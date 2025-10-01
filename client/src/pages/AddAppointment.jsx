@@ -51,26 +51,98 @@ export default function AddAppointment() {
   const [form, setForm] = useState({
     name: "", address: "", contact: "", age: "", gender: "", doctor: "", date: "", time: "", reason: "", status: "pending"
   });
+  const [errors, setErrors] = useState({});
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [activeStep, setActiveStep] = useState(0);
+
+  // Validation rules
+  const validateForm = (step) => {
+    const newErrors = {};
+    
+    if (step === 0) {
+      // Patient Information validation
+      if (!form.name.trim()) {
+        newErrors.name = "Name is required";
+      } else if (form.name.length < 3) {
+        newErrors.name = "Name must be at least 3 characters long";
+      }
+
+      if (!form.contact.trim()) {
+        newErrors.contact = "Contact number is required";
+      } else if (!/^[0-9]{10}$/.test(form.contact.trim())) {
+        newErrors.contact = "Please enter a valid 10-digit contact number";
+      }
+
+      if (form.age && (isNaN(form.age) || form.age < 0 || form.age > 120)) {
+        newErrors.age = "Please enter a valid age between 0 and 120";
+      }
+
+      if (form.gender && !genders.includes(form.gender)) {
+        newErrors.gender = "Please select a valid gender";
+      }
+    }
+
+    if (step === 1) {
+      // Appointment Details validation
+      if (!form.doctor) {
+        newErrors.doctor = "Please select a doctor";
+      }
+
+      if (!form.date) {
+        newErrors.date = "Appointment date is required";
+      } else {
+        const selectedDate = new Date(form.date);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        if (selectedDate < today) {
+          newErrors.date = "Please select a future date";
+        }
+      }
+
+      if (!form.time) {
+        newErrors.time = "Appointment time is required";
+      } else {
+        const [hours, minutes] = form.time.split(':').map(Number);
+        if (hours < 9 || hours >= 17) {
+          newErrors.time = "Please select a time between 9:00 AM and 5:00 PM";
+        }
+      }
+
+      if (form.reason && form.reason.length > 500) {
+        newErrors.reason = "Reason cannot exceed 500 characters";
+      }
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
   const navigate = useNavigate();
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
   const handleNext = () => {
-    setActiveStep((prev) => prev + 1);
+    if (validateForm(activeStep)) {
+      setActiveStep((prev) => prev + 1);
+      setError(""); // Clear any previous general errors
+    }
   };
 
   const handleBack = () => {
     setActiveStep((prev) => prev - 1);
+    setErrors({}); // Clear validation errors when going back
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!form.name || !form.contact || !form.doctor || !form.date || !form.time) {
-      setError("Please fill all required fields (name, contact, doctor, date, time).");
+    // Validate all steps before submission
+    const isStep0Valid = validateForm(0);
+    const isStep1Valid = validateForm(1);
+    
+    if (!isStep0Valid || !isStep1Valid) {
+      setError("Please check all required fields and fix any errors.");
       return;
     }
 
@@ -99,6 +171,8 @@ export default function AddAppointment() {
                 value={form.name}
                 onChange={handleChange}
                 required
+                error={!!errors.name}
+                helperText={errors.name}
                 InputProps={{
                   startAdornment: <Person sx={{ color: 'text.secondary', mr: 1 }} />
                 }}
@@ -113,6 +187,8 @@ export default function AddAppointment() {
                 value={form.contact}
                 onChange={handleChange}
                 required
+                error={!!errors.contact}
+                helperText={errors.contact}
                 InputProps={{
                   startAdornment: <Phone sx={{ color: 'text.secondary', mr: 1 }} />
                 }}
@@ -140,6 +216,8 @@ export default function AddAppointment() {
                 fullWidth
                 value={form.age}
                 onChange={handleChange}
+                error={!!errors.age}
+                helperText={errors.age}
                 InputProps={{
                   startAdornment: <Cake sx={{ color: 'text.secondary', mr: 1 }} />
                 }}
@@ -154,6 +232,8 @@ export default function AddAppointment() {
                 fullWidth
                 value={form.gender}
                 onChange={handleChange}
+                error={!!errors.gender}
+                helperText={errors.gender}
                 InputProps={{
                   startAdornment: <Transgender sx={{ color: 'text.secondary', mr: 1 }} />
                 }}
@@ -177,6 +257,8 @@ export default function AddAppointment() {
                 value={form.doctor}
                 onChange={handleChange}
                 required
+                error={!!errors.doctor}
+                helperText={errors.doctor}
                 InputProps={{
                   startAdornment: <MedicalServices sx={{ color: 'text.secondary', mr: 1 }} />
                 }}
@@ -195,6 +277,8 @@ export default function AddAppointment() {
                 value={form.date}
                 onChange={handleChange}
                 required
+                error={!!errors.date}
+                helperText={errors.date}
                 InputProps={{
                   startAdornment: <CalendarToday sx={{ color: 'text.secondary', mr: 1 }} />
                 }}
@@ -211,6 +295,8 @@ export default function AddAppointment() {
                 value={form.time}
                 onChange={handleChange}
                 required
+                error={!!errors.time}
+                helperText={errors.time}
                 InputProps={{
                   startAdornment: <Schedule sx={{ color: 'text.secondary', mr: 1 }} />
                 }}
@@ -226,6 +312,8 @@ export default function AddAppointment() {
                 rows={4}
                 value={form.reason}
                 onChange={handleChange}
+                error={!!errors.reason}
+                helperText={errors.reason}
                 InputProps={{
                   startAdornment: <Description sx={{ color: 'text.secondary', mr: 1, mt: 1, alignSelf: 'flex-start' }} />
                 }}

@@ -18,9 +18,31 @@ const Login = () => {
     email: '',
     password: ''
   });
+  const [errors, setErrors] = useState({});
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
+
+  const validateForm = () => {
+    const newErrors = {};
+    
+    // Email validation
+    if (!formData.email) {
+      newErrors.email = 'Email is required';
+    } else if (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(formData.email)) {
+      newErrors.email = 'Invalid email address';
+    }
+
+    // Password validation
+    if (!formData.password) {
+      newErrors.password = 'Password is required';
+    } else if (formData.password.length < 6) {
+      newErrors.password = 'Password must be at least 6 characters';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
   
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -44,9 +66,14 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
     setError('');
+    
+    // Validate form before submission
+    if (!validateForm()) {
+      return;
+    }
 
+    setLoading(true);
     const result = await login(formData.email, formData.password);
     
     if (result.success) {
@@ -132,6 +159,8 @@ const Login = () => {
                 autoFocus
                 value={formData.email}
                 onChange={handleChange}
+                error={!!errors.email}
+                helperText={errors.email}
               />
               <TextField
                 margin="normal"
@@ -144,6 +173,8 @@ const Login = () => {
                 autoComplete="current-password"
                 value={formData.password}
                 onChange={handleChange}
+                error={!!errors.password}
+                helperText={errors.password}
               />
               <Button
                 type="submit"
