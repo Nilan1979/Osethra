@@ -73,7 +73,7 @@ const Footer = () => {
             </Box>
 
             {/* Contact Info */}
-            <Stack spacing={1.5} sx={{ alignItems: 'center' }}>
+            <Stack spacing={1.5} sx={{ alignItems: 'flex-end' }}>
               <Box sx={{ display: 'flex', alignItems: 'center' }}>
                 <Phone sx={{ fontSize: 20, mr: 1.5, color: '#ffcc70' }} />
                 <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.9)' }}>
@@ -91,7 +91,7 @@ const Footer = () => {
 
           {/* CENTER SECTION (Services + Company Links) */}
           <Grid item xs={12} md={4}>
-            <Grid container spacing={4} justifyContent="center">
+            <Grid container spacing={4} justifyContent="flex-end">
               {/* Services */}
               <Grid item xs={6}>
                 <Typography

@@ -139,12 +139,23 @@ function App() {
       <CssBaseline />
       <AuthProvider>
         <Router>
-          <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', width: '100%' }}>
             <NavBar />
-            <Box sx={{ pt: 10, backgroundColor: 'background.default', flex: 1 }}>
-              <Container maxWidth="lg">
-                <AppRoutes />
-              </Container>
+            <Box component="main" sx={{ flex: 1, width: '100%' }}>
+              <Routes>
+                <Route path="/" element={
+                  <Box sx={{ width: '100%', margin: 0, padding: 0 }}>
+                    <Home />
+                  </Box>
+                } />
+                <Route path="/*" element={
+                  <Box sx={{ pt: 10, backgroundColor: 'background.default' }}>
+                    <Container maxWidth="lg">
+                      <AppRoutes />
+                    </Container>
+                  </Box>
+                } />
+              </Routes>
             </Box>
             <Footer />
           </Box>
