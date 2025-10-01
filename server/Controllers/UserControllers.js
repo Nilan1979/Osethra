@@ -440,6 +440,41 @@ exports.forgotPassword = async (req, res) => {
     }
 };
 
+// Get all doctors
+exports.getDoctors = async (req, res) => {
+    try {
+        console.log('Starting getDoctors function...');
+        
+        // Query for doctors
+        const query = { role: "doctor" };
+        console.log('Searching for doctors with query:', query);
+        
+        const doctors = await User.find(query).select('_id name contactNo');
+        console.log('Database query completed');
+        console.log('Number of doctors found:', doctors?.length || 0);
+        
+        if (!doctors || doctors.length === 0) {
+            console.log('No doctors found in database');
+            return res.status(404).json({ message: "No doctors found" });
+        }
+
+        // Log success but don't log sensitive data
+        console.log(`Successfully found ${doctors.length} doctors`);
+        res.status(200).json(doctors);
+    } catch (error) {
+        console.error('Error in getDoctors function:', {
+            message: error.message,
+            stack: error.stack,
+            name: error.name
+        });
+        
+        res.status(500).json({ 
+            message: "Error fetching doctors",
+            error: error.message
+        });
+    }
+};
+
 // Reset password
 exports.resetPassword = async (req, res) => {
     try {

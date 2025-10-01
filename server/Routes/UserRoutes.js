@@ -7,6 +7,7 @@ router.get('/', UserController.getAllUsers);
 router.post('/', UserController.addUser);
 router.get('/search', UserController.searchUsers);
 router.get('/pdf', UserController.generateUsersPDF);
+router.get('/doctors', UserController.getDoctors);  // Move this before the :id routes
 router.get('/:id/pdf', UserController.generateUserPDF);
 router.get('/:id', UserController.getById);
 router.put('/:id', UserController.updateUser);

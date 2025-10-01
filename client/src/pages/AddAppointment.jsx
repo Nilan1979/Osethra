@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { createAppointment } from "../api/appointments";
+import { getDoctors } from "../services/userService";
 import { 
   TextField, 
   Button, 
@@ -17,7 +18,8 @@ import {
   StepLabel,
   Alert,
   alpha,
-  useTheme
+  useTheme,
+  CircularProgress
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import {
@@ -36,7 +38,6 @@ import {
 } from "@mui/icons-material";
 
 const genders = ["Male", "Female", "Other"];
-const doctors = ["Dr. Smith (Cardiology)", "Dr. Johnson (Pediatrics)", "Dr. Williams (Orthopedics)", "Dr. Brown (Dermatology)", "Dr. Davis (General)"];
 
 // Background image
 const backgroundImage = `
@@ -49,14 +50,49 @@ const steps = ['Patient Information', 'Appointment Details', 'Review & Confirm']
 export default function AddAppointment() {
   const theme = useTheme();
   const [form, setForm] = useState({
-    name: "", address: "", contact: "", age: "", gender: "", doctor: "", date: "", time: "", reason: ""
+    name: "", address: "", contact: "", age: "", gender: "", 
+    doctor: "", // Only store doctor name
+    date: "", time: "", reason: ""
   });
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [activeStep, setActiveStep] = useState(0);
+  const [doctors, setDoctors] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchDoctors = async () => {
+      try {
+        const result = await getDoctors();
+        if (result.success) {
+          setDoctors(result.data);
+        } else {
+          setError("Failed to load doctors list");
+        }
+      } catch (err) {
+        setError("Failed to load doctors list");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDoctors();
+  }, []);
   const navigate = useNavigate();
 
-  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+  const handleChange = (e) => {
+    if (e.target.name === 'doctor') {
+      const selectedDoctor = doctors.find(doc => doc._id === e.target.value);
+      if (selectedDoctor) {
+        setForm({
+          ...form,
+          doctor: `Dr. ${selectedDoctor.name}` // Store full doctor name with prefix
+        });
+      }
+    } else {
+      setForm({ ...form, [e.target.name]: e.target.value });
+    }
+  };
 
   const handleNext = () => {
     setActiveStep((prev) => prev + 1);
@@ -174,15 +210,28 @@ export default function AddAppointment() {
                 name="doctor"
                 label="Select Doctor"
                 fullWidth
-                value={form.doctor}
+                value={form.doctor} // Use doctor name as value
                 onChange={handleChange}
                 required
+                disabled={loading}
                 InputProps={{
-                  startAdornment: <MedicalServices sx={{ color: 'text.secondary', mr: 1 }} />
+                  startAdornment: loading ? (
+                    <CircularProgress size={20} sx={{ mr: 1 }} />
+                  ) : (
+                    <MedicalServices sx={{ color: 'text.secondary', mr: 1 }} />
+                  )
                 }}
                 sx={{ mb: 2 }}
               >
-                {doctors.map(doctor => <MenuItem key={doctor} value={doctor}>{doctor}</MenuItem>)}
+                {doctors && doctors.length > 0 ? (
+                  doctors.map(doctor => (
+                    <MenuItem key={doctor._id} value={doctor._id}>
+                      Dr. {doctor.name} {doctor.contactNo && `(${doctor.contactNo})`}
+                    </MenuItem>
+                  ))
+                ) : (
+                  <MenuItem disabled>No doctors available</MenuItem>
+                )}
               </TextField>
             </Grid>
             <Grid item xs={12} md={6}>

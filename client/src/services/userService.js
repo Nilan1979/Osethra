@@ -1,6 +1,17 @@
 // API utility functions for user-related operations
 
-import axios from 'axios';
+import api from '../api/axiosConfig';
+
+// Get all doctors
+export const getDoctors = async () => {
+  try {
+    const response = await api.get('/users/doctors');
+    return { success: true, data: response.data };
+  } catch (error) {
+    console.error('Error fetching doctors:', error.response || error);
+    return { success: false, error: error.response?.data?.message || 'Failed to fetch doctors' };
+  }
+};
 
 // Search users by name
 export const searchUsersByName = async (name) => {
