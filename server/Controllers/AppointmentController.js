@@ -2,6 +2,47 @@ const Appointment = require("../Model/AppointmentModel");
 const PDFDocument = require('pdfkit');
 const fs = require('fs');
 
+// Get appointments by doctor ID
+const getAppointmentsByDoctor = async (req, res) => {
+    try {
+        const { doctorId } = req.params;
+        
+        const appointments = await Appointment.find({ doctorId })
+            .sort({ date: 1, time: 1 }); // Sort by date and time in ascending order
+
+        if (!appointments || appointments.length === 0) {
+            return res.status(404).json({ 
+                message: `No appointments found for doctor with ID: ${doctorId}` 
+            });
+        }
+
+        res.status(200).json(appointments);
+    } catch (error) {
+        console.error('Error fetching doctor appointments:', error);
+        res.status(500).json({ 
+            message: "Error fetching doctor appointments", 
+            error: error.message 
+        });
+    }
+};
+
+// Get latest appointments (most recent 5)
+const getLatestAppointments = async (req, res) => {
+    try {
+        const appointments = await Appointment.find()
+            .sort({ createdAt: -1, date: -1 }) // Sort by creation time and date in descending order
+            .limit(5); // Get latest 5 appointments
+
+        res.status(200).json(appointments);
+    } catch (error) {
+        console.error('Error fetching latest appointments:', error);
+        res.status(500).json({ 
+            message: "Error fetching latest appointments", 
+            error: error.message 
+        });
+    }
+};
+
 // Get all appointments with search
 const getAllAppointments = async (req, res, next) => {
     try {
@@ -125,12 +166,12 @@ const generatePDFReport = async (req, res) => {
 
 // Add new appointment
 const addAppointment = async (req, res, next) => {
-    const { name, address, contact, age, gender, doctor, date, time, reason } = req.body;
+    const { name, address, contact, age, gender, doctor, doctorId, date, time, reason } = req.body;
 
     let appointment;
     try {
         appointment = new Appointment({
-            name, address, contact, age, gender, doctor, date, time, reason
+            name, address, contact, age, gender, doctor, doctorId, date, time, reason
         });
         await appointment.save();
     } catch (err) {
@@ -299,10 +340,12 @@ const generateIndividualPDF = async (req, res) => {
 
 module.exports = {
     getAllAppointments,
+    getLatestAppointments,
     addAppointment,
     getById,
     updateAppointment,
     deleteAppointment,
     generatePDFReport,
-    generateIndividualPDF
+    generateIndividualPDF,
+    getAppointmentsByDoctor
 };

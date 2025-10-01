@@ -50,9 +50,16 @@ const steps = ['Patient Information', 'Appointment Details', 'Review & Confirm']
 export default function AddAppointment() {
   const theme = useTheme();
   const [form, setForm] = useState({
-    name: "", address: "", contact: "", age: "", gender: "", 
-    doctor: "", // Only store doctor name
-    date: "", time: "", reason: ""
+    name: "", 
+    address: "", 
+    contact: "", 
+    age: "", 
+    gender: "", 
+    doctor: "", // Full doctor name with Dr. prefix
+    doctorId: "", // Store doctor's ID
+    date: "", 
+    time: "", 
+    reason: ""
   });
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -86,7 +93,8 @@ export default function AddAppointment() {
       if (selectedDoctor) {
         setForm({
           ...form,
-          doctor: `Dr. ${selectedDoctor.name}` // Store full doctor name with prefix
+          doctor: `Dr. ${selectedDoctor.name}`, // Store full doctor name with prefix
+          doctorId: selectedDoctor._id // Store doctor's ID
         });
       }
     } else {
@@ -210,7 +218,7 @@ export default function AddAppointment() {
                 name="doctor"
                 label="Select Doctor"
                 fullWidth
-                value={form.doctor} // Use doctor name as value
+                value={form.doctorId} // Use doctor ID as value
                 onChange={handleChange}
                 required
                 disabled={loading}

@@ -22,8 +22,14 @@ export const AuthProvider = ({ children }) => {
     const token = localStorage.getItem('token');
     const role = localStorage.getItem('role');
     const userId = localStorage.getItem('userId');
+    const storedUser = localStorage.getItem('user');
     
-    if (token && role) {
+    if (token && role && storedUser) {
+      const userData = JSON.parse(storedUser);
+      setUser(userData);
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    } else if (token && role && userId) {
+      // Fallback for existing sessions without full user data
       setUser({ token, role, id: userId });
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
     }
@@ -35,15 +41,28 @@ export const AuthProvider = ({ children }) => {
       const response = await axios.post('/users/login', { email, password });
       const { token, role } = response.data;
       
-      // Decode token to get user ID (simple approach)
+      // Decode token to get user ID
       const payload = JSON.parse(atob(token.split('.')[1]));
       const userId = payload.id;
+      
+      // Fetch complete user details
+      const userResponse = await axios.get(`/users/${userId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      const userData = {
+        ...userResponse.data,
+        token,
+        role,
+        id: userId
+      };
       
       localStorage.setItem('token', token);
       localStorage.setItem('role', role);
       localStorage.setItem('userId', userId);
+      localStorage.setItem('user', JSON.stringify(userData));
       
-      setUser({ token, role, id: userId });
+      setUser(userData);
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       
       return { success: true, role };
@@ -71,6 +90,7 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('token');
     localStorage.removeItem('role');
     localStorage.removeItem('userId');
+    localStorage.removeItem('user');
     delete axios.defaults.headers.common['Authorization'];
     setUser(null);
   };

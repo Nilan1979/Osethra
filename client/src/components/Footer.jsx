@@ -1,13 +1,15 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Container,
-  Grid,
   Typography,
   Link,
   IconButton,
   Stack,
+  Grid,
+  CircularProgress,
 } from '@mui/material';
+import axios from 'axios';
 import {
   LocalHospital,
   Phone,
@@ -20,6 +22,27 @@ import {
 } from '@mui/icons-material';
 
 const Footer = () => {
+  const [latestAppointments, setLatestAppointments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchLatestAppointments = async () => {
+      try {
+        const response = await axios.get('http://localhost:5000/appointments/latest');
+        setLatestAppointments(response.data);
+        setError(null);
+      } catch (err) {
+        console.error('Error fetching appointments:', err);
+        setError('Failed to load latest appointments');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchLatestAppointments();
+  }, []);
+
   return (
     <Box
       sx={{
@@ -31,9 +54,9 @@ const Footer = () => {
       }}
     >
       <Container maxWidth="lg" sx={{ py: 6 }}>
-        <Grid container spacing={4} alignItems="center">
+        <Grid container spacing={4}>
           {/* Brand Section */}
-          <Grid item xs={12} md={4}>
+          <Grid item xs={12} sm={4}>
             <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
               <LocalHospital 
                 sx={{ 
@@ -87,7 +110,7 @@ const Footer = () => {
           </Grid>
 
           {/* Quick Links */}
-          <Grid item xs={12} md={4}>
+          <Grid item xs={12} sm={4}>
             <Grid container spacing={3}>
               <Grid item xs={6}>
                 <Typography 
@@ -164,7 +187,7 @@ const Footer = () => {
           </Grid>
 
           {/* Social Media & Emergency */}
-          <Grid item xs={12} md={4}>
+          <Grid item xs={12} sm={4}>
             {/* Emergency Hotline */}
             <Box sx={{ textAlign: { xs: 'left', md: 'right' }, mb: 3 }}>
               <Typography 
@@ -189,6 +212,42 @@ const Footer = () => {
               >
                 +94 11 543 1088
               </Typography>
+            </Box>
+
+            {/* Latest Appointments */}
+            <Box sx={{ mb: 3 }}>
+              <Typography 
+                variant="subtitle2" 
+                sx={{ 
+                  fontWeight: '600',
+                  mb: 2,
+                  color: 'rgba(255,255,255,0.9)',
+                  letterSpacing: '1px',
+                  fontSize: '0.8rem'
+                }}
+              >
+                LATEST APPOINTMENTS
+              </Typography>
+              {loading ? (
+                <Box display="flex" justifyContent="center">
+                  <CircularProgress size={20} sx={{ color: 'white' }} />
+                </Box>
+              ) : error ? (
+                <Typography color="error" variant="body2">{error}</Typography>
+              ) : (
+                <Stack spacing={1}>
+                  {latestAppointments.slice(0, 3).map((appointment) => (
+                    <Box key={appointment._id} sx={{ color: 'rgba(255,255,255,0.8)' }}>
+                      <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>
+                        {new Date(appointment.date).toLocaleDateString()} - {appointment.time}
+                      </Typography>
+                      <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.8rem' }}>
+                        {appointment.name}
+                      </Typography>
+                    </Box>
+                  ))}
+                </Stack>
+              )}
             </Box>
 
             {/* Social Media */}
