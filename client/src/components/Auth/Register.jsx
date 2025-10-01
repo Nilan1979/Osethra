@@ -32,9 +32,79 @@ const Register = () => {
     password: '',
     confirmPassword: ''
   });
+  const [errors, setErrors] = useState({});
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const validateForm = () => {
+    const newErrors = {};
+
+    // Name validation
+    if (!formData.name.trim()) {
+      newErrors.name = 'Name is required';
+    } else if (formData.name.length < 3) {
+      newErrors.name = 'Name must be at least 3 characters long';
+    } else if (!/^[a-zA-Z\s]+$/.test(formData.name.trim())) {
+      newErrors.name = 'Name can only contain letters and spaces';
+    }
+
+    // Email validation
+    if (!formData.email) {
+      newErrors.email = 'Email is required';
+    } else if (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(formData.email)) {
+      newErrors.email = 'Invalid email address';
+    }
+
+    // Contact number validation
+    if (!formData.contactNo) {
+      newErrors.contactNo = 'Contact number is required';
+    } else if (!/^[0-9]{10}$/.test(formData.contactNo.trim())) {
+      newErrors.contactNo = 'Contact number must be 10 digits';
+    }
+
+    // Address validation
+    if (!formData.address.trim()) {
+      newErrors.address = 'Address is required';
+    } else if (formData.address.length < 5) {
+      newErrors.address = 'Address must be at least 5 characters long';
+    }
+
+    // Role validation
+    if (!formData.role) {
+      newErrors.role = 'Role is required';
+    } else if (!roles.find(r => r.value === formData.role)) {
+      newErrors.role = 'Invalid role selected';
+    }
+
+    // Password validation
+    if (!formData.password) {
+      newErrors.password = 'Password is required';
+    } else {
+      if (formData.password.length < 6) {
+        newErrors.password = 'Password must be at least 6 characters long';
+      }
+      if (!/[A-Z]/.test(formData.password)) {
+        newErrors.password = 'Password must contain at least one uppercase letter';
+      }
+      if (!/[0-9]/.test(formData.password)) {
+        newErrors.password = 'Password must contain at least one number';
+      }
+      if (!/[!@#$%^&*]/.test(formData.password)) {
+        newErrors.password = 'Password must contain at least one special character (!@#$%^&*)';
+      }
+    }
+
+    // Confirm password validation
+    if (!formData.confirmPassword) {
+      newErrors.confirmPassword = 'Please confirm your password';
+    } else if (formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = 'Passwords do not match';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
   
   const { register } = useAuth();
   const navigate = useNavigate();
@@ -48,22 +118,15 @@ const Register = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
     setError('');
     setSuccess('');
 
-    // Validation
-    if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
-      setLoading(false);
+    // Validate form before submission
+    if (!validateForm()) {
       return;
     }
 
-    if (formData.password.length < 6) {
-      setError('Password must be at least 6 characters long');
-      setLoading(false);
-      return;
-    }
+    setLoading(true);
 
     const userData = {
       name: formData.name,
@@ -133,6 +196,8 @@ const Register = () => {
                   autoComplete="name"
                   value={formData.name}
                   onChange={handleChange}
+                  error={!!errors.name}
+                  helperText={errors.name}
                 />
               </Grid>
               <Grid item xs={12}>
@@ -145,6 +210,8 @@ const Register = () => {
                   autoComplete="email"
                   value={formData.email}
                   onChange={handleChange}
+                  error={!!errors.email}
+                  helperText={errors.email}
                 />
               </Grid>
               <Grid item xs={12}>
@@ -156,6 +223,8 @@ const Register = () => {
                   name="contactNo"
                   value={formData.contactNo}
                   onChange={handleChange}
+                  error={!!errors.contactNo}
+                  helperText={errors.contactNo}
                 />
               </Grid>
               <Grid item xs={12}>
@@ -169,6 +238,8 @@ const Register = () => {
                   rows={2}
                   value={formData.address}
                   onChange={handleChange}
+                  error={!!errors.address}
+                  helperText={errors.address}
                 />
               </Grid>
               <Grid item xs={12}>
@@ -181,6 +252,8 @@ const Register = () => {
                   name="role"
                   value={formData.role}
                   onChange={handleChange}
+                  error={!!errors.role}
+                  helperText={errors.role}
                 >
                   {roles.map((option) => (
                     <MenuItem key={option.value} value={option.value}>
@@ -200,6 +273,8 @@ const Register = () => {
                   autoComplete="new-password"
                   value={formData.password}
                   onChange={handleChange}
+                  error={!!errors.password}
+                  helperText={errors.password}
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
@@ -212,6 +287,8 @@ const Register = () => {
                   id="confirmPassword"
                   value={formData.confirmPassword}
                   onChange={handleChange}
+                  error={!!errors.confirmPassword}
+                  helperText={errors.confirmPassword}
                 />
               </Grid>
             </Grid>

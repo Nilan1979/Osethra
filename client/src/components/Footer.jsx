@@ -7,12 +7,12 @@ import {
   Link,
   IconButton,
   Stack,
+  Button,
 } from '@mui/material';
 import {
   LocalHospital,
   Phone,
   Email,
-  LocationOn,
   Facebook,
   Twitter,
   Instagram,
@@ -23,168 +23,179 @@ const Footer = () => {
   return (
     <Box
       sx={{
-        background: 'linear-gradient(135deg, #000000 0%, #1a1a1a 50%, #2d2d2d 100%)',
+        background: 'linear-gradient(135deg, #0f2027, #203a43, #2c5364)',
         color: 'white',
         width: '100%',
         mt: 'auto',
         borderTop: '1px solid rgba(255,255,255,0.1)',
+        boxShadow: '0 -4px 20px rgba(0,0,0,0.4)',
       }}
     >
-      <Container maxWidth="lg" sx={{ py: 6 }}>
-        <Grid container spacing={4} alignItems="center">
-          {/* Brand Section */}
-          <Grid item xs={12} md={4}>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-              <LocalHospital 
-                sx={{ 
-                  fontSize: 36, 
-                  mr: 2, 
-                  color: '#ffffff',
-                  background: 'linear-gradient(45deg, #666666, #999999)',
-                  borderRadius: '8px',
-                  p: 0.5
-                }} 
+      <Container maxWidth="lg" sx={{ py: 8, pl: { xs: 2, sm: 3, md: 4 } }}>
+        <Grid container spacing={6} alignItems="flex-start" justifyContent="center">
+          
+          {/* LEFT SECTION (Brand + Contact Info) */}
+          <Grid item xs={12} md={4} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', pr: { xs: 1, sm: 2 } }}>
+            {/* Brand */}
+            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 3 }}>
+              <LocalHospital
+                sx={{
+                  fontSize: 40,
+                  mb: 2,
+                  color: '#fff',
+                  background: 'linear-gradient(45deg, #ff6a00, #ee0979)',
+                  borderRadius: '12px',
+                  p: 1,
+                  boxShadow: '0 3px 8px rgba(0,0,0,0.3)',
+                }}
               />
-              <Box>
-                <Typography 
-                  variant="h5" 
-                  sx={{ 
-                    fontWeight: '300',
-                    color: 'white',
-                    letterSpacing: '2px'
+              <Box sx={{ textAlign: 'center' }}>
+                <Typography
+                  variant="h5"
+                  sx={{
+                    fontWeight: 'bold',
+                    color: '#fff',
+                    letterSpacing: '2px',
                   }}
                 >
                   OSETHRA HOSPITAL
                 </Typography>
-                <Typography 
-                  variant="caption" 
-                  sx={{ 
-                    color: 'rgba(255,255,255,0.6)',
-                    letterSpacing: '1px'
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: 'rgba(255,255,255,0.7)',
+                    letterSpacing: '1px',
                   }}
                 >
                   Excellence in Healthcare
                 </Typography>
               </Box>
             </Box>
-            
+
             {/* Contact Info */}
-            <Stack spacing={1.5}>
+            <Stack spacing={1.5} sx={{ alignItems: 'center' }}>
               <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <Phone sx={{ fontSize: 18, mr: 1.5, color: 'rgba(255,255,255,0.7)' }} />
-                <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.8)' }}>
+                <Phone sx={{ fontSize: 20, mr: 1.5, color: '#ffcc70' }} />
+                <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.9)' }}>
                   +94 11 543 0000
                 </Typography>
               </Box>
-              
               <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <Email sx={{ fontSize: 18, mr: 1.5, color: 'rgba(255,255,255,0.7)' }} />
-                <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.8)' }}>
+                <Email sx={{ fontSize: 20, mr: 1.5, color: '#ffcc70' }} />
+                <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.9)' }}>
                   info@osethrahospital.com
                 </Typography>
               </Box>
             </Stack>
           </Grid>
 
-          {/* Quick Links */}
+          {/* CENTER SECTION (Services + Company Links) */}
           <Grid item xs={12} md={4}>
-            <Grid container spacing={3}>
+            <Grid container spacing={4} justifyContent="center">
+              {/* Services */}
               <Grid item xs={6}>
-                <Typography 
-                  variant="subtitle2" 
-                  sx={{ 
-                    fontWeight: '600', 
-                    mb: 2, 
-                    color: 'rgba(255,255,255,0.9)',
-                    letterSpacing: '1px',
-                    fontSize: '0.8rem'
+                <Typography
+                  variant="subtitle2"
+                  sx={{
+                    fontWeight: '600',
+                    mb: 2,
+                    color: '#ffcc70',
+                    fontSize: '0.9rem',
                   }}
                 >
                   SERVICES
                 </Typography>
-                <Stack spacing={1}>
+                <Stack spacing={1.5}>
                   {['Emergency', 'Surgery', 'Cardiology', 'Pediatrics'].map((link) => (
-                    <Link
+                    <Button
                       key={link}
                       href="#"
+                      variant="outlined"
+                      size="small"
                       sx={{
-                        color: 'rgba(255,255,255,0.6)',
-                        textDecoration: 'none',
+                        color: 'white',
+                        borderColor: 'rgba(255,255,255,0.3)',
+                        textTransform: 'none',
                         fontSize: '0.8rem',
-                        '&:hover': { 
-                          color: '#ffffff',
-                          transform: 'translateX(2px)'
+                        justifyContent: 'flex-start',
+                        '&:hover': {
+                          borderColor: '#ffcc70',
+                          color: '#ffcc70',
+                          transform: 'translateX(3px)',
                         },
-                        display: 'block',
-                        transition: 'all 0.2s ease'
+                        transition: 'all 0.3s ease',
                       }}
                     >
                       {link}
-                    </Link>
+                    </Button>
                   ))}
                 </Stack>
               </Grid>
 
+              {/* Company */}
               <Grid item xs={6}>
-                <Typography 
-                  variant="subtitle2" 
-                  sx={{ 
-                    fontWeight: '600', 
-                    mb: 2, 
-                    color: 'rgba(255,255,255,0.9)',
-                    letterSpacing: '1px',
-                    fontSize: '0.8rem'
+                <Typography
+                  variant="subtitle2"
+                  sx={{
+                    fontWeight: '600',
+                    mb: 2,
+                    color: '#ffcc70',
+                    fontSize: '0.9rem',
                   }}
                 >
                   COMPANY
                 </Typography>
-                <Stack spacing={1}>
+                <Stack spacing={1.5}>
                   {['About', 'Careers', 'News', 'Contact'].map((link) => (
-                    <Link
+                    <Button
                       key={link}
                       href="#"
+                      variant="outlined"
+                      size="small"
                       sx={{
-                        color: 'rgba(255,255,255,0.6)',
-                        textDecoration: 'none',
+                        color: 'white',
+                        borderColor: 'rgba(255,255,255,0.3)',
+                        textTransform: 'none',
                         fontSize: '0.8rem',
-                        '&:hover': { 
-                          color: '#ffffff',
-                          transform: 'translateX(2px)'
+                        justifyContent: 'flex-start',
+                        '&:hover': {
+                          borderColor: '#ffcc70',
+                          color: '#ffcc70',
+                          transform: 'translateX(3px)',
                         },
-                        display: 'block',
-                        transition: 'all 0.2s ease'
+                        transition: 'all 0.3s ease',
                       }}
                     >
                       {link}
-                    </Link>
+                    </Button>
                   ))}
                 </Stack>
               </Grid>
             </Grid>
           </Grid>
 
-          {/* Social Media & Emergency */}
+          {/* RIGHT SECTION (Emergency Hotline + Social Media) */}
           <Grid item xs={12} md={4}>
-            {/* Emergency Hotline */}
-            <Box sx={{ textAlign: { xs: 'left', md: 'right' }, mb: 3 }}>
-              <Typography 
-                variant="subtitle2" 
-                sx={{ 
-                  fontWeight: '600', 
+            {/* Emergency */}
+            <Box sx={{ textAlign: 'center', mb: 3, pr: { xs: 1, sm: 2 } }}>
+              <Typography
+                variant="subtitle2"
+                sx={{
+                  fontWeight: '600',
                   color: '#ff4444',
-                  letterSpacing: '1px',
-                  fontSize: '0.8rem',
-                  mb: 0.5
+                  fontSize: '0.9rem',
+                  mb: 0.5,
                 }}
               >
                 EMERGENCY HOTLINE
               </Typography>
-              <Typography 
-                variant="h6" 
-                sx={{ 
+              <Typography
+                variant="h6"
+                sx={{
                   fontWeight: '700',
-                  color: 'white',
-                  fontSize: '1.4rem'
+                  color: '#fff',
+                  fontSize: '1.6rem',
+                  textShadow: '0 0 6px rgba(255,0,0,0.7)',
                 }}
               >
                 +94 11 543 1088
@@ -192,130 +203,89 @@ const Footer = () => {
             </Box>
 
             {/* Social Media */}
-            <Box sx={{ textAlign: { xs: 'left', md: 'right' } }}>
-              <Typography 
-                variant="subtitle2" 
-                sx={{ 
-                  fontWeight: '600', 
-                  mb: 1.5, 
-                  color: 'rgba(255,255,255,0.9)',
-                  letterSpacing: '1px',
-                  fontSize: '0.8rem'
+            <Box sx={{ textAlign: 'center' }}>
+              <Typography
+                variant="subtitle2"
+                sx={{
+                  fontWeight: '600',
+                  mb: 1.5,
+                  color: '#ffcc70',
+                  fontSize: '0.9rem',
                 }}
               >
                 CONNECT WITH US
               </Typography>
-              <Stack 
-                direction="row" 
-                spacing={1} 
-                sx={{ 
-                  justifyContent: { xs: 'flex-start', md: 'flex-end' }
+              <Stack
+                direction="row"
+                spacing={1}
+                sx={{
+                  justifyContent: 'center',
                 }}
               >
-                <IconButton 
-                  sx={{ 
-                    color: 'rgba(255,255,255,0.7)',
-                    background: 'rgba(255,255,255,0.05)',
-                    '&:hover': { 
-                      color: '#1877F2', 
-                      background: 'rgba(255,255,255,0.1)',
-                      transform: 'translateY(-2px)'
-                    },
-                    transition: 'all 0.3s ease',
-                    border: '1px solid rgba(255,255,255,0.1)'
-                  }}
-                  size="small"
-                >
-                  <Facebook sx={{ fontSize: 20 }} />
-                </IconButton>
-                <IconButton 
-                  sx={{ 
-                    color: 'rgba(255,255,255,0.7)',
-                    background: 'rgba(255,255,255,0.05)',
-                    '&:hover': { 
-                      color: '#1DA1F2', 
-                      background: 'rgba(255,255,255,0.1)',
-                      transform: 'translateY(-2px)'
-                    },
-                    transition: 'all 0.3s ease',
-                    border: '1px solid rgba(255,255,255,0.1)'
-                  }}
-                  size="small"
-                >
-                  <Twitter sx={{ fontSize: 20 }} />
-                </IconButton>
-                <IconButton 
-                  sx={{ 
-                    color: 'rgba(255,255,255,0.7)',
-                    background: 'rgba(255,255,255,0.05)',
-                    '&:hover': { 
-                      color: '#E4405F', 
-                      background: 'rgba(255,255,255,0.1)',
-                      transform: 'translateY(-2px)'
-                    },
-                    transition: 'all 0.3s ease',
-                    border: '1px solid rgba(255,255,255,0.1)'
-                  }}
-                  size="small"
-                >
-                  <Instagram sx={{ fontSize: 20 }} />
-                </IconButton>
-                <IconButton 
-                  sx={{ 
-                    color: 'rgba(255,255,255,0.7)',
-                    background: 'rgba(255,255,255,0.05)',
-                    '&:hover': { 
-                      color: '#0A66C2', 
-                      background: 'rgba(255,255,255,0.1)',
-                      transform: 'translateY(-2px)'
-                    },
-                    transition: 'all 0.3s ease',
-                    border: '1px solid rgba(255,255,255,0.1)'
-                  }}
-                  size="small"
-                >
-                  <LinkedIn sx={{ fontSize: 20 }} />
-                </IconButton>
+                {[
+                  { icon: <Facebook />, color: '#1877F2' },
+                  { icon: <Twitter />, color: '#1DA1F2' },
+                  { icon: <Instagram />, color: '#E4405F' },
+                  { icon: <LinkedIn />, color: '#0A66C2' },
+                ].map((item, i) => (
+                  <IconButton
+                    key={i}
+                    sx={{
+                      color: 'rgba(255,255,255,0.8)',
+                      background: 'rgba(255,255,255,0.05)',
+                      border: '1px solid rgba(255,255,255,0.1)',
+                      '&:hover': {
+                        color: item.color,
+                        background: 'rgba(255,255,255,0.15)',
+                        transform: 'translateY(-3px)',
+                      },
+                      transition: 'all 0.3s ease',
+                    }}
+                    size="small"
+                  >
+                    {item.icon}
+                  </IconButton>
+                ))}
               </Stack>
             </Box>
           </Grid>
         </Grid>
 
-        {/* Bottom Section */}
-        <Box 
-          sx={{ 
-            borderTop: '1px solid rgba(255,255,255,0.1)', 
-            mt: 4, 
+        {/* BOTTOM SECTION */}
+        <Box
+          sx={{
+            borderTop: '1px solid rgba(255,255,255,0.1)',
+            mt: 6,
             pt: 3,
-            textAlign: 'center'
+            textAlign: 'center',
           }}
         >
-          <Typography 
-            variant="caption" 
-            sx={{ 
-              color: 'rgba(255,255,255,0.4)',
-              letterSpacing: '0.5px'
+          <Typography
+            variant="caption"
+            sx={{
+              color: 'rgba(255,255,255,0.5)',
+              letterSpacing: '0.5px',
             }}
           >
-            © {new Date().getFullYear()} OSETHRA HOSPITAL. All rights reserved. | 
-            <Link 
-              href="#" 
-              sx={{ 
-                color: 'rgba(255,255,255,0.4)', 
-                textDecoration: 'none', 
+            © {new Date().getFullYear()} OSETHRA HOSPITAL. All rights reserved. |
+            <Link
+              href="#"
+              sx={{
+                color: 'rgba(255,255,255,0.5)',
+                textDecoration: 'none',
                 ml: 1,
-                '&:hover': { color: 'rgba(255,255,255,0.6)' }
+                '&:hover': { color: 'rgba(255,255,255,0.8)' },
               }}
             >
               Privacy Policy
             </Link>
-            <Link 
-              href="#" 
-              sx={{ 
-                color: 'rgba(255,255,255,0.4)', 
-                textDecoration: 'none', 
+            <Link
+              href="#"
+              sx={{
+                color: 'rgba(255,255,255,0.5)',
+                textDecoration: 'none',
                 ml: 2,
-                '&:hover': { color: 'rgba(255,255,255,0.6)' }
+                '&:hover': { color: 'rgba(255,255,255,0.8)' },
               }}
             >
               Terms of Service

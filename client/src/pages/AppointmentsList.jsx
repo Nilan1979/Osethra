@@ -42,7 +42,8 @@ import {
   TrendingUp,
   Group,
   AccessTime,
-  CheckCircle
+  CheckCircle,
+  PendingActions
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import Button from "@mui/material/Button";
@@ -488,7 +489,8 @@ export default function AppointmentsList() {
                           </TableCell>
                           <TableCell sx={{ py: 3 }}>
                             <Chip 
-                              label={appointment.status}
+                              icon={appointment.status === 'pending' ? <PendingActions /> : undefined}
+                              label={appointment.status?.charAt(0).toUpperCase() + appointment.status?.slice(1) || 'N/A'}
                               color={getStatusColor(appointment.status)}
                               size="medium"
                               sx={{ 
