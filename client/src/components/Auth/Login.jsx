@@ -79,8 +79,18 @@ const Login = () => {
 
   return (
     <Layout showContactInfo={false}>
-      <Box className="form-container">
-        <Container component="main" maxWidth="xs">
+      <Box className="form-container" sx={{ 
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: '100vh'
+      }}>
+        <Container component="main" maxWidth="xs" sx={{ 
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)'
+        }}>
           <Box
             sx={{
               display: 'flex',

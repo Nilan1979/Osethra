@@ -49,7 +49,7 @@ const steps = ['Patient Information', 'Appointment Details', 'Review & Confirm']
 export default function AddAppointment() {
   const theme = useTheme();
   const [form, setForm] = useState({
-    name: "", address: "", contact: "", age: "", gender: "", doctor: "", date: "", time: "", reason: ""
+    name: "", address: "", contact: "", age: "", gender: "", doctor: "", date: "", time: "", reason: "", status: "pending"
   });
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
