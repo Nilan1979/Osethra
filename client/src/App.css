@@ -1,0 +1,77 @@
+/* Healthcare Management System Styles */
+
+.app-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Dashboard specific styles */
+.dashboard-header {
+  background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%);
+  color: white;
+  padding: 2rem 0;
+  margin-bottom: 2rem;
+}
+
+.stats-card {
+  text-align: center;
+  transition: transform 0.2s ease-in-out;
+}
+
+.stats-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+}
+
+.user-avatar {
+  margin-right: 1rem;
+  background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%);
+}
+
+/* Form styling */
+.form-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  padding: 2rem 0;
+}
+
+.form-paper {
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+  overflow: hidden;
+}
+
+/* Data grid improvements */
+.data-grid-container {
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+/* Button improvements */
+.action-button {
+  margin: 0 4px;
+  min-width: auto;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .dashboard-header {
+    padding: 1rem 0;
+  }
+  
+  .form-container {
+    padding: 1rem;
+  }
+}
