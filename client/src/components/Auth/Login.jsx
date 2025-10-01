@@ -50,7 +50,26 @@ const Login = () => {
     const result = await login(formData.email, formData.password);
     
     if (result.success) {
-      navigate('/dashboard');
+      // Navigate based on user role
+      switch (result.role) {
+        case 'receptionist':
+          navigate('/appointments');
+          break;
+        case 'admin':
+          navigate('/admin/dashboard');
+          break;
+        case 'doctor':
+          navigate('/doctor/dashboard');
+          break;
+        case 'nurse':
+          navigate('/nurse/dashboard');
+          break;
+        case 'pharmacist':
+          navigate('/pharmacist/dashboard');
+          break;
+        default:
+          navigate('/dashboard');
+      }
     } else {
       setError(result.message);
     }
