@@ -16,22 +16,15 @@ const Layout = ({
       flexDirection: 'column', 
       minHeight: '100vh' 
     }}>
-      {showHeader && (
-        <Header 
-          showNavigation={showNavigation} 
-          showContactInfo={showContactInfo} 
-        />
-      )}
-      
       <Box component="main" sx={{ 
         flexGrow: 1,
         display: 'flex',
-        flexDirection: 'column'
+        flexDirection: 'column',
+        justifyContent: 'center', // Add this
+        minHeight: '100vh' // Add this
       }}>
         {children}
       </Box>
-      
-      {showFooter && <Footer />}
     </Box>
   );
 };
