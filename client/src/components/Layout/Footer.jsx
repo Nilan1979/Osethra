@@ -2,276 +2,295 @@ import React from 'react';
 import {
   Box,
   Container,
-  Typography,
   Grid,
+  Typography,
   Link,
   IconButton,
-  Divider
+  Stack,
+  Button,
 } from '@mui/material';
 import {
-  Phone as PhoneIcon,
-  Email as EmailIcon,
-  LocationOn as LocationIcon,
-  Facebook as FacebookIcon,
-  Twitter as TwitterIcon,
-  Instagram as InstagramIcon,
-  LinkedIn as LinkedInIcon,
-  AccessTime as ClockIcon
+  LocalHospital,
+  Phone,
+  Email,
+  Facebook,
+  Twitter,
+  Instagram,
+  LinkedIn,
 } from '@mui/icons-material';
 
 const Footer = () => {
   return (
-    <Box component="footer" sx={{ 
-      background: 'linear-gradient(135deg, #2c5aa0 0%, #1e3f73 100%)',
-      color: 'white',
-      pt: 6,
-      pb: 3,
-      mt: 'auto'
-    }}>
-      <Container maxWidth="lg">
-        <Grid container spacing={4}>
-          {/* Company Info */}
+    <Box
+      sx={{
+        background: 'linear-gradient(135deg, #0f2027, #203a43, #2c5364)',
+        color: 'white',
+        width: '100%',
+        mt: 'auto',
+        borderTop: '1px solid rgba(255,255,255,0.1)',
+        boxShadow: '0 -4px 20px rgba(0,0,0,0.4)',
+      }}
+    >
+      <Container maxWidth="lg" sx={{ py: 8, pl: { xs: 2, sm: 3, md: 4 } }}>
+        <Grid container spacing={6} alignItems="flex-start" justifyContent="center">
+          
+          {/* LEFT SECTION (Brand + Contact Info) */}
+          <Grid item xs={12} md={4} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', pr: { xs: 1, sm: 2 } }}>
+            {/* Brand */}
+            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 3 }}>
+              <LocalHospital
+                sx={{
+                  fontSize: 40,
+                  mb: 2,
+                  color: '#fff',
+                  background: 'linear-gradient(45deg, #ff6a00, #ee0979)',
+                  borderRadius: '12px',
+                  p: 1,
+                  boxShadow: '0 3px 8px rgba(0,0,0,0.3)',
+                }}
+              />
+              <Box sx={{ textAlign: 'center' }}>
+                <Typography
+                  variant="h5"
+                  sx={{
+                    fontWeight: 'bold',
+                    color: '#fff',
+                    letterSpacing: '2px',
+                  }}
+                >
+                  OSETHRA HOSPITAL
+                </Typography>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: 'rgba(255,255,255,0.7)',
+                    letterSpacing: '1px',
+                  }}
+                >
+                  Excellence in Healthcare
+                </Typography>
+              </Box>
+            </Box>
+
+            {/* Contact Info */}
+            <Stack spacing={1.5} sx={{ alignItems: 'center' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <Phone sx={{ fontSize: 20, mr: 1.5, color: '#ffcc70' }} />
+                <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.9)' }}>
+                  +94 11 543 0000
+                </Typography>
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <Email sx={{ fontSize: 20, mr: 1.5, color: '#ffcc70' }} />
+                <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.9)' }}>
+                  info@osethrahospital.com
+                </Typography>
+              </Box>
+            </Stack>
+          </Grid>
+
+          {/* CENTER SECTION (Services + Company Links) */}
           <Grid item xs={12} md={4}>
-            <Typography variant="h4" component="div" sx={{ 
-              fontWeight: 800,
-              mb: 2,
-              fontSize: '2.5rem'
-            }}>
-              MED<span style={{ color: '#3498db' }}>IN</span>
-            </Typography>
-            <Typography variant="body2" sx={{ 
-              mb: 3,
-              color: 'rgba(255, 255, 255, 0.8)',
-              lineHeight: 1.6
-            }}>
-              Leading the way in medical excellence. We provide comprehensive healthcare 
-              services with a commitment to caring for life and delivering the highest 
-              quality medical care to our patients.
-            </Typography>
-            
+            <Grid container spacing={4} justifyContent="center">
+              {/* Services */}
+              <Grid item xs={6}>
+                <Typography
+                  variant="subtitle2"
+                  sx={{
+                    fontWeight: '600',
+                    mb: 2,
+                    color: '#ffcc70',
+                    fontSize: '0.9rem',
+                  }}
+                >
+                  SERVICES
+                </Typography>
+                <Stack spacing={1.5}>
+                  {['Emergency', 'Surgery', 'Cardiology', 'Pediatrics'].map((link) => (
+                    <Button
+                      key={link}
+                      href="#"
+                      variant="outlined"
+                      size="small"
+                      sx={{
+                        color: 'white',
+                        borderColor: 'rgba(255,255,255,0.3)',
+                        textTransform: 'none',
+                        fontSize: '0.8rem',
+                        justifyContent: 'flex-start',
+                        '&:hover': {
+                          borderColor: '#ffcc70',
+                          color: '#ffcc70',
+                          transform: 'translateX(3px)',
+                        },
+                        transition: 'all 0.3s ease',
+                      }}
+                    >
+                      {link}
+                    </Button>
+                  ))}
+                </Stack>
+              </Grid>
+
+              {/* Company */}
+              <Grid item xs={6}>
+                <Typography
+                  variant="subtitle2"
+                  sx={{
+                    fontWeight: '600',
+                    mb: 2,
+                    color: '#ffcc70',
+                    fontSize: '0.9rem',
+                  }}
+                >
+                  COMPANY
+                </Typography>
+                <Stack spacing={1.5}>
+                  {['About', 'Careers', 'News', 'Contact'].map((link) => (
+                    <Button
+                      key={link}
+                      href="#"
+                      variant="outlined"
+                      size="small"
+                      sx={{
+                        color: 'white',
+                        borderColor: 'rgba(255,255,255,0.3)',
+                        textTransform: 'none',
+                        fontSize: '0.8rem',
+                        justifyContent: 'flex-start',
+                        '&:hover': {
+                          borderColor: '#ffcc70',
+                          color: '#ffcc70',
+                          transform: 'translateX(3px)',
+                        },
+                        transition: 'all 0.3s ease',
+                      }}
+                    >
+                      {link}
+                    </Button>
+                  ))}
+                </Stack>
+              </Grid>
+            </Grid>
+          </Grid>
+
+          {/* RIGHT SECTION (Emergency Hotline + Social Media) */}
+          <Grid item xs={12} md={4}>
+            {/* Emergency */}
+            <Box sx={{ textAlign: 'center', mb: 3, pr: { xs: 1, sm: 2 } }}>
+              <Typography
+                variant="subtitle2"
+                sx={{
+                  fontWeight: '600',
+                  color: '#ff4444',
+                  fontSize: '0.9rem',
+                  mb: 0.5,
+                }}
+              >
+                EMERGENCY HOTLINE
+              </Typography>
+              <Typography
+                variant="h6"
+                sx={{
+                  fontWeight: '700',
+                  color: '#fff',
+                  fontSize: '1.6rem',
+                  textShadow: '0 0 6px rgba(255,0,0,0.7)',
+                }}
+              >
+                +94 11 543 1088
+              </Typography>
+            </Box>
+
             {/* Social Media */}
-            <Box sx={{ display: 'flex', gap: 1 }}>
-              <IconButton 
-                sx={{ 
-                  color: 'white',
-                  background: 'rgba(255, 255, 255, 0.1)',
-                  '&:hover': { 
-                    background: '#3498db',
-                    transform: 'translateY(-2px)'
-                  },
-                  transition: 'all 0.3s ease'
+            <Box sx={{ textAlign: 'center' }}>
+              <Typography
+                variant="subtitle2"
+                sx={{
+                  fontWeight: '600',
+                  mb: 1.5,
+                  color: '#ffcc70',
+                  fontSize: '0.9rem',
                 }}
               >
-                <FacebookIcon />
-              </IconButton>
-              <IconButton 
-                sx={{ 
-                  color: 'white',
-                  background: 'rgba(255, 255, 255, 0.1)',
-                  '&:hover': { 
-                    background: '#3498db',
-                    transform: 'translateY(-2px)'
-                  },
-                  transition: 'all 0.3s ease'
+                CONNECT WITH US
+              </Typography>
+              <Stack
+                direction="row"
+                spacing={1}
+                sx={{
+                  justifyContent: 'center',
                 }}
               >
-                <TwitterIcon />
-              </IconButton>
-              <IconButton 
-                sx={{ 
-                  color: 'white',
-                  background: 'rgba(255, 255, 255, 0.1)',
-                  '&:hover': { 
-                    background: '#3498db',
-                    transform: 'translateY(-2px)'
-                  },
-                  transition: 'all 0.3s ease'
-                }}
-              >
-                <InstagramIcon />
-              </IconButton>
-              <IconButton 
-                sx={{ 
-                  color: 'white',
-                  background: 'rgba(255, 255, 255, 0.1)',
-                  '&:hover': { 
-                    background: '#3498db',
-                    transform: 'translateY(-2px)'
-                  },
-                  transition: 'all 0.3s ease'
-                }}
-              >
-                <LinkedInIcon />
-              </IconButton>
-            </Box>
-          </Grid>
-
-          {/* Quick Links */}
-          <Grid item xs={12} md={2}>
-            <Typography variant="h6" sx={{ 
-              fontWeight: 600,
-              mb: 3,
-              color: '#3498db'
-            }}>
-              Quick Links
-            </Typography>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-              {['Home', 'About Us', 'Services', 'Doctors', 'News', 'Contact'].map((item) => (
-                <Link 
-                  key={item}
-                  href="#" 
-                  sx={{ 
-                    color: 'rgba(255, 255, 255, 0.8)',
-                    textDecoration: 'none',
-                    '&:hover': { 
-                      color: '#3498db',
-                      transform: 'translateX(5px)'
-                    },
-                    transition: 'all 0.3s ease'
-                  }}
-                >
-                  {item}
-                </Link>
-              ))}
-            </Box>
-          </Grid>
-
-          {/* Services */}
-          <Grid item xs={12} md={3}>
-            <Typography variant="h6" sx={{ 
-              fontWeight: 600,
-              mb: 3,
-              color: '#3498db'
-            }}>
-              Our Services
-            </Typography>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-              {[
-                'Emergency Care',
-                'General Medicine',
-                'Cardiology',
-                'Pediatrics',
-                'Surgery',
-                'Laboratory'
-              ].map((service) => (
-                <Link 
-                  key={service}
-                  href="#" 
-                  sx={{ 
-                    color: 'rgba(255, 255, 255, 0.8)',
-                    textDecoration: 'none',
-                    '&:hover': { 
-                      color: '#3498db',
-                      transform: 'translateX(5px)'
-                    },
-                    transition: 'all 0.3s ease'
-                  }}
-                >
-                  {service}
-                </Link>
-              ))}
-            </Box>
-          </Grid>
-
-          {/* Contact Info */}
-          <Grid item xs={12} md={3}>
-            <Typography variant="h6" sx={{ 
-              fontWeight: 600,
-              mb: 3,
-              color: '#3498db'
-            }}>
-              Contact Info
-            </Typography>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <LocationIcon sx={{ color: '#3498db', fontSize: '1.5rem' }} />
-                <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.8)' }}>
-                  0123 Some Place<br />
-                  Medical District, City 12345
-                </Typography>
-              </Box>
-              
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <PhoneIcon sx={{ color: '#3498db', fontSize: '1.5rem' }} />
-                <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.8)' }}>
-                  (+254) 717 783 146<br />
-                  Emergency 24/7
-                </Typography>
-              </Box>
-              
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <EmailIcon sx={{ color: '#3498db', fontSize: '1.5rem' }} />
-                <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.8)' }}>
-                  info@medin.com<br />
-                  support@medin.com
-                </Typography>
-              </Box>
-              
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <ClockIcon sx={{ color: '#3498db', fontSize: '1.5rem' }} />
-                <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.8)' }}>
-                  09:00 - 20:00<br />
-                  Every Day
-                </Typography>
-              </Box>
+                {[
+                  { icon: <Facebook />, color: '#1877F2' },
+                  { icon: <Twitter />, color: '#1DA1F2' },
+                  { icon: <Instagram />, color: '#E4405F' },
+                  { icon: <LinkedIn />, color: '#0A66C2' },
+                ].map((item, i) => (
+                  <IconButton
+                    key={i}
+                    sx={{
+                      color: 'rgba(255,255,255,0.8)',
+                      background: 'rgba(255,255,255,0.05)',
+                      border: '1px solid rgba(255,255,255,0.1)',
+                      '&:hover': {
+                        color: item.color,
+                        background: 'rgba(255,255,255,0.15)',
+                        transform: 'translateY(-3px)',
+                      },
+                      transition: 'all 0.3s ease',
+                    }}
+                    size="small"
+                  >
+                    {item.icon}
+                  </IconButton>
+                ))}
+              </Stack>
             </Box>
           </Grid>
         </Grid>
 
-        <Divider sx={{ 
-          my: 4,
-          borderColor: 'rgba(255, 255, 255, 0.2)'
-        }} />
-
-        {/* Bottom Footer */}
-        <Box sx={{ 
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          gap: 2
-        }}>
-          <Typography variant="body2" sx={{ 
-            color: 'rgba(255, 255, 255, 0.6)'
-          }}>
-            © 2025 MEDIN Healthcare. All rights reserved.
-          </Typography>
-          
-          <Box sx={{ display: 'flex', gap: 3 }}>
-            <Link 
-              href="#" 
-              sx={{ 
-                color: 'rgba(255, 255, 255, 0.6)',
+        {/* BOTTOM SECTION */}
+        <Box
+          sx={{
+            borderTop: '1px solid rgba(255,255,255,0.1)',
+            mt: 6,
+            pt: 3,
+            textAlign: 'center',
+          }}
+        >
+          <Typography
+            variant="caption"
+            sx={{
+              color: 'rgba(255,255,255,0.5)',
+              letterSpacing: '0.5px',
+            }}
+          >
+            © {new Date().getFullYear()} OSETHRA HOSPITAL. All rights reserved. |
+            <Link
+              href="#"
+              sx={{
+                color: 'rgba(255,255,255,0.5)',
                 textDecoration: 'none',
-                fontSize: '0.875rem',
-                '&:hover': { color: '#3498db' }
+                ml: 1,
+                '&:hover': { color: 'rgba(255,255,255,0.8)' },
               }}
             >
               Privacy Policy
             </Link>
-            <Link 
-              href="#" 
-              sx={{ 
-                color: 'rgba(255, 255, 255, 0.6)',
+            <Link
+              href="#"
+              sx={{
+                color: 'rgba(255,255,255,0.5)',
                 textDecoration: 'none',
-                fontSize: '0.875rem',
-                '&:hover': { color: '#3498db' }
+                ml: 2,
+                '&:hover': { color: 'rgba(255,255,255,0.8)' },
               }}
             >
               Terms of Service
             </Link>
-            <Link 
-              href="#" 
-              sx={{ 
-                color: 'rgba(255, 255, 255, 0.6)',
-                textDecoration: 'none',
-                fontSize: '0.875rem',
-                '&:hover': { color: '#3498db' }
-              }}
-            >
-              Cookie Policy
-            </Link>
-          </Box>
+          </Typography>
         </Box>
       </Container>
     </Box>
