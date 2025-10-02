@@ -31,7 +31,7 @@ const categorySchema = new Schema({
     timestamps: true 
 });
 
-// Index for quick lookups
-categorySchema.index({ name: 1 });
+// Note: unique: true on 'name' field automatically creates an index
+// No need to define categorySchema.index({ name: 1 })
 
 module.exports = mongoose.model('Category', categorySchema);

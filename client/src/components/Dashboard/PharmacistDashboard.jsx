@@ -44,6 +44,7 @@ import { useNavigate } from 'react-router-dom';
 import Layout from '../Layout/Layout';
 import { useAuth } from '../../context/AuthContext';
 import PrescriptionDetailsModal from '../Inventory/molecules/PrescriptionDetailsModal';
+import inventoryAPI from '../../api/inventory';
 
 const PharmacistDashboard = () => {
   const { user } = useAuth();
@@ -51,115 +52,107 @@ const PharmacistDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [selectedPrescription, setSelectedPrescription] = useState(null);
   const [prescriptionModalOpen, setPrescriptionModalOpen] = useState(false);
+  const [error, setError] = useState(null);
   
-  const [stats] = useState({
-    totalProducts: 1234,
-    lowStock: 23,
-    expired: 8,
-    totalValue: 245680,
-    pendingPrescriptions: 15,
-    todayIssues: 48,
-    categories: 12,
-    suppliers: 28,
-    todayRevenue: 48750,
+  const [stats, setStats] = useState({
+    totalProducts: 0,
+    lowStock: 0,
+    expired: 0,
+    totalValue: 0,
+    pendingPrescriptions: 0,
+    todayIssues: 0,
+    todayRevenue: 0,
   });
 
-  const [lowStockItems] = useState([
-    { id: 1, name: 'Paracetamol 500mg', stock: 45, minStock: 100, category: 'Pain Relief' },
-    { id: 2, name: 'Amoxicillin 250mg', stock: 12, minStock: 50, category: 'Antibiotics' },
-    { id: 3, name: 'Ibuprofen 400mg', stock: 30, minStock: 80, category: 'Pain Relief' },
-    { id: 4, name: 'Surgical Gloves (M)', stock: 25, minStock: 200, category: 'Medical Supplies' },
-    { id: 5, name: 'Face Masks (N95)', stock: 50, minStock: 150, category: 'PPE' },
-  ]);
+  const [lowStockItems, setLowStockItems] = useState([]);
+  const [expiryAlerts, setExpiryAlerts] = useState([]);
+  const [recentActivities, setRecentActivities] = useState([]);
+  const [pendingPrescriptions, setPendingPrescriptions] = useState([]);
 
-  const [expiryAlerts] = useState([
-    { id: 1, name: 'Insulin Vials', expiryDate: '2025-10-15', daysLeft: 13, batch: 'INS2024-089' },
-    { id: 2, name: 'Vaccine Doses', expiryDate: '2025-10-08', daysLeft: 6, batch: 'VAC2024-156' },
-    { id: 3, name: 'Syrup Antibiotics', expiryDate: '2025-10-20', daysLeft: 18, batch: 'SYR2024-234' },
-  ]);
+  const getTimeAgo = (date) => {
+    const seconds = Math.floor((new Date() - date) / 1000);
+    
+    if (seconds < 60) return `${seconds} seconds ago`;
+    if (seconds < 3600) return `${Math.floor(seconds / 60)} mins ago`;
+    if (seconds < 86400) return `${Math.floor(seconds / 3600)} hours ago`;
+    return `${Math.floor(seconds / 86400)} days ago`;
+  };
 
-  const [recentActivities] = useState([
-    { id: 1, type: 'issue', description: 'Issued medication to Patient #12345', time: '10 mins ago' },
-    { id: 2, type: 'receipt', description: 'Received shipment from MedSupply Co.', time: '1 hour ago' },
-    { id: 3, type: 'update', description: 'Updated stock for Paracetamol 500mg', time: '2 hours ago' },
-    { id: 4, type: 'issue', description: 'Issued supplies to Ward-3', time: '3 hours ago' },
-  ]);
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
 
-  const [pendingPrescriptions] = useState([
-    {
-      id: 'RX-2025-001',
-      patientName: 'Amal Perera',
-      patientId: 'PT-12345',
-      doctorName: 'Dr. Sunil Fernando',
-      date: '2025-10-02',
-      time: '09:30 AM',
-      status: 'pending',
-      medications: [
-        { name: 'Amoxicillin 500mg', dosage: '3 times daily', quantity: 21, duration: '7 days' },
-        { name: 'Paracetamol 500mg', dosage: 'As needed', quantity: 10, duration: '5 days' },
-        { name: 'Vitamin C 1000mg', dosage: '1 daily', quantity: 30, duration: '30 days' },
-      ]
-    },
-    {
-      id: 'RX-2025-002',
-      patientName: 'Nimal Silva',
-      patientId: 'PT-12346',
-      doctorName: 'Dr. Kamala Wijesinghe',
-      date: '2025-10-02',
-      time: '10:15 AM',
-      status: 'pending',
-      medications: [
-        { name: 'Metformin 500mg', dosage: '2 times daily', quantity: 60, duration: '30 days' },
-        { name: 'Atorvastatin 20mg', dosage: '1 at night', quantity: 30, duration: '30 days' },
-      ]
-    },
-    {
-      id: 'RX-2025-003',
-      patientName: 'Shalini Jayawardena',
-      patientId: 'PT-12347',
-      doctorName: 'Dr. Ranjith Kumar',
-      date: '2025-10-02',
-      time: '11:00 AM',
-      status: 'pending',
-      medications: [
-        { name: 'Ibuprofen 400mg', dosage: '3 times daily', quantity: 15, duration: '5 days' },
-        { name: 'Omeprazole 20mg', dosage: '1 before breakfast', quantity: 14, duration: '14 days' },
-      ]
-    },
-    {
-      id: 'RX-2025-004',
-      patientName: 'Rohan Mendis',
-      patientId: 'PT-12348',
-      doctorName: 'Dr. Sunil Fernando',
-      date: '2025-10-02',
-      time: '11:45 AM',
-      status: 'pending',
-      medications: [
-        { name: 'Cephalexin 500mg', dosage: '4 times daily', quantity: 28, duration: '7 days' },
-        { name: 'Cetirizine 10mg', dosage: '1 at night', quantity: 7, duration: '7 days' },
-      ]
-    },
-    {
-      id: 'RX-2025-005',
-      patientName: 'Kumari Dissanayake',
-      patientId: 'PT-12349',
-      doctorName: 'Dr. Kamala Wijesinghe',
-      date: '2025-10-02',
-      time: '01:20 PM',
-      status: 'pending',
-      medications: [
-        { name: 'Losartan 50mg', dosage: '1 daily', quantity: 30, duration: '30 days' },
-        { name: 'Aspirin 75mg', dosage: '1 daily', quantity: 30, duration: '30 days' },
-        { name: 'Simvastatin 40mg', dosage: '1 at night', quantity: 30, duration: '30 days' },
-      ]
-    },
-  ]);
+      // Fetch dashboard stats
+      const statsResponse = await inventoryAPI.dashboard.getDashboardStats();
+      setStats(statsResponse.data || statsResponse);
+
+      // Fetch stock alerts
+      const alertsResponse = await inventoryAPI.alerts.getStockAlerts();
+      const alerts = alertsResponse.data || alertsResponse;
+      
+      // Set low stock items
+      if (alerts.lowStock) {
+        setLowStockItems(alerts.lowStock.slice(0, 5).map(item => ({
+          id: item._id,
+          name: item.name,
+          stock: item.currentStock,
+          minStock: item.minStock,
+          category: item.category,
+        })));
+      }
+
+      // Set expiry alerts
+      if (alerts.expiring) {
+        const today = new Date();
+        setExpiryAlerts(alerts.expiring.slice(0, 3).map(item => {
+          const expiryDate = new Date(item.expiryDate);
+          const daysLeft = Math.ceil((expiryDate - today) / (1000 * 60 * 60 * 24));
+          return {
+            id: item._id,
+            name: item.name,
+            expiryDate: item.expiryDate,
+            daysLeft,
+            batch: item.batchNumber || 'N/A',
+          };
+        }));
+      }
+
+      // Fetch pending prescriptions
+      const prescriptionsResponse = await inventoryAPI.prescriptions.getPrescriptions({ status: 'pending' });
+      const prescriptions = prescriptionsResponse.data?.prescriptions || prescriptionsResponse.prescriptions || [];
+      setPendingPrescriptions(prescriptions.slice(0, 5).map(rx => ({
+        id: rx.prescriptionNumber || rx._id,
+        patientName: rx.patient?.name || 'Unknown',
+        patientId: rx.patient?.id || 'N/A',
+        doctorName: rx.doctor?.name || 'Unknown',
+        date: new Date(rx.date).toLocaleDateString(),
+        time: rx.time || 'N/A',
+        status: rx.status,
+        medications: rx.medications || [],
+      })));
+
+      // Fetch recent activities
+      const activitiesResponse = await inventoryAPI.dashboard.getRecentActivities(10);
+      const activities = activitiesResponse.data?.activities || activitiesResponse.activities || [];
+      setRecentActivities(activities.map(activity => ({
+        id: activity._id,
+        type: activity.type,
+        description: activity.description || activity.message,
+        time: getTimeAgo(new Date(activity.timestamp || activity.createdAt)),
+      })));
+
+    } catch (err) {
+      console.error('Error fetching dashboard data:', err);
+      setError(err.response?.data?.message || 'Failed to load dashboard data');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    // Simulate loading data
-    setTimeout(() => {
-      setLoading(false);
-    }, 1000);
+    fetchDashboardData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const statCards = [
@@ -331,6 +324,13 @@ const PharmacistDashboard = () => {
             </Box>
           </Box>
         </Paper>
+
+        {/* Error Alert */}
+        {error && (
+          <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>
+            {error}
+          </Alert>
+        )}
 
         <Grid container spacing={3}>
           {/* Statistics Cards */}

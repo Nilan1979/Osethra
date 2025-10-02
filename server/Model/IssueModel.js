@@ -40,14 +40,12 @@ const issueSchema = new Schema({
     issueNumber: {
         type: String,
         required: true,
-        unique: true,
-        index: true
+        unique: true
     },
     type: {
         type: String,
         required: [true, 'Issue type is required'],
-        enum: ['outpatient', 'inpatient', 'department', 'emergency'],
-        index: true
+        enum: ['outpatient', 'inpatient', 'department', 'emergency']
     },
     
     // Patient Information (for outpatient and inpatient)
@@ -103,15 +101,13 @@ const issueSchema = new Schema({
     issueDate: {
         type: Date,
         required: true,
-        default: Date.now,
-        index: true
+        default: Date.now
     },
     
     status: {
         type: String,
         enum: ['pending', 'issued', 'partial', 'returned', 'cancelled'],
-        default: 'issued',
-        index: true
+        default: 'issued'
     },
     
     notes: {

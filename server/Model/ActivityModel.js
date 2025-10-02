@@ -78,8 +78,7 @@ const activitySchema = new Schema({
     
     timestamp: {
         type: Date,
-        default: Date.now,
-        index: true
+        default: Date.now
     }
 }, { 
     timestamps: false // We're using timestamp field instead

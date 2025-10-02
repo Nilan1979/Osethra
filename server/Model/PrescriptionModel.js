@@ -37,16 +37,14 @@ const prescriptionSchema = new Schema({
     prescriptionNumber: {
         type: String,
         required: true,
-        unique: true,
-        index: true
+        unique: true
     },
     
     // Patient Information
     patient: {
         id: {
             type: Schema.Types.ObjectId,
-            required: true,
-            index: true
+            required: true
         },
         name: {
             type: String,
@@ -69,8 +67,7 @@ const prescriptionSchema = new Schema({
         id: {
             type: Schema.Types.ObjectId,
             ref: 'User',
-            required: true,
-            index: true
+            required: true
         },
         name: {
             type: String,
@@ -91,8 +88,7 @@ const prescriptionSchema = new Schema({
     date: {
         type: Date,
         required: true,
-        default: Date.now,
-        index: true
+        default: Date.now
     },
     
     time: {
@@ -103,8 +99,7 @@ const prescriptionSchema = new Schema({
     status: {
         type: String,
         enum: ['pending', 'completed', 'cancelled', 'partial'],
-        default: 'pending',
-        index: true
+        default: 'pending'
     },
     
     // Dispensing information
@@ -181,7 +176,7 @@ prescriptionSchema.pre('save', async function(next) {
 });
 
 // Indexes for performance
-prescriptionSchema.index({ prescriptionNumber: 1 });
+// prescriptionNumber already has index from unique: true
 prescriptionSchema.index({ status: 1, date: -1 });
 prescriptionSchema.index({ 'patient.id': 1 });
 prescriptionSchema.index({ 'doctor.id': 1 });

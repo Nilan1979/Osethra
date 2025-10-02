@@ -2,6 +2,17 @@ import api from './axiosConfig';
 
 // Products API
 export const productsAPI = {
+  // Get all products with filters (alias for getProducts)
+  getAll: async (params = {}) => {
+    try {
+      const response = await api.get('/api/inventory/products', { params });
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching products:', error);
+      throw error;
+    }
+  },
+
   // Get all products with filters
   getProducts: async (params = {}) => {
     try {
@@ -48,6 +59,17 @@ export const productsAPI = {
 
   // Delete product
   deleteProduct: async (id) => {
+    try {
+      const response = await api.delete(`/api/inventory/products/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error deleting product:', error);
+      throw error;
+    }
+  },
+
+  // Delete product (alias)
+  delete: async (id) => {
     try {
       const response = await api.delete(`/api/inventory/products/${id}`);
       return response.data;

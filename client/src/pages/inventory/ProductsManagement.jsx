@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Container,
   Grid,
@@ -12,6 +12,8 @@ import {
   CardContent,
   IconButton,
   Pagination,
+  CircularProgress,
+  Alert,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -25,6 +27,7 @@ import Layout from '../../components/Layout/Layout';
 import ProductCard from '../../components/Inventory/molecules/ProductCard';
 import ProductSearchBar from '../../components/Inventory/molecules/ProductSearchBar';
 import CategorySelector from '../../components/Inventory/molecules/CategorySelector';
+import inventoryAPI from '../../api/inventory';
 
 const ProductsManagement = () => {
   const navigate = useNavigate();
@@ -33,109 +36,70 @@ const ProductsManagement = () => {
   const [selectedCategory, setSelectedCategory] = useState('All Categories');
   const [statusFilter, setStatusFilter] = useState('all');
   const [page, setPage] = useState(1);
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalProducts, setTotalProducts] = useState(0);
   const itemsPerPage = 12;
 
-  // Mock data - replace with API call
-  const [products] = useState([
-    {
-      id: 1,
-      name: 'Paracetamol 500mg',
-      sku: 'MED-PAR-500',
-      category: 'Medications',
-      stock: 450,
-      minStock: 100,
-      unitPrice: 15.00,
-      expiryDate: '2026-03-15',
-      batchNumber: 'PAR2024-089',
-      status: 'active',
-    },
-    {
-      id: 2,
-      name: 'Amoxicillin 250mg',
-      sku: 'MED-AMO-250',
-      category: 'Medications',
-      stock: 12,
-      minStock: 50,
-      unitPrice: 35.00,
-      expiryDate: '2025-12-20',
-      batchNumber: 'AMO2024-156',
-      status: 'active',
-    },
-    {
-      id: 3,
-      name: 'Surgical Gloves (Medium)',
-      sku: 'SUP-GLV-M',
-      category: 'Medical Supplies',
-      stock: 25,
-      minStock: 200,
-      unitPrice: 10.00,
-      expiryDate: '2027-06-10',
-      batchNumber: 'GLV2024-234',
-      status: 'active',
-    },
-    {
-      id: 4,
-      name: 'Face Masks (N95)',
-      sku: 'PPE-MSK-N95',
-      category: 'PPE',
-      stock: 150,
-      minStock: 150,
-      unitPrice: 75.00,
-      expiryDate: '2026-01-30',
-      batchNumber: 'MSK2024-345',
-      status: 'active',
-    },
-    {
-      id: 5,
-      name: 'Insulin Vials',
-      sku: 'MED-INS-100',
-      category: 'Medications',
-      stock: 80,
-      minStock: 50,
-      unitPrice: 750.00,
-      expiryDate: '2025-10-15',
-      batchNumber: 'INS2024-456',
-      status: 'active',
-    },
-    {
-      id: 6,
-      name: 'Syringes 5ml',
-      sku: 'SUP-SYR-5',
-      category: 'Medical Supplies',
-      stock: 500,
-      minStock: 200,
-      unitPrice: 5.00,
-      expiryDate: '2028-04-20',
-      batchNumber: 'SYR2024-567',
-      status: 'active',
-    },
-  ]);
+  // Fetch products from API
+  const fetchProducts = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const params = {
+        page,
+        limit: itemsPerPage,
+      };
+      
+      if (searchTerm) {
+        params.search = searchTerm;
+      }
+      
+      if (selectedCategory && selectedCategory !== 'All Categories') {
+        params.category = selectedCategory;
+      }
+      
+      if (statusFilter && statusFilter !== 'all') {
+        params.status = statusFilter;
+      }
 
-  const filteredProducts = products.filter((product) => {
-    const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         product.sku.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === 'All Categories' || product.category === selectedCategory;
-    const matchesStatus = statusFilter === 'all' || product.status === statusFilter;
-    
-    return matchesSearch && matchesCategory && matchesStatus;
-  });
+      const response = await inventoryAPI.products.getAll(params);
+      
+      setProducts(response.data.products || []);
+      setTotalPages(response.data.pages || 1);
+      setTotalProducts(response.data.total || 0);
+    } catch (err) {
+      console.error('Error fetching products:', err);
+      setError(err.response?.data?.message || 'Failed to fetch products');
+    } finally {
+      setLoading(false);
+    }
+  }, [page, searchTerm, selectedCategory, statusFilter]);
 
-  const paginatedProducts = filteredProducts.slice(
-    (page - 1) * itemsPerPage,
-    page * itemsPerPage
-  );
+  useEffect(() => {
+    fetchProducts();
+  }, [fetchProducts]);
 
   const handleEdit = (product) => {
-    navigate(`/pharmacist/products/edit/${product.id}`);
+    navigate(`/pharmacist/products/edit/${product._id}`);
   };
 
-  const handleDelete = (product) => {
-    // Implement delete functionality
-    console.log('Delete product:', product);
+  const handleDelete = async (product) => {
+    if (window.confirm(`Are you sure you want to delete ${product.name}?`)) {
+      try {
+        await inventoryAPI.products.delete(product._id);
+        fetchProducts(); // Refresh the list
+      } catch (err) {
+        alert(err.response?.data?.message || 'Failed to delete product');
+      }
+    }
   };
 
   const handleIssue = (product) => {
-    navigate(`/pharmacist/issues/new?productId=${product.id}`);
+    navigate(`/pharmacist/issues/new?productId=${product._id}`);
   };
 
   return (
@@ -193,6 +157,13 @@ const ProductsManagement = () => {
             </Button>
           </Box>
         </Paper>
+
+        {/* Error Alert */}
+        {error && (
+          <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>
+            {error}
+          </Alert>
+        )}
 
         {/* Filters */}
         <Card elevation={0} sx={{ mb: 3, borderRadius: 2, border: '1px solid #e0e0e0' }}>
@@ -253,48 +224,62 @@ const ProductsManagement = () => {
           </CardContent>
         </Card>
 
-        {/* Products Grid/List */}
-        <Box mb={3}>
-          <Typography variant="body2" color="text.secondary" mb={2}>
-            Showing {paginatedProducts.length} of {filteredProducts.length} products
-          </Typography>
-          
-          <Grid container spacing={3}>
-            {paginatedProducts.map((product) => (
-              <Grid item xs={12} sm={6} md={4} lg={3} key={product.id}>
-                <ProductCard 
-                  product={product}
-                  onEdit={handleEdit}
-                  onDelete={handleDelete}
-                  onIssue={handleIssue}
-                />
-              </Grid>
-            ))}
-          </Grid>
-
-          {filteredProducts.length === 0 && (
-            <Card elevation={0} sx={{ p: 4, textAlign: 'center', border: '1px solid #e0e0e0' }}>
-              <Typography variant="h6" color="text.secondary">
-                No products found
-              </Typography>
-              <Typography variant="body2" color="text.secondary" mt={1}>
-                Try adjusting your search or filter criteria
-              </Typography>
-            </Card>
-          )}
-        </Box>
-
-        {/* Pagination */}
-        {filteredProducts.length > itemsPerPage && (
-          <Box display="flex" justifyContent="center" mt={4}>
-            <Pagination 
-              count={Math.ceil(filteredProducts.length / itemsPerPage)}
-              page={page}
-              onChange={(e, value) => setPage(value)}
-              color="primary"
-              size="large"
-            />
+        {/* Loading State */}
+        {loading ? (
+          <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
+            <CircularProgress size={60} />
           </Box>
+        ) : (
+          <>
+            {/* Products Grid/List */}
+            <Box mb={3}>
+              <Typography variant="body2" color="text.secondary" mb={2}>
+                Showing {products.length} of {totalProducts} products
+              </Typography>
+              
+              <Grid container spacing={3}>
+                {products.map((product) => (
+                  <Grid item xs={12} sm={6} md={4} lg={3} key={product._id}>
+                    <ProductCard 
+                      product={{
+                        ...product,
+                        id: product._id,
+                        stock: product.currentStock,
+                        unitPrice: product.sellingPrice,
+                      }}
+                      onEdit={handleEdit}
+                      onDelete={handleDelete}
+                      onIssue={handleIssue}
+                    />
+                  </Grid>
+                ))}
+              </Grid>
+
+              {products.length === 0 && (
+                <Card elevation={0} sx={{ p: 4, textAlign: 'center', border: '1px solid #e0e0e0' }}>
+                  <Typography variant="h6" color="text.secondary">
+                    No products found
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" mt={1}>
+                    Try adjusting your search or filter criteria
+                  </Typography>
+                </Card>
+              )}
+            </Box>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <Box display="flex" justifyContent="center" mt={4}>
+                <Pagination 
+                  count={totalPages}
+                  page={page}
+                  onChange={(e, value) => setPage(value)}
+                  color="primary"
+                  size="large"
+                />
+              </Box>
+            )}
+          </>
         )}
       </Container>
     </Layout>

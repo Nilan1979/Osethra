@@ -311,7 +311,7 @@ const seedInventoryData = async () => {
                 minStock: 50,
                 maxStock: 500,
                 reorderPoint: 100,
-                unit: 'tubes',
+                unit: 'pieces',
                 batchNumber: 'DIC2024016',
                 manufactureDate: new Date('2024-02-10'),
                 expiryDate: addDays(today, 550),
@@ -439,7 +439,7 @@ const seedInventoryData = async () => {
                 minStock: 1500,
                 maxStock: 15000,
                 reorderPoint: 2500,
-                unit: 'pairs',
+                unit: 'pieces',
                 batchNumber: 'GLV2024021',
                 manufactureDate: new Date('2024-02-20'),
                 expiryDate: addDays(today, 1095),
@@ -651,7 +651,7 @@ const seedInventoryData = async () => {
                 minStock: 1000,
                 maxStock: 10000,
                 reorderPoint: 1800,
-                unit: 'pairs',
+                unit: 'pieces',
                 batchNumber: 'NIT2024022',
                 manufactureDate: new Date('2024-02-22'),
                 expiryDate: addDays(today, 1095),
@@ -802,7 +802,7 @@ const seedInventoryData = async () => {
                 minStock: 100,
                 maxStock: 1000,
                 reorderPoint: 200,
-                unit: 'kits',
+                unit: 'pieces',
                 batchNumber: 'COV2024028',
                 manufactureDate: new Date('2024-03-08'),
                 expiryDate: addDays(today, 365),
@@ -825,7 +825,7 @@ const seedInventoryData = async () => {
                 minStock: 20,
                 maxStock: 150,
                 reorderPoint: 35,
-                unit: 'kits',
+                unit: 'pieces',
                 batchNumber: 'AID2024012',
                 manufactureDate: new Date('2024-01-28'),
                 expiryDate: addDays(today, 1095),
@@ -934,7 +934,7 @@ const seedInventoryData = async () => {
                 minStock: 100,
                 maxStock: 800,
                 reorderPoint: 180,
-                unit: 'packs',
+                unit: 'pieces',
                 batchNumber: 'COT2024031',
                 manufactureDate: new Date('2024-03-15'),
                 expiryDate: addDays(today, 1095),
@@ -976,7 +976,7 @@ const seedInventoryData = async () => {
                 minStock: 200,
                 maxStock: 1500,
                 reorderPoint: 350,
-                unit: 'rolls',
+                unit: 'pieces',
                 batchNumber: 'TAP2024033',
                 manufactureDate: new Date('2024-03-20'),
                 expiryDate: addDays(today, 1095),
@@ -1081,13 +1081,19 @@ const seedInventoryData = async () => {
         // Create sample prescriptions
         const doctors = await User.find({ role: 'doctor' }).limit(3);
         const pharmacists = await User.find({ role: 'pharmacist' }).limit(2);
+        const patients = await User.find({ role: 'patient' }).limit(3);
+
+        // Generate ObjectIds for sample patients if no patient users exist
+        const patientIds = patients.length >= 3 
+            ? patients.map(p => p._id)
+            : [new mongoose.Types.ObjectId(), new mongoose.Types.ObjectId(), new mongoose.Types.ObjectId()];
 
         if (doctors.length > 0) {
             const prescriptions = [
                 {
                     prescriptionNumber: 'RX-202410-0001',
                     patient: {
-                        id: 'P12345',
+                        id: patientIds[0],
                         name: 'John Smith'
                     },
                     doctor: {
@@ -1118,7 +1124,7 @@ const seedInventoryData = async () => {
                 {
                     prescriptionNumber: 'RX-202410-0002',
                     patient: {
-                        id: 'P12346',
+                        id: patientIds[1],
                         name: 'Sarah Johnson'
                     },
                     doctor: {
@@ -1149,7 +1155,7 @@ const seedInventoryData = async () => {
                 {
                     prescriptionNumber: 'RX-202410-0003',
                     patient: {
-                        id: 'P12347',
+                        id: patientIds[2],
                         name: 'Michael Brown'
                     },
                     doctor: {
