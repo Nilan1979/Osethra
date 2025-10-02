@@ -31,6 +31,11 @@ import UpdateTreatment from './pages/UpdateTreatment';
 import Footer from './components/Footer';
 import { Container, Box } from '@mui/material';
 
+// Inventory Management
+import ProductsManagement from './pages/inventory/ProductsManagement';
+import StockAlerts from './pages/inventory/StockAlerts';
+import IssueManagement from './pages/inventory/IssueManagement';
+
 const theme = createTheme({
   palette: {
     primary: {
@@ -99,6 +104,38 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <PharmacistDashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/pharmacist/products"
+        element={
+          <ProtectedRoute>
+            <ProductsManagement />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/pharmacist/alerts"
+        element={
+          <ProtectedRoute>
+            <StockAlerts />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/pharmacist/issues"
+        element={
+          <ProtectedRoute>
+            <IssueManagement />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/pharmacist/issues/new"
+        element={
+          <ProtectedRoute>
+            <IssueManagement />
           </ProtectedRoute>
         }
       />
