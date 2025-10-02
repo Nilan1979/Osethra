@@ -75,6 +75,51 @@ const AdminDashboard = () => {
     role: 'receptionist',
     password: ''
   });
+  const [formErrors, setFormErrors] = useState({
+    name: '',
+    email: '',
+    contactNo: '',
+    address: '',
+    password: ''
+  });
+
+  const validateField = (name, value) => {
+    switch (name) {
+      case 'name':
+        if (!value.trim()) return 'Name is required';
+        if (!/^[a-zA-Z\s]{2,50}$/.test(value.trim())) {
+          return 'Name must be between 2-50 characters and contain only letters';
+        }
+        break;
+      case 'email':
+        if (!value.trim()) return 'Email is required';
+        if (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(value.trim())) {
+          return 'Please enter a valid email address';
+        }
+        break;
+      case 'contactNo':
+        if (!value.trim()) return 'Contact number is required';
+        if (!/^[0-9]{10}$/.test(value.trim())) {
+          return 'Contact number must be 10 digits';
+        }
+        break;
+      case 'address':
+        if (!value.trim()) return 'Address is required';
+        if (value.trim().length < 5) {
+          return 'Address must be at least 5 characters long';
+        }
+        break;
+      case 'password':
+        if (!editingUser && !value) return 'Password is required for new users';
+        if (value && value.length < 6) {
+          return 'Password must be at least 6 characters long';
+        }
+        break;
+      default:
+        return '';
+    }
+    return '';
+  };
 
   useEffect(() => {
     fetchUsers();
@@ -139,16 +184,46 @@ const AdminDashboard = () => {
   };
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+
+    // Validate field in real-time
+    const fieldError = validateField(name, value);
+    setFormErrors(prev => ({
+      ...prev,
+      [name]: fieldError
+    }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setSuccess('');
+
+    // Validate all fields
+    const errors = {};
+    Object.keys(formData).forEach(field => {
+      if (field === 'password' && editingUser && !formData[field]) {
+        // Skip password validation for editing if no new password is provided
+        return;
+      }
+      const error = validateField(field, formData[field]);
+      if (error) {
+        errors[field] = error;
+      }
+    });
+
+    // Update form errors
+    setFormErrors(errors);
+
+    // If there are validation errors, stop submission
+    if (Object.keys(errors).length > 0) {
+      setError('Please fix all validation errors before submitting.');
+      return;
+    }
 
     try {
       if (editingUser) {
@@ -161,10 +236,6 @@ const AdminDashboard = () => {
         setSuccess('User updated successfully');
       } else {
         // Create user
-        if (!formData.password) {
-          setError('Password is required for new users');
-          return;
-        }
         await axios.post('/users', formData);
         setSuccess('User created successfully');
       }
@@ -502,6 +573,8 @@ const AdminDashboard = () => {
                   label="Full Name"
                   value={formData.name}
                   onChange={handleChange}
+                  error={!!formErrors.name}
+                  helperText={formErrors.name}
                 />
               </Grid>
               <Grid item xs={12}>
@@ -513,6 +586,8 @@ const AdminDashboard = () => {
                   type="email"
                   value={formData.email}
                   onChange={handleChange}
+                  error={!!formErrors.email}
+                  helperText={formErrors.email}
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
@@ -523,6 +598,8 @@ const AdminDashboard = () => {
                   label="Contact Number"
                   value={formData.contactNo}
                   onChange={handleChange}
+                  error={!!formErrors.contactNo}
+                  helperText={formErrors.contactNo}
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
@@ -552,6 +629,8 @@ const AdminDashboard = () => {
                   rows={2}
                   value={formData.address}
                   onChange={handleChange}
+                  error={!!formErrors.address}
+                  helperText={formErrors.address}
                 />
               </Grid>
               <Grid item xs={12}>
@@ -563,6 +642,8 @@ const AdminDashboard = () => {
                   required={!editingUser}
                   value={formData.password}
                   onChange={handleChange}
+                  error={!!formErrors.password}
+                  helperText={formErrors.password}
                 />
               </Grid>
             </Grid>

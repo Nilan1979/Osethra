@@ -134,22 +134,59 @@ const NavBar = () => {
         {/* Main Toolbar */}
         <Toolbar sx={{ display: "flex", justifyContent: "space-between", py: 1 }}>
           {/* Logo and Brand */}
-          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+          <Box 
+            sx={{ 
+              display: "flex", 
+              alignItems: "center", 
+              gap: 2,
+              cursor: 'pointer',
+              '&:hover': {
+                opacity: 0.9
+              }
+            }}
+            onClick={() => {
+              if (!user) {
+                navigate('/');
+                return;
+              }
+              switch (user.role?.toLowerCase()) {
+                case 'admin':
+                  navigate('/admin/dashboard');
+                  break;
+                case 'doctor':
+                  navigate('/doctor/dashboard');
+                  break;
+                case 'nurse':
+                  navigate('/nurse/dashboard');
+                  break;
+                case 'receptionist':
+                  navigate('/appointments');
+                  break;
+                case 'pharmacist':
+                  navigate('/pharmacist/dashboard');
+                  break;
+                default:
+                  navigate('/');
+              }
+            }}
+          >
             <Avatar
               sx={{
                 width: 45,
                 height: 45,
                 bgcolor: "white",
                 color: "#2E7D32",
-                borderRadius: 1
+                borderRadius: 1,
+                transition: 'transform 0.2s ease-in-out',
+                '&:hover': {
+                  transform: 'scale(1.05)'
+                }
               }}
             >
               <LocalHospital />
             </Avatar>
             <Typography 
               variant="h6" 
-              component={RouterLink} 
-              to="/"
               sx={{ 
                 color: "white", 
                 textDecoration: "none",

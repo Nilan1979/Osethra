@@ -3,7 +3,7 @@ import { getAppointments, deleteAppointment, downloadPDF } from "../api/appointm
 import { 
   Table, 
   TableHead, 
-  TableRow, 
+  TableRow,
   TableCell, 
   TableBody, 
   IconButton, 
@@ -63,6 +63,13 @@ export default function AppointmentsList() {
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  
+  const containerStyles = {
+    minHeight: 'calc(100vh - 64px)',
+    py: 3,
+    px: { xs: 1, sm: 2 },
+    background: `linear-gradient(135deg, rgba(76,175,80,0.12), rgba(56,142,60,0.2))`
+  };
 
   const load = async (search) => {
     try {
@@ -130,7 +137,7 @@ export default function AppointmentsList() {
   // Statistics data array - FIXED SYNTAX
   const statisticsData = [
     { 
-      icon: <Group sx={{ fontSize: 24 }} />, 
+      icon: <Group sx={{ fontSize: 20 }} />, 
       label: 'Total Appointments', 
       value: stats.total, 
       color: '#4FC3F7' 
@@ -158,20 +165,20 @@ export default function AppointmentsList() {
   return (
     <Box
       sx={{
-        minHeight: '100vh',
-        background: premiumBackground,
+        minHeight: 'calc(100vh - 64px)',
+        background: `linear-gradient(135deg, rgba(76,175,80,0.08), rgba(56,142,60,0.15))`,
         backgroundSize: 'cover',
-        backgroundAttachment: 'fixed',
-        py: 4
+        py: 2
+        
       }}
     >
-      <Container maxWidth="xl">
+      <Container maxWidth="lg" sx={{ px: { xs: 1, sm: 2 }, mt: { xs: 3, sm: 4, md: 5 } }}>
         {/* Hero Section with Stats */}
         <Fade in timeout={800}>
           <Card 
             sx={{ 
-              mb: 4, 
-              borderRadius: 4,
+              my: { xs: 3, sm: 4, md: 5 }, 
+              borderRadius: 3,
               background: `linear-gradient(135deg, ${alpha('#4CAF50', 0.95)} 0%, ${alpha('#2E7D32', 0.95)} 100%)`,
               color: 'white',
               boxShadow: '0 20px 60px rgba(76, 175, 80, 0.3)',
@@ -190,26 +197,39 @@ export default function AppointmentsList() {
               }
             }}
           >
-            <CardContent sx={{ p: 4, position: 'relative' }}>
+            <CardContent sx={{ p: { xs: 2, sm: 2.5, md: 3 }, position: 'relative' }}>
               <Grid container spacing={4} alignItems="center">
                 <Grid item xs={12} md={6}>
                   <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 3 }}>
                     <Avatar
                       sx={{
-                        width: 70,
-                        height: 70,
+                        width: 48,
+                        height: 48,
                         background: 'rgba(255,255,255,0.2)',
                         backdropFilter: 'blur(10px)',
-                        border: '2px solid rgba(255,255,255,0.3)'
+                        border: '1px solid rgba(255,255,255,0.3)'
                       }}
                     >
-                      <LocalHospital sx={{ fontSize: 36 }} />
+                      <LocalHospital sx={{ fontSize: 24 }} />
                     </Avatar>
                     <Box>
-                      <Typography variant="h3" fontWeight="800" gutterBottom>
+                      <Typography 
+                        variant="h5" 
+                        fontWeight="700" 
+                        sx={{ 
+                          fontSize: { xs: '1.5rem', sm: '1.75rem' },
+                          mb: 0.5
+                        }}
+                      >
                         Appointments Dashboard
                       </Typography>
-                      <Typography variant="h6" sx={{ opacity: 0.9, fontWeight: 300 }}>
+                      <Typography 
+                        variant="subtitle1" 
+                        sx={{ 
+                          opacity: 0.85,
+                          fontSize: { xs: '0.875rem', sm: '1rem' }
+                        }}
+                      >
                         Real-time Management & Patient Care Tracking
                       </Typography>
                     </Box>
@@ -267,13 +287,13 @@ export default function AppointmentsList() {
                 </Grid>
                 
                 <Grid item xs={12} md={6}>
-                  <Grid container spacing={2}>
+                  <Grid container spacing={{ xs: 1.5, sm: 2 }}>
                     {statisticsData.map((stat, index) => (
                       <Grid item xs={6} key={index}>
                         <Zoom in timeout={1000 + (index * 200)}>
                           <Paper
                             sx={{
-                              p: 2,
+                              p: { xs: 1.5, sm: 2 },
                               textAlign: 'center',
                               background: 'rgba(255,255,255,0.1)',
                               backdropFilter: 'blur(10px)',

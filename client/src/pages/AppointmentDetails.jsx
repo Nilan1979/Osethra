@@ -217,14 +217,15 @@ export default function AppointmentDetails() {
         minHeight: '100vh',
         background: backgroundImage,
         backgroundSize: 'cover',
-        py: 4
+        pt: 8,
+        pb: 4
       }}
     >
-      <Container maxWidth="xl">
+      <Container maxWidth="lg" sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mt: 4 }}>
         {/* Header Section */}
         <Card 
           sx={{ 
-            mb: 4, 
+            mb: 8, 
             borderRadius: 4,
             background: `linear-gradient(135deg, ${alpha('#4CAF50', 0.9)} 0%, ${alpha('#2E7D32', 0.9)} 100%)`,
             color: 'white',
@@ -341,7 +342,7 @@ export default function AppointmentDetails() {
         {/* Main Content Grid */}
         <Grid container spacing={3}>
           {/* Patient Information Card */}
-          <Grid item xs={12} lg={8}>
+          <Grid item xs={12} md={10} lg={9}>
             <Card 
               sx={{ 
                 borderRadius: 3,
@@ -472,15 +473,17 @@ export default function AppointmentDetails() {
           </Grid>
 
           {/* Appointment Details Card */}
-          <Grid item xs={12} lg={4}>
+          <Grid item xs={12} md={8} lg={6}>
             <Card 
               sx={{ 
                 borderRadius: 3,
                 height: '100%',
-                background: 'rgba(255,255,255,0.95)',
+                background: 'rgba(255,255,255,0.98)',
                 backdropFilter: 'blur(10px)',
                 border: `1px solid ${alpha('#4CAF50', 0.1)}`,
-                boxShadow: '0 4px 20px rgba(76, 175, 80, 0.1)'
+                boxShadow: '0 4px 20px rgba(76, 175, 80, 0.1)',
+                mx: 'auto',
+                maxWidth: 600
               }}
             >
               <CardContent sx={{ p: 4 }}>

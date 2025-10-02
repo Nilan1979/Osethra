@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -60,6 +60,15 @@ const theme = createTheme({
 
 function AppRoutes() {
   const { user } = useAuth();
+  const location = useLocation();
+  
+  if (location.pathname === '/') {
+    return (
+      <Box sx={{ width: '100%', margin: 0, padding: 0 }}>
+        <Home />
+      </Box>
+    );
+  }
 
   return (
     <Routes>
@@ -103,14 +112,6 @@ function AppRoutes() {
         }
       />
       <Route
-        path="/appointments"
-        element={
-          <ProtectedRoute>
-           <AppointmentsList/>
-          </ProtectedRoute>
-        }
-      />
-      <Route
         path="/dashboard"
         element={
           <ProtectedRoute>
@@ -125,10 +126,10 @@ function AppRoutes() {
       />
 
       {/* Appointment Management Routes */}
-      <Route path="/appointments" element={<AppointmentsList />} />
-      <Route path="/appointments/add" element={<AddAppointment />} />
-      <Route path="/appointments/:id/edit" element={<EditAppointment />} />
-      <Route path="/appointments/:id" element={<AppointmentDetails />} />
+      <Route path="/appointments" element={<ProtectedRoute><AppointmentsList /></ProtectedRoute>} />
+      <Route path="/appointments/add" element={<ProtectedRoute><AddAppointment /></ProtectedRoute>} />
+      <Route path="/appointments/:id/edit" element={<ProtectedRoute><EditAppointment /></ProtectedRoute>} />
+      <Route path="/appointments/:id" element={<ProtectedRoute><AppointmentDetails /></ProtectedRoute>} />
       
       {/* Treatment Routes */}
       <Route
@@ -168,23 +169,25 @@ function App() {
       <CssBaseline />
       <AuthProvider>
         <Router>
-          <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', width: '100%' }}>
+          <Box 
+            sx={{ 
+              display: 'flex', 
+              flexDirection: 'column', 
+              minHeight: '100vh',
+              width: '100%',
+              bgcolor: 'background.default'
+            }}
+          >
             <NavBar />
-            <Box component="main" sx={{ flex: 1, width: '100%' }}>
-              <Routes>
-                <Route path="/" element={
-                  <Box sx={{ width: '100%', margin: 0, padding: 0 }}>
-                    <Home />
-                  </Box>
-                } />
-                <Route path="/*" element={
-                  <Box sx={{ pt: 10, backgroundColor: 'background.default' }}>
-                    <Container maxWidth="lg">
-                      <AppRoutes />
-                    </Container>
-                  </Box>
-                } />
-              </Routes>
+            <Box 
+              component="main" 
+              sx={{ 
+                flex: 1,
+                width: '100%',
+                pt: { xs: 2, sm: 3, md: 4 }
+              }}
+            >
+              <AppRoutes />
             </Box>
             <Footer />
           </Box>
