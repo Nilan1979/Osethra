@@ -126,7 +126,7 @@ const ProductsManagement = () => {
   );
 
   const handleEdit = (product) => {
-    navigate(`/pharmacist/products/${product.id}/edit`);
+    navigate(`/pharmacist/products/edit/${product.id}`);
   };
 
   const handleDelete = (product) => {

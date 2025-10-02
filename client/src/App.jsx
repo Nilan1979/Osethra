@@ -37,6 +37,7 @@ import StockAlerts from './pages/inventory/StockAlerts';
 import IssueManagement from './pages/inventory/IssueManagement';
 import PrescriptionsManagement from './pages/inventory/PrescriptionsManagement';
 import AddProduct from './pages/inventory/AddProduct';
+import EditProduct from './pages/inventory/EditProduct';
 
 const theme = createTheme({
   palette: {
@@ -122,6 +123,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <AddProduct />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/pharmacist/products/edit/:id"
+        element={
+          <ProtectedRoute>
+            <EditProduct />
           </ProtectedRoute>
         }
       />
