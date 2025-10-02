@@ -5,7 +5,7 @@ export const productsAPI = {
   // Get all products with filters
   getProducts: async (params = {}) => {
     try {
-      const response = await api.get('/inventory/products', { params });
+      const response = await api.get('/api/inventory/products', { params });
       return response.data;
     } catch (error) {
       console.error('Error fetching products:', error);
@@ -16,7 +16,7 @@ export const productsAPI = {
   // Get single product by ID
   getProduct: async (id) => {
     try {
-      const response = await api.get(`/inventory/products/${id}`);
+      const response = await api.get(`/api/inventory/products/${id}`);
       return response.data;
     } catch (error) {
       console.error('Error fetching product:', error);
@@ -27,7 +27,7 @@ export const productsAPI = {
   // Create new product
   createProduct: async (productData) => {
     try {
-      const response = await api.post('/inventory/products', productData);
+      const response = await api.post('/api/inventory/products', productData);
       return response.data;
     } catch (error) {
       console.error('Error creating product:', error);
@@ -38,7 +38,7 @@ export const productsAPI = {
   // Update product
   updateProduct: async (id, productData) => {
     try {
-      const response = await api.put(`/inventory/products/${id}`, productData);
+      const response = await api.put(`/api/inventory/products/${id}`, productData);
       return response.data;
     } catch (error) {
       console.error('Error updating product:', error);
@@ -49,21 +49,10 @@ export const productsAPI = {
   // Delete product
   deleteProduct: async (id) => {
     try {
-      const response = await api.delete(`/inventory/products/${id}`);
+      const response = await api.delete(`/api/inventory/products/${id}`);
       return response.data;
     } catch (error) {
       console.error('Error deleting product:', error);
-      throw error;
-    }
-  },
-
-  // Get low stock products
-  getLowStockProducts: async () => {
-    try {
-      const response = await api.get('/inventory/products/low-stock');
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching low stock products:', error);
       throw error;
     }
   },
@@ -74,7 +63,7 @@ export const categoriesAPI = {
   // Get all categories
   getCategories: async () => {
     try {
-      const response = await api.get('/inventory/categories');
+      const response = await api.get('/api/inventory/categories');
       return response.data;
     } catch (error) {
       console.error('Error fetching categories:', error);
@@ -85,7 +74,7 @@ export const categoriesAPI = {
   // Create new category
   createCategory: async (categoryData) => {
     try {
-      const response = await api.post('/inventory/categories', categoryData);
+      const response = await api.post('/api/inventory/categories', categoryData);
       return response.data;
     } catch (error) {
       console.error('Error creating category:', error);
@@ -93,21 +82,10 @@ export const categoriesAPI = {
     }
   },
 
-  // Update category
-  updateCategory: async (id, categoryData) => {
-    try {
-      const response = await api.put(`/inventory/categories/${id}`, categoryData);
-      return response.data;
-    } catch (error) {
-      console.error('Error updating category:', error);
-      throw error;
-    }
-  },
-
   // Delete category
-  deleteCategory: async (id) => {
+  deleteCategory: async (name) => {
     try {
-      const response = await api.delete(`/inventory/categories/${id}`);
+      const response = await api.delete(`/api/inventory/categories/${name}`);
       return response.data;
     } catch (error) {
       console.error('Error deleting category:', error);
@@ -121,7 +99,7 @@ export const issuesAPI = {
   // Get all issues with filters
   getIssues: async (params = {}) => {
     try {
-      const response = await api.get('/inventory/issues', { params });
+      const response = await api.get('/api/inventory/issues', { params });
       return response.data;
     } catch (error) {
       console.error('Error fetching issues:', error);
@@ -132,7 +110,7 @@ export const issuesAPI = {
   // Get single issue by ID
   getIssue: async (id) => {
     try {
-      const response = await api.get(`/inventory/issues/${id}`);
+      const response = await api.get(`/api/inventory/issues/${id}`);
       return response.data;
     } catch (error) {
       console.error('Error fetching issue:', error);
@@ -140,10 +118,21 @@ export const issuesAPI = {
     }
   },
 
+  // Get today's issues
+  getTodayIssues: async () => {
+    try {
+      const response = await api.get('/api/inventory/issues/today');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching today issues:', error);
+      throw error;
+    }
+  },
+
   // Create new issue
   createIssue: async (issueData) => {
     try {
-      const response = await api.post('/inventory/issues', issueData);
+      const response = await api.post('/api/inventory/issues', issueData);
       return response.data;
     } catch (error) {
       console.error('Error creating issue:', error);
@@ -154,21 +143,10 @@ export const issuesAPI = {
   // Update issue status
   updateIssueStatus: async (id, status) => {
     try {
-      const response = await api.patch(`/inventory/issues/${id}/status`, { status });
+      const response = await api.patch(`/api/inventory/issues/${id}/status`, { status });
       return response.data;
     } catch (error) {
       console.error('Error updating issue status:', error);
-      throw error;
-    }
-  },
-
-  // Delete issue
-  deleteIssue: async (id) => {
-    try {
-      const response = await api.delete(`/inventory/issues/${id}`);
-      return response.data;
-    } catch (error) {
-      console.error('Error deleting issue:', error);
       throw error;
     }
   },
@@ -176,89 +154,83 @@ export const issuesAPI = {
 
 // Alerts API
 export const alertsAPI = {
-  // Get all stock alerts
-  getStockAlerts: async () => {
+  // Get all stock alerts (low-stock, out-of-stock, expiring, expired)
+  getStockAlerts: async (type = null) => {
     try {
-      const response = await api.get('/inventory/alerts');
+      const params = type ? { type } : {};
+      const response = await api.get('/api/inventory/alerts', { params });
       return response.data;
     } catch (error) {
       console.error('Error fetching stock alerts:', error);
       throw error;
     }
   },
-
-  // Get expiry alerts
-  getExpiryAlerts: async (daysThreshold = 30) => {
-    try {
-      const response = await api.get('/inventory/alerts/expiry', { 
-        params: { daysThreshold } 
-      });
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching expiry alerts:', error);
-      throw error;
-    }
-  },
-
-  // Get expired products
-  getExpiredProducts: async () => {
-    try {
-      const response = await api.get('/inventory/alerts/expired');
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching expired products:', error);
-      throw error;
-    }
-  },
 };
 
-// Reports API
-export const reportsAPI = {
-  // Get inventory report
-  getInventoryReport: async (params = {}) => {
+// Prescriptions API
+export const prescriptionsAPI = {
+  // Get all prescriptions with filters
+  getPrescriptions: async (params = {}) => {
     try {
-      const response = await api.get('/inventory/reports', { params });
+      const response = await api.get('/api/prescriptions', { params });
       return response.data;
     } catch (error) {
-      console.error('Error fetching inventory report:', error);
+      console.error('Error fetching prescriptions:', error);
       throw error;
     }
   },
 
-  // Get stock movement report
-  getStockMovementReport: async (startDate, endDate) => {
+  // Get single prescription by ID
+  getPrescription: async (id) => {
     try {
-      const response = await api.get('/inventory/reports/movement', {
-        params: { startDate, endDate }
-      });
+      const response = await api.get(`/api/prescriptions/${id}`);
       return response.data;
     } catch (error) {
-      console.error('Error fetching stock movement report:', error);
+      console.error('Error fetching prescription:', error);
       throw error;
     }
   },
 
-  // Get valuation report
-  getValuationReport: async () => {
+  // Create new prescription
+  createPrescription: async (prescriptionData) => {
     try {
-      const response = await api.get('/inventory/reports/valuation');
+      const response = await api.post('/api/prescriptions', prescriptionData);
       return response.data;
     } catch (error) {
-      console.error('Error fetching valuation report:', error);
+      console.error('Error creating prescription:', error);
       throw error;
     }
   },
 
-  // Export report
-  exportReport: async (reportType, format = 'pdf') => {
+  // Dispense prescription
+  dispensePrescription: async (id, medications) => {
     try {
-      const response = await api.get(`/inventory/reports/export/${reportType}`, {
-        params: { format },
-        responseType: 'blob'
-      });
+      const response = await api.post(`/api/prescriptions/${id}/dispense`, { medications });
       return response.data;
     } catch (error) {
-      console.error('Error exporting report:', error);
+      console.error('Error dispensing prescription:', error);
+      throw error;
+    }
+  },
+
+  // Update prescription status
+  updatePrescriptionStatus: async (id, status) => {
+    try {
+      const response = await api.patch(`/api/prescriptions/${id}/status`, { status });
+      return response.data;
+    } catch (error) {
+      console.error('Error updating prescription status:', error);
+      throw error;
+    }
+  },
+
+  // Cancel/Delete prescription
+  deletePrescription: async (id) => {
+    try {
+      const response = await api.delete(`/api/prescriptions/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error deleting prescription:', error);
       throw error;
     }
   },
@@ -269,7 +241,7 @@ export const dashboardAPI = {
   // Get pharmacist dashboard statistics
   getDashboardStats: async () => {
     try {
-      const response = await api.get('/inventory/dashboard/stats');
+      const response = await api.get('/api/inventory/dashboard/stats');
       return response.data;
     } catch (error) {
       console.error('Error fetching dashboard stats:', error);
@@ -278,11 +250,13 @@ export const dashboardAPI = {
   },
 
   // Get recent activities
-  getRecentActivities: async (limit = 10) => {
+  getRecentActivities: async (limit = 10, type = null, severity = null) => {
     try {
-      const response = await api.get('/inventory/dashboard/activities', {
-        params: { limit }
-      });
+      const params = { limit };
+      if (type) params.type = type;
+      if (severity) params.severity = severity;
+      
+      const response = await api.get('/api/inventory/dashboard/activities', { params });
       return response.data;
     } catch (error) {
       console.error('Error fetching recent activities:', error);
@@ -291,11 +265,13 @@ export const dashboardAPI = {
   },
 };
 
+// Export all APIs as default
 export default {
   products: productsAPI,
   categories: categoriesAPI,
   issues: issuesAPI,
   alerts: alertsAPI,
-  reports: reportsAPI,
+  prescriptions: prescriptionsAPI,
   dashboard: dashboardAPI,
 };
+
