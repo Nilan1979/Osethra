@@ -35,6 +35,8 @@ import { Container, Box } from '@mui/material';
 import ProductsManagement from './pages/inventory/ProductsManagement';
 import StockAlerts from './pages/inventory/StockAlerts';
 import IssueManagement from './pages/inventory/IssueManagement';
+import PrescriptionsManagement from './pages/inventory/PrescriptionsManagement';
+import AddProduct from './pages/inventory/AddProduct';
 
 const theme = createTheme({
   palette: {
@@ -116,6 +118,14 @@ function AppRoutes() {
         }
       />
       <Route
+        path="/pharmacist/products/add"
+        element={
+          <ProtectedRoute>
+            <AddProduct />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/pharmacist/alerts"
         element={
           <ProtectedRoute>
@@ -136,6 +146,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <IssueManagement />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/pharmacist/prescriptions"
+        element={
+          <ProtectedRoute>
+            <PrescriptionsManagement />
           </ProtectedRoute>
         }
       />

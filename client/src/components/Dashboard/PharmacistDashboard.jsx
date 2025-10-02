@@ -36,15 +36,22 @@ import {
   Assignment as AssignmentIcon,
   CalendarToday as CalendarIcon,
   ArrowForward as ArrowForwardIcon,
+  Visibility as VisibilityIcon,
+  MedicalServices as MedicalIcon,
+  AttachMoney as MoneyIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../Layout/Layout';
 import { useAuth } from '../../context/AuthContext';
+import PrescriptionDetailsModal from '../Inventory/molecules/PrescriptionDetailsModal';
 
 const PharmacistDashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
+  const [selectedPrescription, setSelectedPrescription] = useState(null);
+  const [prescriptionModalOpen, setPrescriptionModalOpen] = useState(false);
+  
   const [stats] = useState({
     totalProducts: 1234,
     lowStock: 23,
@@ -54,6 +61,7 @@ const PharmacistDashboard = () => {
     todayIssues: 48,
     categories: 12,
     suppliers: 28,
+    todayRevenue: 48750,
   });
 
   const [lowStockItems] = useState([
@@ -77,6 +85,76 @@ const PharmacistDashboard = () => {
     { id: 4, type: 'issue', description: 'Issued supplies to Ward-3', time: '3 hours ago' },
   ]);
 
+  const [pendingPrescriptions] = useState([
+    {
+      id: 'RX-2025-001',
+      patientName: 'Amal Perera',
+      patientId: 'PT-12345',
+      doctorName: 'Dr. Sunil Fernando',
+      date: '2025-10-02',
+      time: '09:30 AM',
+      status: 'pending',
+      medications: [
+        { name: 'Amoxicillin 500mg', dosage: '3 times daily', quantity: 21, duration: '7 days' },
+        { name: 'Paracetamol 500mg', dosage: 'As needed', quantity: 10, duration: '5 days' },
+        { name: 'Vitamin C 1000mg', dosage: '1 daily', quantity: 30, duration: '30 days' },
+      ]
+    },
+    {
+      id: 'RX-2025-002',
+      patientName: 'Nimal Silva',
+      patientId: 'PT-12346',
+      doctorName: 'Dr. Kamala Wijesinghe',
+      date: '2025-10-02',
+      time: '10:15 AM',
+      status: 'pending',
+      medications: [
+        { name: 'Metformin 500mg', dosage: '2 times daily', quantity: 60, duration: '30 days' },
+        { name: 'Atorvastatin 20mg', dosage: '1 at night', quantity: 30, duration: '30 days' },
+      ]
+    },
+    {
+      id: 'RX-2025-003',
+      patientName: 'Shalini Jayawardena',
+      patientId: 'PT-12347',
+      doctorName: 'Dr. Ranjith Kumar',
+      date: '2025-10-02',
+      time: '11:00 AM',
+      status: 'pending',
+      medications: [
+        { name: 'Ibuprofen 400mg', dosage: '3 times daily', quantity: 15, duration: '5 days' },
+        { name: 'Omeprazole 20mg', dosage: '1 before breakfast', quantity: 14, duration: '14 days' },
+      ]
+    },
+    {
+      id: 'RX-2025-004',
+      patientName: 'Rohan Mendis',
+      patientId: 'PT-12348',
+      doctorName: 'Dr. Sunil Fernando',
+      date: '2025-10-02',
+      time: '11:45 AM',
+      status: 'pending',
+      medications: [
+        { name: 'Cephalexin 500mg', dosage: '4 times daily', quantity: 28, duration: '7 days' },
+        { name: 'Cetirizine 10mg', dosage: '1 at night', quantity: 7, duration: '7 days' },
+      ]
+    },
+    {
+      id: 'RX-2025-005',
+      patientName: 'Kumari Dissanayake',
+      patientId: 'PT-12349',
+      doctorName: 'Dr. Kamala Wijesinghe',
+      date: '2025-10-02',
+      time: '01:20 PM',
+      status: 'pending',
+      medications: [
+        { name: 'Losartan 50mg', dosage: '1 daily', quantity: 30, duration: '30 days' },
+        { name: 'Aspirin 75mg', dosage: '1 daily', quantity: 30, duration: '30 days' },
+        { name: 'Simvastatin 40mg', dosage: '1 at night', quantity: 30, duration: '30 days' },
+      ]
+    },
+  ]);
+
   useEffect(() => {
     // Simulate loading data
     setTimeout(() => {
@@ -92,6 +170,15 @@ const PharmacistDashboard = () => {
       color: '#2e7d32',
       bgColor: '#e8f5e9',
       trend: '+5.2%',
+      trendUp: true,
+    },
+    {
+      title: "Today's Revenue",
+      value: `LKR ${stats.todayRevenue.toLocaleString()}`,
+      icon: <MoneyIcon sx={{ fontSize: 40 }} />,
+      color: '#0288d1',
+      bgColor: '#e1f5fe',
+      trend: '+12.5%',
       trendUp: true,
     },
     {
@@ -139,6 +226,13 @@ const PharmacistDashboard = () => {
       description: 'Issue to patients/departments',
     },
     {
+      title: 'Prescriptions',
+      icon: <MedicalIcon />,
+      color: '#0288d1',
+      route: '/pharmacist/prescriptions',
+      description: 'View all prescriptions',
+    },
+    {
       title: 'Stock Alerts',
       icon: <WarningIcon />,
       color: '#ed6c02',
@@ -168,6 +262,12 @@ const PharmacistDashboard = () => {
     if (days <= 7) return 'error';
     if (days <= 14) return 'warning';
     return 'info';
+  };
+
+  const handleDispensePrescription = (prescription) => {
+    console.log('Dispensing prescription:', prescription);
+    // Navigate to issue management with prescription data
+    navigate('/pharmacist/issues/new', { state: { prescription } });
   };
 
   if (loading) {
@@ -235,7 +335,7 @@ const PharmacistDashboard = () => {
         <Grid container spacing={3}>
           {/* Statistics Cards */}
           {statCards.map((stat, index) => (
-            <Grid item xs={12} sm={6} md={3} key={index}>
+            <Grid item xs={12} sm={6} md={2.4} key={index}>
               <Card 
                 elevation={0}
                 sx={{ 
@@ -326,6 +426,98 @@ const PharmacistDashboard = () => {
                 </Grid>
               ))}
             </Grid>
+          </Grid>
+
+          {/* Pending Prescriptions */}
+          <Grid item xs={12} md={6}>
+            <Card elevation={0} sx={{ borderRadius: 3, border: '1px solid #e0e0e0', height: '100%' }}>
+              <CardContent>
+                <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                  <Typography variant="h6" fontWeight="600">
+                    <MedicalIcon sx={{ verticalAlign: 'middle', mr: 1, color: '#1976d2' }} />
+                    Pending Prescriptions
+                  </Typography>
+                  <Badge badgeContent={pendingPrescriptions.length} color="primary">
+                    <IconButton size="small">
+                      <ArrowForwardIcon />
+                    </IconButton>
+                  </Badge>
+                </Box>
+                <Divider sx={{ mb: 2 }} />
+                <List dense>
+                  {pendingPrescriptions.slice(0, 4).map((prescription) => (
+                    <ListItem 
+                      key={prescription.id}
+                      sx={{ 
+                        mb: 1, 
+                        bgcolor: '#fafafa', 
+                        borderRadius: 1,
+                        cursor: 'pointer',
+                        '&:hover': { 
+                          bgcolor: '#e3f2fd',
+                          transform: 'translateX(4px)',
+                          transition: 'all 0.2s ease'
+                        }
+                      }}
+                      onClick={() => {
+                        setSelectedPrescription(prescription);
+                        setPrescriptionModalOpen(true);
+                      }}
+                    >
+                      <ListItemIcon>
+                        <Avatar sx={{ bgcolor: '#1976d2', width: 36, height: 36 }}>
+                          <MedicalIcon fontSize="small" />
+                        </Avatar>
+                      </ListItemIcon>
+                      <ListItemText
+                        primary={
+                          <Box>
+                            <Typography variant="body2" fontWeight="600">
+                              {prescription.patientName}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              ID: {prescription.patientId}
+                            </Typography>
+                          </Box>
+                        }
+                        secondary={
+                          <Box mt={0.5}>
+                            <Typography variant="caption" color="text.secondary" display="block">
+                              Dr. {prescription.doctorName.replace('Dr. ', '')}
+                            </Typography>
+                            <Box display="flex" gap={1} mt={0.5}>
+                              <Chip 
+                                label={`${prescription.medications.length} items`}
+                                size="small" 
+                                sx={{ fontSize: '0.65rem', height: 20 }}
+                              />
+                              <Chip 
+                                label={prescription.time}
+                                size="small" 
+                                variant="outlined"
+                                sx={{ fontSize: '0.65rem', height: 20 }}
+                              />
+                            </Box>
+                          </Box>
+                        }
+                      />
+                      <IconButton size="small" sx={{ alignSelf: 'flex-start' }}>
+                        <VisibilityIcon fontSize="small" />
+                      </IconButton>
+                    </ListItem>
+                  ))}
+                </List>
+                {pendingPrescriptions.length > 4 && (
+                  <Button
+                    fullWidth
+                    variant="text"
+                    sx={{ mt: 1 }}
+                  >
+                    View All Prescriptions ({pendingPrescriptions.length})
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
           </Grid>
 
           {/* Low Stock Alerts */}
@@ -514,6 +706,14 @@ const PharmacistDashboard = () => {
             </Card>
           </Grid>
         </Grid>
+
+        {/* Prescription Details Modal */}
+        <PrescriptionDetailsModal
+          open={prescriptionModalOpen}
+          onClose={() => setPrescriptionModalOpen(false)}
+          prescription={selectedPrescription}
+          onDispense={handleDispensePrescription}
+        />
       </Container>
     </Layout>
   );

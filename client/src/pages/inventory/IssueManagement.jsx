@@ -27,6 +27,7 @@ import {
   Delete as DeleteIcon,
   Add as AddIcon,
   Person as PersonIcon,
+  ArrowBack as ArrowBackIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../../components/Layout/Layout';
@@ -92,6 +93,24 @@ const IssueManagement = () => {
   return (
     <Layout showContactInfo={false}>
       <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+        {/* Back Button */}
+        <Box mb={2}>
+          <IconButton
+            onClick={() => navigate('/pharmacist/dashboard')}
+            sx={{
+              bgcolor: 'white',
+              border: '1px solid #e0e0e0',
+              '&:hover': {
+                bgcolor: '#f5f5f5',
+                transform: 'translateX(-4px)',
+                transition: 'all 0.2s ease',
+              },
+            }}
+          >
+            <ArrowBackIcon />
+          </IconButton>
+        </Box>
+
         {/* Header */}
         <Paper 
           elevation={0}
