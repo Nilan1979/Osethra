@@ -462,19 +462,17 @@ const NavBar = () => {
             {item.label}
           </MenuItem>
         ))}
-        {user && (
-          <>
-            <Divider />
-            {staffMenuItems.map((item) => (
+        {user && [
+            <Divider key="divider" />,
+            ...staffMenuItems.map((item) => (
               <MenuItem 
                 key={item.path} 
                 onClick={() => handleNavigation(item.path)}
               >
                 {item.label}
               </MenuItem>
-            ))}
-          </>
-        )}
+            ))
+        ]}
       </Menu>
     </AppBar>
   );

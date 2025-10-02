@@ -1,6 +1,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const appointmentRoutes = require('./Routes/AppointmentRoutes');
+const treatmentRoutes = require('./Routes/TreatmentRoutes');
 
 const cors = require('cors');
 const dotenv = require('dotenv');
@@ -17,6 +18,7 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use("/appointments", appointmentRoutes);
+app.use("/api/treatments", treatmentRoutes);
 
 
 // Routes

@@ -115,6 +115,11 @@ export default function EditAppointment() {
     // Clear messages when user starts typing
     if (error) setError("");
     if (success) setSuccess("");
+    
+    // Show warning when marking as completed
+    if (e.target.name === 'status' && e.target.value === 'Completed') {
+      setError("Note: Marking an appointment as 'Completed' here does not create a treatment record. Treatments should be created through the doctor dashboard by adding treatment details.");
+    }
   };
 
   const handleSubmit = async (e) => {

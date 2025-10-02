@@ -25,6 +25,9 @@ import AppointmentsList from './pages/AppointmentsList';
 import AddAppointment from './pages/AddAppointment';
 import EditAppointment from './pages/EditAppointment';
 import AppointmentDetails from './pages/AppointmentDetails';
+import AddTreatment from './pages/AddTreatment';
+import TreatmentView from './pages/TreatmentView';
+import UpdateTreatment from './pages/UpdateTreatment';
 import Footer from './components/Footer';
 import { Container, Box } from '@mui/material';
 
@@ -126,6 +129,32 @@ function AppRoutes() {
       <Route path="/appointments/add" element={<AddAppointment />} />
       <Route path="/appointments/:id/edit" element={<EditAppointment />} />
       <Route path="/appointments/:id" element={<AppointmentDetails />} />
+      
+      {/* Treatment Routes */}
+      <Route
+        path="/add-treatment/:appointmentId"
+        element={
+          <ProtectedRoute>
+            <AddTreatment />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/treatment-view/:appointmentId"
+        element={
+          <ProtectedRoute>
+            <TreatmentView />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/update-treatment/:treatmentId"
+        element={
+          <ProtectedRoute>
+            <UpdateTreatment />
+          </ProtectedRoute>
+        }
+      />
 
       {/* Fallback */}
       <Route path="*" element={<div>404 Not Found</div>} />
