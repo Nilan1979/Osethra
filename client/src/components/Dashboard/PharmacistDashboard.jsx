@@ -193,12 +193,21 @@ const PharmacistDashboard = () => {
       trendUp: false,
     },
     {
-      title: 'Inventory Value',
-      value: `LKR ${(stats.totalValue / 1000).toFixed(1)}K`,
-      icon: <SellIcon sx={{ fontSize: 40 }} />,
+      title: 'Pending Prescriptions',
+      value: stats.pendingPrescriptions || 0,
+      icon: <MedicalIcon sx={{ fontSize: 40 }} />,
       color: '#1976d2',
       bgColor: '#e3f2fd',
-      trend: '+8.1%',
+      trend: `${stats.pendingPrescriptions || 0} new`,
+      trendUp: true,
+    },
+    {
+      title: "Today's Transactions",
+      value: stats.todayIssues || 0,
+      icon: <AssignmentIcon sx={{ fontSize: 40 }} />,
+      color: '#7b1fa2',
+      bgColor: '#f3e5f5',
+      trend: '+8',
       trendUp: true,
     },
   ];
@@ -334,184 +343,211 @@ const PharmacistDashboard = () => {
 
         <Grid container spacing={3}>
           {/* Statistics Cards */}
-          {statCards.map((stat, index) => (
-            <Grid item xs={12} sm={6} md={2.4} key={index}>
-              <Card 
-                elevation={0}
-                sx={{ 
-                  height: '100%',
-                  borderRadius: 3,
-                  border: '1px solid #e0e0e0',
-                  transition: 'all 0.3s ease',
-                  '&:hover': {
-                    transform: 'translateY(-4px)',
-                    boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
-                  }
-                }}
-              >
-                <CardContent>
-                  <Box display="flex" justifyContent="space-between" alignItems="start" mb={2}>
-                    <Box
-                      sx={{
-                        width: 64,
-                        height: 64,
-                        borderRadius: 2,
-                        bgcolor: stat.bgColor,
-                        color: stat.color,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      {stat.icon}
+          <Grid item xs={12}>
+            <Box sx={{ 
+              display: 'grid', 
+              gridTemplateColumns: { 
+                xs: '1fr', 
+                sm: 'repeat(2, 1fr)', 
+                md: 'repeat(3, 1fr)', 
+                lg: 'repeat(6, 1fr)' 
+              },
+              gap: 3 
+            }}>
+              {statCards.map((stat, index) => (
+                <Card 
+                  key={index}
+                  elevation={0}
+                  sx={{ 
+                    minHeight: '180px',
+                    borderRadius: 3,
+                    border: '1px solid #e0e0e0',
+                    transition: 'all 0.3s ease',
+                    '&:hover': {
+                      transform: 'translateY(-4px)',
+                      boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+                    }
+                  }}
+                >
+                  <CardContent sx={{ p: 2.5, height: '100%', display: 'flex', flexDirection: 'column' }}>
+                    <Box display="flex" justifyContent="space-between" alignItems="start" mb={2}>
+                      <Box
+                        sx={{
+                          width: 56,
+                          height: 56,
+                          borderRadius: 2,
+                          bgcolor: stat.bgColor,
+                          color: stat.color,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        {React.cloneElement(stat.icon, { sx: { fontSize: 32 } })}
+                      </Box>
+                      <Chip
+                        label={stat.trend}
+                        size="small"
+                        sx={{
+                          bgcolor: stat.trendUp ? '#e8f5e9' : '#ffebee',
+                          color: stat.trendUp ? '#2e7d32' : '#d32f2f',
+                          fontWeight: 600,
+                          height: 24,
+                          fontSize: '0.7rem',
+                        }}
+                      />
                     </Box>
-                    <Chip
-                      label={stat.trend}
-                      size="small"
-                      sx={{
-                        bgcolor: stat.trendUp ? '#e8f5e9' : '#ffebee',
-                        color: stat.trendUp ? '#2e7d32' : '#d32f2f',
-                        fontWeight: 600,
-                      }}
-                    />
-                  </Box>
-                  <Typography variant="h4" fontWeight="bold" gutterBottom>
-                    {stat.value}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    {stat.title}
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-          ))}
+                    <Typography variant="h4" fontWeight="bold" gutterBottom sx={{ fontSize: { xs: '1.75rem', md: '2rem' }, mt: 'auto' }}>
+                      {stat.value}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.875rem' }}>
+                      {stat.title}
+                    </Typography>
+                  </CardContent>
+                </Card>
+              ))}
+            </Box>
+          </Grid>
 
           {/* Quick Actions */}
           <Grid item xs={12}>
-            <Typography variant="h6" gutterBottom fontWeight="600" sx={{ mb: 2 }}>
+            <Typography variant="h6" gutterBottom fontWeight="600" sx={{ mb: 2, mt: 2 }}>
               Quick Actions
             </Typography>
-            <Grid container spacing={2}>
+            <Box sx={{ 
+              display: 'grid', 
+              gridTemplateColumns: { 
+                xs: '1fr', 
+                sm: 'repeat(2, 1fr)', 
+                md: 'repeat(3, 1fr)', 
+                lg: 'repeat(5, 1fr)' 
+              },
+              gap: 2 
+            }}>
               {quickActions.map((action, index) => (
-                <Grid item xs={12} sm={6} md={3} key={index}>
-                  <Card
-                    elevation={0}
-                    sx={{
-                      cursor: 'pointer',
-                      borderRadius: 2,
-                      border: '1px solid #e0e0e0',
-                      transition: 'all 0.3s ease',
-                      '&:hover': {
-                        borderColor: action.color,
-                        transform: 'translateY(-2px)',
-                        boxShadow: `0 4px 12px ${action.color}33`,
-                      },
-                    }}
-                    onClick={() => navigate(action.route)}
-                  >
-                    <CardContent>
-                      <Box display="flex" alignItems="center" mb={1}>
-                        <Avatar sx={{ bgcolor: `${action.color}15`, color: action.color, mr: 2 }}>
-                          {action.icon}
-                        </Avatar>
-                        <Typography variant="h6" fontWeight="600">
-                          {action.title}
-                        </Typography>
-                      </Box>
-                      <Typography variant="body2" color="text.secondary">
-                        {action.description}
+                <Card
+                  key={index}
+                  elevation={0}
+                  sx={{
+                    cursor: 'pointer',
+                    borderRadius: 2,
+                    border: '1px solid #e0e0e0',
+                    minHeight: '120px',
+                    transition: 'all 0.3s ease',
+                    '&:hover': {
+                      borderColor: action.color,
+                      transform: 'translateY(-2px)',
+                      boxShadow: `0 4px 12px ${action.color}33`,
+                    },
+                  }}
+                  onClick={() => navigate(action.route)}
+                >
+                  <CardContent sx={{ p: 2.5, height: '100%', display: 'flex', flexDirection: 'column' }}>
+                    <Box display="flex" alignItems="center" mb={1.5}>
+                      <Avatar sx={{ bgcolor: `${action.color}15`, color: action.color, mr: 1.5, width: 40, height: 40 }}>
+                        {React.cloneElement(action.icon, { sx: { fontSize: 20 } })}
+                      </Avatar>
+                      <Typography variant="subtitle1" fontWeight="600" sx={{ fontSize: '0.95rem' }}>
+                        {action.title}
                       </Typography>
-                    </CardContent>
-                  </Card>
-                </Grid>
+                    </Box>
+                    <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
+                      {action.description}
+                    </Typography>
+                  </CardContent>
+                </Card>
               ))}
-            </Grid>
+            </Box>
           </Grid>
 
           {/* Pending Prescriptions */}
           <Grid item xs={12} md={6}>
-            <Card elevation={0} sx={{ borderRadius: 3, border: '1px solid #e0e0e0', height: '100%' }}>
-              <CardContent>
+            <Card elevation={0} sx={{ borderRadius: 3, border: '1px solid #e0e0e0', height: '100%', minHeight: '500px', maxHeight: '500px', display: 'flex', flexDirection: 'column' }}>
+              <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column', p: 2.5 }}>
                 <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-                  <Typography variant="h6" fontWeight="600">
-                    <MedicalIcon sx={{ verticalAlign: 'middle', mr: 1, color: '#1976d2' }} />
+                  <Typography variant="h6" fontWeight="600" sx={{ fontSize: '1.1rem' }}>
+                    <MedicalIcon sx={{ verticalAlign: 'middle', mr: 1, color: '#1976d2', fontSize: 24 }} />
                     Pending Prescriptions
                   </Typography>
                   <Badge badgeContent={pendingPrescriptions.length} color="primary">
-                    <IconButton size="small">
+                    <IconButton size="small" onClick={() => navigate('/pharmacist/prescriptions')}>
                       <ArrowForwardIcon />
                     </IconButton>
                   </Badge>
                 </Box>
                 <Divider sx={{ mb: 2 }} />
-                <List dense>
-                  {pendingPrescriptions.slice(0, 4).map((prescription) => (
-                    <ListItem 
-                      key={prescription.id}
-                      sx={{ 
-                        mb: 1, 
-                        bgcolor: '#fafafa', 
-                        borderRadius: 1,
-                        cursor: 'pointer',
-                        '&:hover': { 
-                          bgcolor: '#e3f2fd',
-                          transform: 'translateX(4px)',
-                          transition: 'all 0.2s ease'
-                        }
-                      }}
-                      onClick={() => {
-                        setSelectedPrescription(prescription);
-                        setPrescriptionModalOpen(true);
-                      }}
-                    >
-                      <ListItemIcon>
-                        <Avatar sx={{ bgcolor: '#1976d2', width: 36, height: 36 }}>
-                          <MedicalIcon fontSize="small" />
-                        </Avatar>
-                      </ListItemIcon>
-                      <ListItemText
-                        primary={
-                          <Box>
-                            <Typography variant="body2" fontWeight="600">
-                              {prescription.patientName}
-                            </Typography>
-                            <Typography variant="caption" color="text.secondary">
-                              ID: {prescription.patientId}
-                            </Typography>
-                          </Box>
-                        }
-                        secondary={
-                          <Box mt={0.5}>
-                            <Typography variant="caption" color="text.secondary" display="block">
-                              Dr. {prescription.doctorName.replace('Dr. ', '')}
-                            </Typography>
-                            <Box display="flex" gap={1} mt={0.5}>
-                              <Chip 
-                                label={`${prescription.medications.length} items`}
-                                size="small" 
-                                sx={{ fontSize: '0.65rem', height: 20 }}
-                              />
-                              <Chip 
-                                label={prescription.time}
-                                size="small" 
-                                variant="outlined"
-                                sx={{ fontSize: '0.65rem', height: 20 }}
-                              />
+                <Box sx={{ flex: 1, overflowY: 'auto', pr: 1 }}>
+                  <List dense sx={{ py: 0 }}>
+                    {pendingPrescriptions.slice(0, 4).map((prescription) => (
+                      <ListItem 
+                        key={prescription.id}
+                        sx={{ 
+                          mb: 1.5, 
+                          bgcolor: '#fafafa', 
+                          borderRadius: 1.5,
+                          cursor: 'pointer',
+                          p: 1.5,
+                          '&:hover': { 
+                            bgcolor: '#e3f2fd',
+                            transform: 'translateX(4px)',
+                            transition: 'all 0.2s ease'
+                          }
+                        }}
+                        onClick={() => {
+                          setSelectedPrescription(prescription);
+                          setPrescriptionModalOpen(true);
+                        }}
+                      >
+                        <ListItemIcon sx={{ minWidth: 40 }}>
+                          <Avatar sx={{ bgcolor: '#1976d2', width: 36, height: 36 }}>
+                            <MedicalIcon fontSize="small" />
+                          </Avatar>
+                        </ListItemIcon>
+                        <ListItemText
+                          primary={
+                            <Box>
+                              <Typography variant="body2" fontWeight="600" sx={{ fontSize: '0.9rem' }}>
+                                {prescription.patientName}
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
+                                ID: {prescription.patientId}
+                              </Typography>
                             </Box>
-                          </Box>
-                        }
-                      />
-                      <IconButton size="small" sx={{ alignSelf: 'flex-start' }}>
-                        <VisibilityIcon fontSize="small" />
-                      </IconButton>
-                    </ListItem>
-                  ))}
-                </List>
+                          }
+                          secondary={
+                            <Box mt={0.5}>
+                              <Typography variant="caption" color="text.secondary" display="block" sx={{ fontSize: '0.75rem' }}>
+                                Dr. {prescription.doctorName.replace('Dr. ', '')}
+                              </Typography>
+                              <Box display="flex" gap={0.5} mt={0.5}>
+                                <Chip 
+                                  label={`${prescription.medications.length} items`}
+                                  size="small" 
+                                  sx={{ fontSize: '0.65rem', height: 20 }}
+                                />
+                                <Chip 
+                                  label={prescription.time}
+                                  size="small" 
+                                  variant="outlined"
+                                  sx={{ fontSize: '0.65rem', height: 20 }}
+                                />
+                              </Box>
+                            </Box>
+                          }
+                        />
+                        <IconButton size="small" sx={{ alignSelf: 'flex-start' }}>
+                          <VisibilityIcon fontSize="small" />
+                        </IconButton>
+                      </ListItem>
+                    ))}
+                  </List>
+                </Box>
                 {pendingPrescriptions.length > 4 && (
                   <Button
                     fullWidth
                     variant="text"
-                    sx={{ mt: 1 }}
+                    sx={{ mt: 1.5 }}
+                    onClick={() => navigate('/pharmacist/prescriptions')}
                   >
                     View All Prescriptions ({pendingPrescriptions.length})
                   </Button>
@@ -522,11 +558,11 @@ const PharmacistDashboard = () => {
 
           {/* Low Stock Alerts */}
           <Grid item xs={12} md={6}>
-            <Card elevation={0} sx={{ borderRadius: 3, border: '1px solid #e0e0e0', height: '100%' }}>
-              <CardContent>
+            <Card elevation={0} sx={{ borderRadius: 3, border: '1px solid #e0e0e0', height: '100%', minHeight: '500px', maxHeight: '500px', display: 'flex', flexDirection: 'column' }}>
+              <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column', p: 2.5 }}>
                 <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-                  <Typography variant="h6" fontWeight="600">
-                    <WarningIcon sx={{ verticalAlign: 'middle', mr: 1, color: '#ed6c02' }} />
+                  <Typography variant="h6" fontWeight="600" sx={{ fontSize: '1.1rem' }}>
+                    <WarningIcon sx={{ verticalAlign: 'middle', mr: 1, color: '#ed6c02', fontSize: 24 }} />
                     Low Stock Alerts
                   </Typography>
                   <Badge badgeContent={lowStockItems.length} color="error">
@@ -536,53 +572,56 @@ const PharmacistDashboard = () => {
                   </Badge>
                 </Box>
                 <Divider sx={{ mb: 2 }} />
-                <List dense>
-                  {lowStockItems.slice(0, 4).map((item) => {
-                    const percentage = getStockPercentage(item.stock, item.minStock);
-                    return (
-                      <ListItem 
-                        key={item.id}
-                        sx={{ 
-                          mb: 1, 
-                          bgcolor: '#fafafa', 
-                          borderRadius: 1,
-                          '&:hover': { bgcolor: '#f5f5f5' }
-                        }}
-                      >
-                        <ListItemText
-                          primary={
-                            <Typography variant="body2" fontWeight="600">
-                              {item.name}
-                            </Typography>
-                          }
-                          secondary={
-                            <Box mt={1}>
-                              <Box display="flex" justifyContent="space-between" mb={0.5}>
-                                <Typography variant="caption" color="text.secondary">
-                                  Stock: {item.stock} / {item.minStock}
-                                </Typography>
-                                <Typography variant="caption" fontWeight="600">
-                                  {percentage.toFixed(0)}%
-                                </Typography>
+                <Box sx={{ flex: 1, overflowY: 'auto', pr: 1 }}>
+                  <List dense sx={{ py: 0 }}>
+                    {lowStockItems.slice(0, 5).map((item) => {
+                      const percentage = getStockPercentage(item.stock, item.minStock);
+                      return (
+                        <ListItem 
+                          key={item.id}
+                          sx={{ 
+                            mb: 1.5, 
+                            bgcolor: '#fafafa', 
+                            borderRadius: 1.5,
+                            p: 1.5,
+                            '&:hover': { bgcolor: '#f5f5f5' }
+                          }}
+                        >
+                          <ListItemText
+                            primary={
+                              <Typography variant="body2" fontWeight="600" sx={{ fontSize: '0.9rem' }}>
+                                {item.name}
+                              </Typography>
+                            }
+                            secondary={
+                              <Box mt={1}>
+                                <Box display="flex" justifyContent="space-between" mb={0.5}>
+                                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
+                                    Stock: {item.stock} / {item.minStock}
+                                  </Typography>
+                                  <Typography variant="caption" fontWeight="600" sx={{ fontSize: '0.75rem' }}>
+                                    {percentage.toFixed(0)}%
+                                  </Typography>
+                                </Box>
+                                <LinearProgress
+                                  variant="determinate"
+                                  value={Math.min(percentage, 100)}
+                                  color={getStockColor(percentage)}
+                                  sx={{ height: 6, borderRadius: 3 }}
+                                />
                               </Box>
-                              <LinearProgress
-                                variant="determinate"
-                                value={Math.min(percentage, 100)}
-                                color={getStockColor(percentage)}
-                                sx={{ height: 6, borderRadius: 3 }}
-                              />
-                            </Box>
-                          }
-                        />
-                      </ListItem>
-                    );
-                  })}
-                </List>
-                {lowStockItems.length > 4 && (
+                            }
+                          />
+                        </ListItem>
+                      );
+                    })}
+                  </List>
+                </Box>
+                {lowStockItems.length > 5 && (
                   <Button
                     fullWidth
                     variant="text"
-                    sx={{ mt: 1 }}
+                    sx={{ mt: 1.5 }}
                     onClick={() => navigate('/pharmacist/alerts')}
                   >
                     View All Alerts
@@ -594,11 +633,11 @@ const PharmacistDashboard = () => {
 
           {/* Expiry Alerts */}
           <Grid item xs={12} md={6}>
-            <Card elevation={0} sx={{ borderRadius: 3, border: '1px solid #e0e0e0', height: '100%' }}>
-              <CardContent>
+            <Card elevation={0} sx={{ borderRadius: 3, border: '1px solid #e0e0e0', height: '100%', minHeight: '400px', maxHeight: '400px', display: 'flex', flexDirection: 'column' }}>
+              <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column', p: 2.5 }}>
                 <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-                  <Typography variant="h6" fontWeight="600">
-                    <CalendarIcon sx={{ verticalAlign: 'middle', mr: 1, color: '#d32f2f' }} />
+                  <Typography variant="h6" fontWeight="600" sx={{ fontSize: '1.1rem' }}>
+                    <CalendarIcon sx={{ verticalAlign: 'middle', mr: 1, color: '#d32f2f', fontSize: 24 }} />
                     Expiry Alerts
                   </Typography>
                   <Badge badgeContent={expiryAlerts.length} color="error">
@@ -608,100 +647,107 @@ const PharmacistDashboard = () => {
                   </Badge>
                 </Box>
                 <Divider sx={{ mb: 2 }} />
-                <List dense>
-                  {expiryAlerts.map((item) => (
-                    <ListItem
-                      key={item.id}
-                      sx={{
-                        mb: 1,
-                        bgcolor: '#fafafa',
-                        borderRadius: 1,
-                        '&:hover': { bgcolor: '#f5f5f5' }
-                      }}
-                    >
-                      <ListItemText
-                        primary={
-                          <Typography variant="body2" fontWeight="600">
-                            {item.name}
-                          </Typography>
-                        }
-                        secondary={
-                          <Box mt={0.5}>
-                            <Typography variant="caption" color="text.secondary">
-                              Batch: {item.batch}
+                <Box sx={{ flex: 1, overflowY: 'auto', pr: 1 }}>
+                  <List dense sx={{ py: 0 }}>
+                    {expiryAlerts.map((item) => (
+                      <ListItem
+                        key={item.id}
+                        sx={{
+                          mb: 1.5,
+                          bgcolor: '#fafafa',
+                          borderRadius: 1.5,
+                          p: 1.5,
+                          '&:hover': { bgcolor: '#f5f5f5' }
+                        }}
+                      >
+                        <ListItemText
+                          primary={
+                            <Typography variant="body2" fontWeight="600" sx={{ fontSize: '0.9rem' }}>
+                              {item.name}
                             </Typography>
-                            <Box display="flex" gap={1} mt={0.5}>
-                              <Chip
-                                label={`${item.daysLeft} days left`}
-                                size="small"
-                                color={getDaysLeftColor(item.daysLeft)}
-                              />
-                              <Chip
-                                label={new Date(item.expiryDate).toLocaleDateString()}
-                                size="small"
-                                variant="outlined"
-                              />
+                          }
+                          secondary={
+                            <Box mt={0.5}>
+                              <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
+                                Batch: {item.batch}
+                              </Typography>
+                              <Box display="flex" gap={0.5} mt={0.5}>
+                                <Chip
+                                  label={`${item.daysLeft} days left`}
+                                  size="small"
+                                  color={getDaysLeftColor(item.daysLeft)}
+                                  sx={{ fontSize: '0.65rem', height: 20 }}
+                                />
+                                <Chip
+                                  label={new Date(item.expiryDate).toLocaleDateString()}
+                                  size="small"
+                                  variant="outlined"
+                                  sx={{ fontSize: '0.65rem', height: 20 }}
+                                />
+                              </Box>
                             </Box>
-                          </Box>
-                        }
-                      />
-                    </ListItem>
-                  ))}
-                </List>
+                          }
+                        />
+                      </ListItem>
+                    ))}
+                  </List>
+                </Box>
               </CardContent>
             </Card>
           </Grid>
 
           {/* Recent Activity */}
-          <Grid item xs={12}>
-            <Card elevation={0} sx={{ borderRadius: 3, border: '1px solid #e0e0e0' }}>
-              <CardContent>
-                <Typography variant="h6" fontWeight="600" mb={2}>
-                  <AssignmentIcon sx={{ verticalAlign: 'middle', mr: 1 }} />
+          <Grid item xs={12} md={6}>
+            <Card elevation={0} sx={{ borderRadius: 3, border: '1px solid #e0e0e0', minHeight: '400px', maxHeight: '400px', display: 'flex', flexDirection: 'column' }}>
+              <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column', p: 2.5 }}>
+                <Typography variant="h6" fontWeight="600" mb={2} sx={{ fontSize: '1.1rem' }}>
+                  <AssignmentIcon sx={{ verticalAlign: 'middle', mr: 1, fontSize: 24 }} />
                   Recent Activity
                 </Typography>
                 <Divider sx={{ mb: 2 }} />
-                <List>
-                  {recentActivities.map((activity, index) => (
-                    <React.Fragment key={activity.id}>
-                      <ListItem>
-                        <ListItemIcon>
-                          <Avatar
-                            sx={{
-                              width: 36,
-                              height: 36,
-                              bgcolor:
-                                activity.type === 'issue'
-                                  ? '#e3f2fd'
-                                  : activity.type === 'receipt'
-                                  ? '#e8f5e9'
-                                  : '#fff3e0',
-                              color:
-                                activity.type === 'issue'
-                                  ? '#1976d2'
-                                  : activity.type === 'receipt'
-                                  ? '#2e7d32'
-                                  : '#ed6c02',
-                            }}
-                          >
-                            {activity.type === 'issue' ? (
-                              <ShoppingCartIcon fontSize="small" />
-                            ) : activity.type === 'receipt' ? (
-                              <ShippingIcon fontSize="small" />
-                            ) : (
-                              <InventoryIcon fontSize="small" />
-                            )}
-                          </Avatar>
-                        </ListItemIcon>
-                        <ListItemText
-                          primary={activity.description}
-                          secondary={activity.time}
-                        />
-                      </ListItem>
-                      {index < recentActivities.length - 1 && <Divider variant="inset" />}
-                    </React.Fragment>
-                  ))}
-                </List>
+                <Box sx={{ flex: 1, overflowY: 'auto', pr: 1 }}>
+                  <List sx={{ py: 0 }}>
+                    {recentActivities.map((activity, index) => (
+                      <React.Fragment key={activity.id}>
+                        <ListItem sx={{ px: 0, py: 1.5 }}>
+                          <ListItemIcon sx={{ minWidth: 40 }}>
+                            <Avatar
+                              sx={{
+                                width: 36,
+                                height: 36,
+                                bgcolor:
+                                  activity.type === 'issue'
+                                    ? '#e3f2fd'
+                                    : activity.type === 'receipt'
+                                    ? '#e8f5e9'
+                                    : '#fff3e0',
+                                color:
+                                  activity.type === 'issue'
+                                    ? '#1976d2'
+                                    : activity.type === 'receipt'
+                                    ? '#2e7d32'
+                                    : '#ed6c02',
+                              }}
+                            >
+                              {activity.type === 'issue' ? (
+                                <ShoppingCartIcon fontSize="small" />
+                              ) : activity.type === 'receipt' ? (
+                                <ShippingIcon fontSize="small" />
+                              ) : (
+                                <InventoryIcon fontSize="small" />
+                              )}
+                            </Avatar>
+                          </ListItemIcon>
+                          <ListItemText
+                            primary={<Typography variant="body2" sx={{ fontSize: '0.875rem' }}>{activity.description}</Typography>}
+                            secondary={<Typography variant="caption" sx={{ fontSize: '0.75rem' }}>{activity.time}</Typography>}
+                          />
+                        </ListItem>
+                        {index < recentActivities.length - 1 && <Divider variant="inset" sx={{ ml: '40px' }} />}
+                      </React.Fragment>
+                    ))}
+                  </List>
+                </Box>
               </CardContent>
             </Card>
           </Grid>
