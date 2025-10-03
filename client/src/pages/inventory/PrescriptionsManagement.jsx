@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Container,
   Grid,
@@ -18,6 +18,8 @@ import {
   IconButton,
   Tabs,
   Tab,
+  CircularProgress,
+  Alert,
 } from '@mui/material';
 import {
   MedicalServices as MedicalIcon,
@@ -30,6 +32,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import Layout from '../../components/Layout/Layout';
 import PrescriptionDetailsModal from '../../components/Inventory/molecules/PrescriptionDetailsModal';
+import inventoryAPI from '../../api/inventory';
 
 const PrescriptionsManagement = () => {
   const navigate = useNavigate();
@@ -37,103 +40,82 @@ const PrescriptionsManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPrescription, setSelectedPrescription] = useState(null);
   const [prescriptionModalOpen, setPrescriptionModalOpen] = useState(false);
+  
+  // API state
+  const [prescriptions, setPrescriptions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [totalCount, setTotalCount] = useState(0);
+  const [pendingCount, setPendingCount] = useState(0);
+  const [completedCount, setCompletedCount] = useState(0);
 
-  const [prescriptions] = useState([
-    {
-      id: 'RX-2025-001',
-      patientName: 'Amal Perera',
-      patientId: 'PT-12345',
-      doctorName: 'Dr. Sunil Fernando',
-      date: '2025-10-02',
-      time: '09:30 AM',
-      status: 'pending',
-      medications: [
-        { name: 'Amoxicillin 500mg', dosage: '3 times daily', quantity: 21, duration: '7 days' },
-        { name: 'Paracetamol 500mg', dosage: 'As needed', quantity: 10, duration: '5 days' },
-        { name: 'Vitamin C 1000mg', dosage: '1 daily', quantity: 30, duration: '30 days' },
-      ]
-    },
-    {
-      id: 'RX-2025-002',
-      patientName: 'Nimal Silva',
-      patientId: 'PT-12346',
-      doctorName: 'Dr. Kamala Wijesinghe',
-      date: '2025-10-02',
-      time: '10:15 AM',
-      status: 'pending',
-      medications: [
-        { name: 'Metformin 500mg', dosage: '2 times daily', quantity: 60, duration: '30 days' },
-        { name: 'Atorvastatin 20mg', dosage: '1 at night', quantity: 30, duration: '30 days' },
-      ]
-    },
-    {
-      id: 'RX-2025-003',
-      patientName: 'Shalini Jayawardena',
-      patientId: 'PT-12347',
-      doctorName: 'Dr. Ranjith Kumar',
-      date: '2025-10-02',
-      time: '11:00 AM',
-      status: 'completed',
-      medications: [
-        { name: 'Ibuprofen 400mg', dosage: '3 times daily', quantity: 15, duration: '5 days' },
-        { name: 'Omeprazole 20mg', dosage: '1 before breakfast', quantity: 14, duration: '14 days' },
-      ]
-    },
-    {
-      id: 'RX-2025-004',
-      patientName: 'Rohan Mendis',
-      patientId: 'PT-12348',
-      doctorName: 'Dr. Sunil Fernando',
-      date: '2025-10-02',
-      time: '11:45 AM',
-      status: 'pending',
-      medications: [
-        { name: 'Cephalexin 500mg', dosage: '4 times daily', quantity: 28, duration: '7 days' },
-        { name: 'Cetirizine 10mg', dosage: '1 at night', quantity: 7, duration: '7 days' },
-      ]
-    },
-    {
-      id: 'RX-2025-005',
-      patientName: 'Kumari Dissanayake',
-      patientId: 'PT-12349',
-      doctorName: 'Dr. Kamala Wijesinghe',
-      date: '2025-10-02',
-      time: '01:20 PM',
-      status: 'pending',
-      medications: [
-        { name: 'Losartan 50mg', dosage: '1 daily', quantity: 30, duration: '30 days' },
-        { name: 'Aspirin 75mg', dosage: '1 daily', quantity: 30, duration: '30 days' },
-        { name: 'Simvastatin 40mg', dosage: '1 at night', quantity: 30, duration: '30 days' },
-      ]
-    },
-    {
-      id: 'RX-2025-006',
-      patientName: 'Chaminda Fernando',
-      patientId: 'PT-12350',
-      doctorName: 'Dr. Ranjith Kumar',
-      date: '2025-10-01',
-      time: '02:30 PM',
-      status: 'completed',
-      medications: [
-        { name: 'Azithromycin 500mg', dosage: '1 daily', quantity: 3, duration: '3 days' },
-      ]
-    },
-  ]);
+  // Fetch prescriptions from API
+  const fetchPrescriptions = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
 
-  const filteredPrescriptions = prescriptions.filter((prescription) => {
-    const matchesSearch = 
-      prescription.patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      prescription.patientId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      prescription.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      prescription.doctorName.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesStatus = 
-      activeTab === 0 || 
-      (activeTab === 1 && prescription.status === 'pending') ||
-      (activeTab === 2 && prescription.status === 'completed');
-    
-    return matchesSearch && matchesStatus;
-  });
+      const params = {
+        page: 1,
+        limit: 1000, // Get all prescriptions
+        search: searchTerm,
+      };
+
+      // Add status filter based on active tab
+      if (activeTab === 1) {
+        params.status = 'pending';
+      } else if (activeTab === 2) {
+        params.status = 'completed';
+      }
+
+      const response = await inventoryAPI.prescriptions.getPrescriptions(params);
+      
+      if (response.success) {
+        // Transform data to match UI format
+        const transformedPrescriptions = response.data.prescriptions.map(prescription => ({
+          id: prescription.prescriptionNumber,
+          _id: prescription._id,
+          patientName: prescription.patient.name,
+          patientId: prescription.patient.id,
+          doctorName: prescription.doctor.name,
+          date: new Date(prescription.date).toLocaleDateString('en-GB'),
+          time: prescription.time,
+          status: prescription.status,
+          medications: prescription.medications.map(med => ({
+            name: med.medicationName,
+            dosage: med.dosage,
+            quantity: med.quantity,
+            duration: med.duration,
+            instructions: med.instructions
+          })),
+          diagnosis: prescription.diagnosis,
+          notes: prescription.notes,
+          followUpDate: prescription.followUpDate,
+          priority: prescription.priority,
+          dispensedBy: prescription.dispensedBy,
+          dispensedAt: prescription.dispensedAt,
+        }));
+
+        setPrescriptions(transformedPrescriptions);
+        setTotalCount(response.data.total);
+        setPendingCount(response.data.pending);
+        setCompletedCount(response.data.completed);
+      }
+    } catch (err) {
+      console.error('Error fetching prescriptions:', err);
+      setError(err.response?.data?.message || 'Failed to load prescriptions');
+    } finally {
+      setLoading(false);
+    }
+  }, [activeTab, searchTerm]);
+
+  // Fetch prescriptions on component mount and when filters change
+  useEffect(() => {
+    fetchPrescriptions();
+  }, [fetchPrescriptions]);
+
+  // Prescriptions are already filtered by the API, so just use them directly
+  const filteredPrescriptions = prescriptions;
 
   const getStatusConfig = (status) => {
     const configs = {
@@ -144,12 +126,10 @@ const PrescriptionsManagement = () => {
     return configs[status] || configs.pending;
   };
 
-  const handleDispensePrescription = (prescription) => {
+  const handleDispensePrescription = async (prescription) => {
+    // You can navigate to issues page or handle inline dispensing
     navigate('/pharmacist/issues/new', { state: { prescription } });
   };
-
-  const pendingCount = prescriptions.filter(p => p.status === 'pending').length;
-  const completedCount = prescriptions.filter(p => p.status === 'completed').length;
 
   return (
     <Layout showContactInfo={false}>
@@ -196,6 +176,13 @@ const PrescriptionsManagement = () => {
           </Box>
         </Paper>
 
+        {/* Error Alert */}
+        {error && (
+          <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>
+            {error}
+          </Alert>
+        )}
+
         {/* Stats Cards */}
         <Grid container spacing={2} mb={3}>
           <Grid item xs={12} sm={4}>
@@ -207,7 +194,7 @@ const PrescriptionsManagement = () => {
                   </Box>
                   <Box>
                     <Typography variant="h4" fontWeight="bold">
-                      {prescriptions.length}
+                      {loading ? '-' : totalCount}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
                       Total Prescriptions
@@ -226,7 +213,7 @@ const PrescriptionsManagement = () => {
                   </Box>
                   <Box>
                     <Typography variant="h4" fontWeight="bold">
-                      {pendingCount}
+                      {loading ? '-' : pendingCount}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
                       Pending
@@ -245,7 +232,7 @@ const PrescriptionsManagement = () => {
                   </Box>
                   <Box>
                     <Typography variant="h4" fontWeight="bold">
-                      {completedCount}
+                      {loading ? '-' : completedCount}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
                       Completed
@@ -261,9 +248,9 @@ const PrescriptionsManagement = () => {
         <Card elevation={0} sx={{ mb: 3, borderRadius: 2, border: '1px solid #e0e0e0' }}>
           <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
             <Tabs value={activeTab} onChange={(e, newValue) => setActiveTab(newValue)}>
-              <Tab label={`All (${prescriptions.length})`} />
-              <Tab label={`Pending (${pendingCount})`} />
-              <Tab label={`Completed (${completedCount})`} />
+              <Tab label={`All (${loading ? '-' : totalCount})`} />
+              <Tab label={`Pending (${loading ? '-' : pendingCount})`} />
+              <Tab label={`Completed (${loading ? '-' : completedCount})`} />
             </Tabs>
           </Box>
           <CardContent>
@@ -276,6 +263,7 @@ const PrescriptionsManagement = () => {
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   sx={{ bgcolor: 'white' }}
+                  disabled={loading}
                 />
               </Grid>
             </Grid>
@@ -289,7 +277,14 @@ const PrescriptionsManagement = () => {
               Showing {filteredPrescriptions.length} prescriptions
             </Typography>
 
-            {filteredPrescriptions.length === 0 ? (
+            {loading ? (
+              <Box textAlign="center" py={6}>
+                <CircularProgress />
+                <Typography variant="body2" color="text.secondary" mt={2}>
+                  Loading prescriptions...
+                </Typography>
+              </Box>
+            ) : filteredPrescriptions.length === 0 ? (
               <Box textAlign="center" py={6}>
                 <Typography variant="h6" color="text.secondary">
                   No prescriptions found
