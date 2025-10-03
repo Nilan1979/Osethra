@@ -1,0 +1,1086 @@
+import React, { useState, useEffect, useRef } from 'react';
+import {
+  Container,
+  Grid,
+  Box,
+  Typography,
+  Button,
+  Paper,
+  Card,
+  CardContent,
+  TextField,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
+  IconButton,
+  Divider,
+  Chip,
+  Alert,
+  InputAdornment,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Badge,
+  Snackbar,
+  CircularProgress,
+  Autocomplete,
+  Tooltip,
+  ToggleButton,
+  ToggleButtonGroup,
+  Fade,
+  Slide,
+  useTheme,
+  alpha,
+} from '@mui/material';
+import {
+  ShoppingCart as CartIcon,
+  Delete as DeleteIcon,
+  Add as AddIcon,
+  Remove as RemoveIcon,
+  ArrowBack as ArrowBackIcon,
+  Print as PrintIcon,
+  CheckCircle as CheckCircleIcon,
+  Search as SearchIcon,
+  ClearAll as ClearAllIcon,
+  Receipt as ReceiptIcon,
+  LocalHospital as HospitalIcon,
+  Description as DescriptionIcon,
+  ReceiptLong as ReceiptLongIcon,
+  ShoppingBag as ShoppingBagIcon,
+  Person as PersonIcon,
+  Inventory2 as InventoryIcon,
+  AttachMoney as MoneyIcon,
+  CalendarToday as CalendarIcon,
+} from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
+import { useReactToPrint } from 'react-to-print';
+import Layout from '../../components/Layout/Layout';
+import InvoiceBill from '../../components/Inventory/molecules/InvoiceBill';
+import ThermalReceipt from '../../components/Inventory/molecules/ThermalReceipt';
+import inventoryAPI from '../../api/inventory';
+
+const IssueManagement = () => {
+  const navigate = useNavigate();
+  const theme = useTheme();
+  const invoiceRef = useRef();
+  const thermalRef = useRef();
+  
+  // State management
+  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [products, setProducts] = useState([]);
+  const [cart, setCart] = useState([]);
+  const [showInvoice, setShowInvoice] = useState(false);
+  const [printFormat, setPrintFormat] = useState('a4'); // 'a4' or 'thermal'
+  const [createdIssue, setCreatedIssue] = useState(null);
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
+  
+  // Issue details
+  const [issueType, setIssueType] = useState('outpatient');
+  const [patientInfo, setPatientInfo] = useState({
+    name: '',
+    id: '',
+    bedNumber: '',
+    wardId: '',
+  });
+  const [departmentInfo, setDepartmentInfo] = useState({
+    name: '',
+    id: '',
+  });
+  const [notes, setNotes] = useState('');
+
+  // Fetch products
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  const fetchProducts = async () => {
+    try {
+      setLoading(true);
+      const response = await inventoryAPI.products.getProducts({ 
+        page: 1, 
+        limit: 100,
+        status: 'active' 
+      });
+      const productsData = response.data?.products || response.products || [];
+      setProducts(productsData);
+    } catch (err) {
+      console.error('Error fetching products:', err);
+      setError('Failed to load products');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Filter products based on search
+  const filteredProducts = products.filter(product => 
+    product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    product.sku?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    product.category?.toLowerCase().includes(searchTerm.toLowerCase())
+  ).filter(product => product.currentStock > 0); // Only show in-stock items
+
+  // Add product to cart
+  const handleAddToCart = (product) => {
+    const existingItem = cart.find(item => item._id === product._id);
+    
+    if (existingItem) {
+      if (existingItem.quantity >= product.currentStock) {
+        setError(`Cannot add more. Only ${product.currentStock} units available.`);
+        return;
+      }
+      handleUpdateQuantity(product._id, existingItem.quantity + 1);
+    } else {
+      setCart([...cart, {
+        _id: product._id,
+        productName: product.name,
+        sku: product.sku,
+        quantity: 1,
+        unitPrice: product.sellingPrice,
+        totalPrice: product.sellingPrice,
+        availableStock: product.currentStock,
+        batchNumber: product.batchNumber,
+        expiryDate: product.expiryDate,
+      }]);
+      setSuccess(`Added ${product.name} to cart`);
+    }
+    setSearchTerm(''); // Clear search
+  };
+
+  // Update quantity in cart
+  const handleUpdateQuantity = (productId, newQuantity) => {
+    const item = cart.find(i => i._id === productId);
+    
+    if (newQuantity < 1) {
+      handleRemoveFromCart(productId);
+      return;
+    }
+    
+    if (newQuantity > item.availableStock) {
+      setError(`Only ${item.availableStock} units available`);
+      return;
+    }
+
+    setCart(cart.map(item => 
+      item._id === productId 
+        ? { ...item, quantity: newQuantity, totalPrice: item.unitPrice * newQuantity }
+        : item
+    ));
+  };
+
+  // Remove from cart
+  const handleRemoveFromCart = (productId) => {
+    setCart(cart.filter(item => item._id !== productId));
+  };
+
+  // Clear cart
+  const handleClearCart = () => {
+    setCart([]);
+    setSearchTerm('');
+  };
+
+  // Calculate totals
+  const calculateSubtotal = () => {
+    return cart.reduce((sum, item) => sum + item.totalPrice, 0);
+  };
+
+  const calculateTax = () => {
+    return 0; // No tax for now
+  };
+
+  const calculateTotal = () => {
+    return calculateSubtotal() + calculateTax();
+  };
+
+  // Validate form
+  const validateForm = () => {
+    if (cart.length === 0) {
+      setError('Please add at least one product to the cart');
+      return false;
+    }
+
+    if (issueType === 'outpatient' || issueType === 'inpatient' || issueType === 'emergency') {
+      if (!patientInfo.name.trim()) {
+        setError('Patient name is required');
+        return false;
+      }
+      if (!patientInfo.id.trim()) {
+        setError('Patient ID is required');
+        return false;
+      }
+      if (issueType === 'inpatient' && (!patientInfo.wardId.trim() || !patientInfo.bedNumber.trim())) {
+        setError('Ward ID and Bed Number are required for inpatient');
+        return false;
+      }
+    }
+
+    if (issueType === 'department') {
+      if (!departmentInfo.name.trim() || !departmentInfo.id.trim()) {
+        setError('Department name and ID are required');
+        return false;
+      }
+    }
+
+    return true;
+  };
+
+  // Submit issue
+  const handleSubmitIssue = async () => {
+    if (!validateForm()) return;
+
+    try {
+      setSubmitting(true);
+      setError(null);
+
+      const issueData = {
+        type: issueType,
+        items: cart.map(item => ({
+          productId: item._id,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          batchNumber: item.batchNumber,
+          expiryDate: item.expiryDate,
+        })),
+        notes: notes.trim(),
+      };
+
+      // Add patient or department info
+      if (issueType === 'department') {
+        issueData.department = departmentInfo;
+      } else {
+        issueData.patient = {
+          ...patientInfo,
+          type: issueType,
+        };
+      }
+
+      const response = await inventoryAPI.issues.createIssue(issueData);
+      const issue = response.data?.issue || response.issue;
+
+      setCreatedIssue({
+        ...issue,
+        issueType,
+        patient: issueData.patient,
+        department: issueData.department,
+        items: cart,
+      });
+
+      setSuccess('Issue created successfully!');
+      setShowInvoice(true);
+
+      // Refresh products to update stock
+      await fetchProducts();
+      
+    } catch (err) {
+      console.error('Error creating issue:', err);
+      setError(err.response?.data?.message || 'Failed to create issue');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Print invoice
+  const handlePrintA4 = useReactToPrint({
+    content: () => invoiceRef.current,
+    documentTitle: `Invoice-${createdIssue?.issueNumber || 'DRAFT'}`,
+    onAfterPrint: () => {
+      setSuccess('A4 Invoice printed successfully!');
+    },
+  });
+
+  const handlePrintThermal = useReactToPrint({
+    content: () => thermalRef.current,
+    documentTitle: `Receipt-${createdIssue?.issueNumber || 'DRAFT'}`,
+    pageStyle: `
+      @page {
+        size: 80mm auto;
+        margin: 0;
+      }
+      @media print {
+        body {
+          margin: 0;
+          padding: 0;
+        }
+      }
+    `,
+    onAfterPrint: () => {
+      setSuccess('Thermal receipt printed successfully!');
+    },
+  });
+
+  const handlePrint = () => {
+    if (printFormat === 'thermal') {
+      handlePrintThermal();
+    } else {
+      handlePrintA4();
+    }
+  };
+
+  // Reset form after printing
+  const handleCompleteIssue = () => {
+    setShowInvoice(false);
+    setCreatedIssue(null);
+    setCart([]);
+    setPatientInfo({ name: '', id: '', bedNumber: '', wardId: '' });
+    setDepartmentInfo({ name: '', id: '' });
+    setNotes('');
+    setIssueType('outpatient');
+  };
+
+  return (
+    <Layout showContactInfo={false}>
+      <Box sx={{ 
+        minHeight: '100vh',
+        bgcolor: '#f8f9fa',
+        pb: 4,
+      }}>
+        <Container maxWidth="xl" sx={{ pt: 3 }}>
+          {/* Header with Back Button */}
+          <Box mb={3}>
+            <Button
+              startIcon={<ArrowBackIcon />}
+              onClick={() => navigate('/pharmacist/dashboard')}
+              sx={{
+                color: 'text.secondary',
+                '&:hover': {
+                  bgcolor: 'white',
+                  color: 'primary.main',
+                },
+              }}
+            >
+              Back to Dashboard
+            </Button>
+          </Box>
+
+          {/* Modern Header */}
+          <Paper 
+            elevation={0}
+            sx={{ 
+              p: 4,
+              mb: 3,
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              borderRadius: 4,
+              position: 'relative',
+              overflow: 'hidden',
+              '&::before': {
+                content: '""',
+                position: 'absolute',
+                top: 0,
+                right: 0,
+                width: '400px',
+                height: '400px',
+                background: 'radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%)',
+                borderRadius: '50%',
+                transform: 'translate(30%, -30%)',
+              }
+            }}
+          >
+            <Grid container spacing={3} alignItems="center">
+              <Grid item xs={12} md={8}>
+                <Box display="flex" alignItems="center" gap={2} mb={1}>
+                  <Box
+                    sx={{
+                      width: 60,
+                      height: 60,
+                      borderRadius: 3,
+                      bgcolor: 'rgba(255,255,255,0.2)',
+                      backdropFilter: 'blur(10px)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <ShoppingBagIcon sx={{ fontSize: 32, color: 'white' }} />
+                  </Box>
+                  <Box>
+                    <Typography variant="h3" fontWeight="bold" sx={{ color: 'white', mb: 0.5 }}>
+                      Issue Products
+                    </Typography>
+                    <Typography variant="h6" sx={{ color: 'rgba(255,255,255,0.9)' }}>
+                      Point of Sale System
+                    </Typography>
+                  </Box>
+                </Box>
+              </Grid>
+              <Grid item xs={12} md={4}>
+                <Box
+                  sx={{
+                    bgcolor: 'rgba(255,255,255,0.15)',
+                    backdropFilter: 'blur(10px)',
+                    borderRadius: 3,
+                    p: 2,
+                    border: '1px solid rgba(255,255,255,0.2)',
+                  }}
+                >
+                  <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.8)', display: 'block', mb: 0.5 }}>
+                    Current Date & Time
+                  </Typography>
+                  <Typography variant="h6" fontWeight="600" sx={{ color: 'white' }}>
+                    {new Date().toLocaleDateString('en-GB', { 
+                      day: '2-digit', 
+                      month: 'short', 
+                      year: 'numeric' 
+                    })}
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.9)' }}>
+                    {new Date().toLocaleTimeString('en-GB', { 
+                      hour: '2-digit', 
+                      minute: '2-digit' 
+                    })}
+                  </Typography>
+                </Box>
+              </Grid>
+            </Grid>
+          </Paper>
+
+          <Grid container spacing={3}>
+            {/* Left Panel - Product Selection */}
+            <Grid item xs={12} lg={8}>
+              <Fade in timeout={500}>
+                <Card 
+                  elevation={0} 
+                  sx={{ 
+                    borderRadius: 4,
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    height: '100%',
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.05)',
+                  }}
+                >
+                  <CardContent sx={{ p: 3 }}>
+                    {/* Search Section */}
+                    <Box mb={3}>
+                      <Box display="flex" alignItems="center" gap={1} mb={2}>
+                        <SearchIcon sx={{ color: 'primary.main', fontSize: 24 }} />
+                        <Typography variant="h6" fontWeight="600">
+                          Search Products
+                        </Typography>
+                      </Box>
+                      <Autocomplete
+                  freeSolo
+                  options={filteredProducts}
+                  getOptionLabel={(option) => 
+                    typeof option === 'string' ? option : `${option.name} (${option.sku})`
+                  }
+                      renderOption={(props, option) => (
+                        <Box 
+                          component="li" 
+                          {...props} 
+                          key={option._id}
+                          sx={{
+                            borderBottom: '1px solid #f0f0f0',
+                            '&:hover': {
+                              bgcolor: alpha(theme.palette.primary.main, 0.08),
+                            }
+                          }}
+                        >
+                          <Box sx={{ flexGrow: 1, py: 0.5 }}>
+                            <Typography variant="body1" fontWeight="600" sx={{ mb: 0.5 }}>
+                              {option.name}
+                            </Typography>
+                            <Box display="flex" gap={1} alignItems="center" flexWrap="wrap">
+                              <Chip 
+                                icon={<InventoryIcon sx={{ fontSize: 14 }} />}
+                                label={option.sku}
+                                size="small"
+                                variant="outlined"
+                                sx={{ height: 22, fontSize: '0.7rem' }}
+                              />
+                              <Chip 
+                                label={`Stock: ${option.currentStock}`} 
+                                size="small"
+                                color={option.currentStock < 10 ? 'error' : option.currentStock < 50 ? 'warning' : 'success'}
+                                sx={{ 
+                                  height: 22, 
+                                  fontSize: '0.7rem',
+                                  fontWeight: 600,
+                                }}
+                              />
+                              <Chip 
+                                icon={<MoneyIcon sx={{ fontSize: 14 }} />}
+                                label={`LKR ${option.sellingPrice.toFixed(2)}`} 
+                                size="small"
+                                color="primary"
+                                sx={{ height: 22, fontSize: '0.7rem', fontWeight: 600 }}
+                              />
+                            </Box>
+                          </Box>
+                          <Tooltip title="Add to cart">
+                            <IconButton 
+                              size="small"
+                              sx={{
+                                bgcolor: 'primary.main',
+                                color: 'white',
+                                '&:hover': {
+                                  bgcolor: 'primary.dark',
+                                  transform: 'scale(1.1)',
+                                },
+                                transition: 'all 0.2s',
+                              }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleAddToCart(option);
+                              }}
+                            >
+                              <AddIcon />
+                            </IconButton>
+                          </Tooltip>
+                        </Box>
+                      )}
+                  inputValue={searchTerm}
+                  onInputChange={(_, newValue) => setSearchTerm(newValue)}
+                  onChange={(_, value) => {
+                    if (value && typeof value === 'object') {
+                      handleAddToCart(value);
+                    }
+                  }}
+                      renderInput={(params) => (
+                        <TextField
+                          {...params}
+                          placeholder="Type product name, SKU, or scan barcode..."
+                          variant="outlined"
+                          fullWidth
+                          autoFocus
+                          InputProps={{
+                            ...params.InputProps,
+                            startAdornment: (
+                              <InputAdornment position="start">
+                                <SearchIcon sx={{ color: 'action.active' }} />
+                              </InputAdornment>
+                            ),
+                          }}
+                          sx={{
+                            '& .MuiOutlinedInput-root': {
+                              borderRadius: 3,
+                              bgcolor: 'background.paper',
+                              '&:hover': {
+                                '& .MuiOutlinedInput-notchedOutline': {
+                                  borderColor: 'primary.main',
+                                },
+                              },
+                            },
+                          }}
+                        />
+                      )}
+                      loading={loading}
+                      loadingText="Loading products..."
+                      noOptionsText="No products found. Try different keywords."
+                    />
+                    </Box>
+
+                    {/* Cart Section */}
+                    <Box>
+                      <Box 
+                        display="flex" 
+                        justifyContent="space-between" 
+                        alignItems="center" 
+                        mb={2}
+                        sx={{
+                          p: 2,
+                          bgcolor: alpha(theme.palette.primary.main, 0.08),
+                          borderRadius: 2,
+                        }}
+                      >
+                        <Box display="flex" alignItems="center" gap={1.5}>
+                          <CartIcon sx={{ color: 'primary.main', fontSize: 28 }} />
+                          <Box>
+                            <Typography variant="h6" fontWeight="700" sx={{ color: 'primary.main' }}>
+                              Shopping Cart
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {cart.length} {cart.length === 1 ? 'item' : 'items'} | {cart.reduce((sum, item) => sum + item.quantity, 0)} total units
+                            </Typography>
+                          </Box>
+                        </Box>
+                        {cart.length > 0 && (
+                          <Button
+                            startIcon={<ClearAllIcon />}
+                            variant="outlined"
+                            color="error"
+                            onClick={handleClearCart}
+                            size="small"
+                            sx={{ borderRadius: 2 }}
+                          >
+                            Clear All
+                          </Button>
+                        )}
+                      </Box>
+
+                      <Box 
+                        sx={{ 
+                          maxHeight: 500, 
+                          overflow: 'auto',
+                          border: '1px solid',
+                          borderColor: 'divider',
+                          borderRadius: 3,
+                          bgcolor: 'background.paper',
+                        }}
+                      >
+                        {cart.length === 0 ? (
+                          <Box 
+                            sx={{ 
+                              py: 8, 
+                              textAlign: 'center',
+                              bgcolor: alpha(theme.palette.primary.main, 0.02),
+                            }}
+                          >
+                            <Box
+                              sx={{
+                                width: 120,
+                                height: 120,
+                                borderRadius: '50%',
+                                bgcolor: alpha(theme.palette.primary.main, 0.1),
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                margin: '0 auto',
+                                mb: 2,
+                              }}
+                            >
+                              <ShoppingBagIcon sx={{ fontSize: 60, color: 'primary.main', opacity: 0.5 }} />
+                            </Box>
+                            <Typography variant="h6" fontWeight="600" color="text.secondary" gutterBottom>
+                              Your cart is empty
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                              Search for products above and add them to get started
+                            </Typography>
+                          </Box>
+                        ) : (
+                          <Table stickyHeader>
+                            <TableHead>
+                              <TableRow>
+                                <TableCell sx={{ fontWeight: 'bold', bgcolor: alpha(theme.palette.primary.main, 0.08), color: 'primary.main' }}>
+                                  Product Details
+                                </TableCell>
+                                <TableCell sx={{ fontWeight: 'bold', bgcolor: alpha(theme.palette.primary.main, 0.08), color: 'primary.main' }} align="center">
+                                  Quantity
+                                </TableCell>
+                                <TableCell sx={{ fontWeight: 'bold', bgcolor: alpha(theme.palette.primary.main, 0.08), color: 'primary.main' }} align="right">
+                                  Unit Price
+                                </TableCell>
+                                <TableCell sx={{ fontWeight: 'bold', bgcolor: alpha(theme.palette.primary.main, 0.08), color: 'primary.main' }} align="right">
+                                  Total
+                                </TableCell>
+                                <TableCell sx={{ fontWeight: 'bold', bgcolor: alpha(theme.palette.primary.main, 0.08), color: 'primary.main' }} align="center">
+                                  Action
+                                </TableCell>
+                              </TableRow>
+                            </TableHead>
+                            <TableBody>
+                              {cart.map((item, index) => (
+                                <TableRow 
+                                  key={item._id} 
+                                  sx={{
+                                    '&:hover': {
+                                      bgcolor: alpha(theme.palette.primary.main, 0.04),
+                                    },
+                                    transition: 'background-color 0.2s',
+                                  }}
+                                >
+                                          <TableCell>
+                                      <Box>
+                                        <Typography variant="body1" fontWeight="600" sx={{ mb: 0.5 }}>
+                                          {item.productName}
+                                        </Typography>
+                                        <Box display="flex" gap={0.5} alignItems="center" flexWrap="wrap">
+                                          <Chip 
+                                            label={item.sku}
+                                            size="small"
+                                            variant="outlined"
+                                            sx={{ height: 20, fontSize: '0.65rem' }}
+                                          />
+                                          {item.availableStock < 10 && (
+                                            <Chip 
+                                              label={`⚠ Only ${item.availableStock} left!`}
+                                              size="small"
+                                              color="warning"
+                                              sx={{ height: 20, fontSize: '0.65rem', fontWeight: 600 }}
+                                            />
+                                          )}
+                                        </Box>
+                                      </Box>
+                                    </TableCell>
+                                    <TableCell align="center">
+                                      <Box display="flex" alignItems="center" justifyContent="center" gap={0.5}>
+                                        <IconButton
+                                          size="small"
+                                          onClick={() => handleUpdateQuantity(item._id, item.quantity - 1)}
+                                          sx={{
+                                            bgcolor: alpha(theme.palette.error.main, 0.1),
+                                            color: 'error.main',
+                                            '&:hover': {
+                                              bgcolor: alpha(theme.palette.error.main, 0.2),
+                                            },
+                                          }}
+                                        >
+                                          <RemoveIcon fontSize="small" />
+                                        </IconButton>
+                                        <TextField
+                                          value={item.quantity}
+                                          onChange={(e) => {
+                                            const val = parseInt(e.target.value) || 0;
+                                            handleUpdateQuantity(item._id, val);
+                                          }}
+                                          type="number"
+                                          size="small"
+                                          sx={{ 
+                                            width: 70,
+                                            '& input': { 
+                                              textAlign: 'center', 
+                                              fontWeight: 'bold',
+                                              fontSize: '1rem',
+                                              py: 1,
+                                            },
+                                            '& .MuiOutlinedInput-root': {
+                                              borderRadius: 2,
+                                            }
+                                          }}
+                                          inputProps={{ min: 1, max: item.availableStock }}
+                                        />
+                                        <IconButton
+                                          size="small"
+                                          onClick={() => handleUpdateQuantity(item._id, item.quantity + 1)}
+                                          disabled={item.quantity >= item.availableStock}
+                                          sx={{
+                                            bgcolor: item.quantity >= item.availableStock 
+                                              ? alpha(theme.palette.action.disabled, 0.1)
+                                              : alpha(theme.palette.success.main, 0.1),
+                                            color: item.quantity >= item.availableStock 
+                                              ? 'action.disabled'
+                                              : 'success.main',
+                                            '&:hover': {
+                                              bgcolor: item.quantity >= item.availableStock 
+                                                ? alpha(theme.palette.action.disabled, 0.1)
+                                                : alpha(theme.palette.success.main, 0.2),
+                                            },
+                                          }}
+                                        >
+                                          <AddIcon fontSize="small" />
+                                        </IconButton>
+                                      </Box>
+                                      <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                                        Max: {item.availableStock} units
+                                      </Typography>
+                                    </TableCell>
+                                    <TableCell align="right">
+                                      <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                                        LKR {item.unitPrice.toFixed(2)}
+                                      </Typography>
+                                    </TableCell>
+                                    <TableCell align="right">
+                                      <Typography variant="h6" fontWeight="700" sx={{ color: 'primary.main' }}>
+                                        LKR {item.totalPrice.toFixed(2)}
+                                      </Typography>
+                                    </TableCell>
+                                    <TableCell align="center">
+                                      <Tooltip title="Remove from cart">
+                                        <IconButton
+                                          size="small"
+                                          onClick={() => handleRemoveFromCart(item._id)}
+                                          sx={{
+                                            color: 'error.main',
+                                            bgcolor: alpha(theme.palette.error.main, 0.1),
+                                            '&:hover': {
+                                              bgcolor: 'error.main',
+                                              color: 'white',
+                                              transform: 'scale(1.1)',
+                                            },
+                                            transition: 'all 0.2s',
+                                          }}
+                                        >
+                                          <DeleteIcon fontSize="small" />
+                                        </IconButton>
+                                      </Tooltip>
+                                    </TableCell>
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
+                          )}
+                        </Box>
+                      </Box>
+                    </CardContent>
+                  </Card>
+                </Fade>
+              </Grid>
+
+          {/* Right Panel - Issue Details & Summary */}
+          <Grid item xs={12} lg={4}>
+            <Card elevation={0} sx={{ border: '1px solid #e0e0e0', borderRadius: 2, position: 'sticky', top: 20 }}>
+              <CardContent sx={{ p: 3 }}>
+                <Typography variant="h6" fontWeight="600" gutterBottom>
+                  Issue Details
+                </Typography>
+                <Divider sx={{ mb: 2 }} />
+
+                {/* Issue Type */}
+                <TextField
+                  select
+                  fullWidth
+                  label="Issue Type"
+                  value={issueType}
+                  onChange={(e) => setIssueType(e.target.value)}
+                  sx={{ mb: 2 }}
+                  SelectProps={{ native: true }}
+                >
+                  <option value="outpatient">Outpatient</option>
+                  <option value="inpatient">Inpatient</option>
+                  <option value="department">Department</option>
+                  <option value="emergency">Emergency</option>
+                </TextField>
+
+                {/* Patient/Department Info */}
+                {issueType === 'department' ? (
+                  <>
+                    <TextField
+                      fullWidth
+                      label="Department Name"
+                      value={departmentInfo.name}
+                      onChange={(e) => setDepartmentInfo({ ...departmentInfo, name: e.target.value })}
+                      sx={{ mb: 2 }}
+                    />
+                    <TextField
+                      fullWidth
+                      label="Department ID"
+                      value={departmentInfo.id}
+                      onChange={(e) => setDepartmentInfo({ ...departmentInfo, id: e.target.value })}
+                      sx={{ mb: 2 }}
+                    />
+                  </>
+                ) : (
+                  <>
+                    <TextField
+                      fullWidth
+                      label="Patient Name"
+                      value={patientInfo.name}
+                      onChange={(e) => setPatientInfo({ ...patientInfo, name: e.target.value })}
+                      sx={{ mb: 2 }}
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <HospitalIcon fontSize="small" />
+                          </InputAdornment>
+                        ),
+                      }}
+                    />
+                    <TextField
+                      fullWidth
+                      label="Patient ID"
+                      value={patientInfo.id}
+                      onChange={(e) => setPatientInfo({ ...patientInfo, id: e.target.value })}
+                      sx={{ mb: 2 }}
+                    />
+                    {issueType === 'inpatient' && (
+                      <Grid container spacing={2} sx={{ mb: 2 }}>
+                        <Grid item xs={6}>
+                          <TextField
+                            fullWidth
+                            label="Ward ID"
+                            value={patientInfo.wardId}
+                            onChange={(e) => setPatientInfo({ ...patientInfo, wardId: e.target.value })}
+                          />
+                        </Grid>
+                        <Grid item xs={6}>
+                          <TextField
+                            fullWidth
+                            label="Bed Number"
+                            value={patientInfo.bedNumber}
+                            onChange={(e) => setPatientInfo({ ...patientInfo, bedNumber: e.target.value })}
+                          />
+                        </Grid>
+                      </Grid>
+                    )}
+                  </>
+                )}
+
+                {/* Notes */}
+                <TextField
+                  fullWidth
+                  label="Notes (Optional)"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  multiline
+                  rows={2}
+                  sx={{ mb: 3 }}
+                />
+
+                <Divider sx={{ mb: 2 }} />
+
+                {/* Summary */}
+                <Typography variant="h6" fontWeight="600" gutterBottom>
+                  Order Summary
+                </Typography>
+
+                <Box sx={{ bgcolor: '#f9f9f9', p: 2, borderRadius: 2, mb: 2 }}>
+                  <Box display="flex" justifyContent="space-between" mb={1}>
+                    <Typography variant="body2">Items:</Typography>
+                    <Typography variant="body2" fontWeight="500">
+                      {cart.reduce((sum, item) => sum + item.quantity, 0)} units
+                    </Typography>
+                  </Box>
+                  <Box display="flex" justifyContent="space-between" mb={1}>
+                    <Typography variant="body2">Subtotal:</Typography>
+                    <Typography variant="body2" fontWeight="500">
+                      LKR {calculateSubtotal().toFixed(2)}
+                    </Typography>
+                  </Box>
+                  <Box display="flex" justifyContent="space-between" mb={1}>
+                    <Typography variant="body2">Tax (0%):</Typography>
+                    <Typography variant="body2" fontWeight="500">
+                      LKR {calculateTax().toFixed(2)}
+                    </Typography>
+                  </Box>
+                  <Divider sx={{ my: 1 }} />
+                  <Box display="flex" justifyContent="space-between">
+                    <Typography variant="h6" fontWeight="bold">Total:</Typography>
+                    <Typography variant="h6" fontWeight="bold" color="primary">
+                      LKR {calculateTotal().toFixed(2)}
+                    </Typography>
+                  </Box>
+                </Box>
+
+                {/* Action Buttons */}
+                <Button
+                  fullWidth
+                  variant="contained"
+                  size="large"
+                  startIcon={submitting ? <CircularProgress size={20} color="inherit" /> : <CheckCircleIcon />}
+                  onClick={handleSubmitIssue}
+                  disabled={cart.length === 0 || submitting}
+                  sx={{ 
+                    py: 1.5,
+                    fontWeight: 'bold',
+                    fontSize: '1.1rem',
+                  }}
+                >
+                  {submitting ? 'Processing...' : 'Complete Issue'}
+                </Button>
+
+                <Button
+                  fullWidth
+                  variant="outlined"
+                  size="large"
+                  onClick={() => navigate('/pharmacist/dashboard')}
+                  sx={{ mt: 1 }}
+                >
+                  Cancel
+                </Button>
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
+
+        {/* Invoice Dialog */}
+        <Dialog
+          open={showInvoice}
+          onClose={() => {}}
+          maxWidth={printFormat === 'thermal' ? 'xs' : 'md'}
+          fullWidth
+          PaperProps={{
+            sx: { minHeight: printFormat === 'thermal' ? 'auto' : '80vh' }
+          }}
+        >
+          <DialogTitle sx={{ bgcolor: '#2e7d32', color: 'white', display: 'flex', alignItems: 'center', gap: 1 }}>
+            <CheckCircleIcon />
+            <Typography variant="h6" fontWeight="bold">
+              Issue Completed Successfully!
+            </Typography>
+          </DialogTitle>
+          <DialogContent sx={{ p: 0 }}>
+            {/* Print Format Toggle */}
+            <Box sx={{ p: 2, bgcolor: '#f5f5f5', borderBottom: '1px solid #e0e0e0' }}>
+              <Box display="flex" justifyContent="center" alignItems="center" gap={2}>
+                <Typography variant="body2" fontWeight="500">
+                  Print Format:
+                </Typography>
+                <ToggleButtonGroup
+                  value={printFormat}
+                  exclusive
+                  onChange={(e, newFormat) => newFormat && setPrintFormat(newFormat)}
+                  size="small"
+                >
+                  <ToggleButton value="a4">
+                    <DescriptionIcon fontSize="small" sx={{ mr: 0.5 }} />
+                    A4 Invoice
+                  </ToggleButton>
+                  <ToggleButton value="thermal">
+                    <ReceiptLongIcon fontSize="small" sx={{ mr: 0.5 }} />
+                    Thermal Receipt
+                  </ToggleButton>
+                </ToggleButtonGroup>
+              </Box>
+            </Box>
+
+            {/* Invoice Preview */}
+            <Box sx={{ maxHeight: '70vh', overflow: 'auto', bgcolor: printFormat === 'thermal' ? 'white' : '#f5f5f5', p: printFormat === 'thermal' ? 0 : 2 }}>
+              {createdIssue && (
+                <>
+                  {printFormat === 'a4' ? (
+                    <InvoiceBill ref={invoiceRef} issueData={createdIssue} />
+                  ) : (
+                    <Box display="flex" justifyContent="center">
+                      <ThermalReceipt ref={thermalRef} issueData={createdIssue} />
+                    </Box>
+                  )}
+                </>
+              )}
+            </Box>
+          </DialogContent>
+          <DialogActions sx={{ p: 3, bgcolor: '#f5f5f5' }}>
+            <Button
+              variant="contained"
+              startIcon={<PrintIcon />}
+              onClick={handlePrint}
+              size="large"
+            >
+              Print {printFormat === 'thermal' ? 'Receipt' : 'Invoice'}
+            </Button>
+            <Button
+              variant="outlined"
+              onClick={handleCompleteIssue}
+              size="large"
+            >
+              New Issue
+            </Button>
+            <Button
+              onClick={() => navigate('/pharmacist/dashboard')}
+              size="large"
+            >
+              Go to Dashboard
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Notifications */}
+        <Snackbar
+          open={!!error}
+          autoHideDuration={6000}
+          onClose={() => setError(null)}
+          anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+        >
+          <Alert severity="error" onClose={() => setError(null)} sx={{ width: '100%' }}>
+            {error}
+          </Alert>
+        </Snackbar>
+
+        <Snackbar
+          open={!!success}
+          autoHideDuration={3000}
+          onClose={() => setSuccess(null)}
+          anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+        >
+          <Alert severity="success" onClose={() => setSuccess(null)} sx={{ width: '100%' }}>
+            {success}
+          </Alert>
+        </Snackbar>
+      </Container>
+    </Layout>
+  );
+};
+
+export default IssueManagement;
