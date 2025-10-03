@@ -7,17 +7,19 @@ import {
   Avatar,
   IconButton,
   Chip,
+  Tooltip,
 } from '@mui/material';
 import { 
   Edit as EditIcon, 
   Delete as DeleteIcon,
   ShoppingCart as CartIcon,
+  History as HistoryIcon,
 } from '@mui/icons-material';
 import StockBadge from '../atoms/StockBadge';
 import CategoryChip from '../atoms/CategoryChip';
 import ExpiryDateBadge from '../atoms/ExpiryDateBadge';
 
-const ProductCard = ({ product, onEdit, onDelete, onIssue, viewMode = 'grid' }) => {
+const ProductCard = ({ product, onEdit, onDelete, onIssue, onViewHistory, viewMode = 'grid' }) => {
   if (viewMode === 'list') {
     return (
       <Card 
@@ -81,19 +83,32 @@ const ProductCard = ({ product, onEdit, onDelete, onIssue, viewMode = 'grid' }) 
 
             <Box display="flex" gap={0.5}>
               {onEdit && (
-                <IconButton size="small" onClick={() => onEdit(product)} color="primary">
-                  <EditIcon fontSize="small" />
-                </IconButton>
+                <Tooltip title="Edit Product">
+                  <IconButton size="small" onClick={() => onEdit(product)} color="primary">
+                    <EditIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
               )}
               {onIssue && (
-                <IconButton size="small" onClick={() => onIssue(product)} color="success">
-                  <CartIcon fontSize="small" />
-                </IconButton>
+                <Tooltip title="Issue Product">
+                  <IconButton size="small" onClick={() => onIssue(product)} color="success">
+                    <CartIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+              )}
+              {onViewHistory && (
+                <Tooltip title="View History">
+                  <IconButton size="small" onClick={() => onViewHistory(product)} color="info">
+                    <HistoryIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
               )}
               {onDelete && (
-                <IconButton size="small" onClick={() => onDelete(product)} color="error">
-                  <DeleteIcon fontSize="small" />
-                </IconButton>
+                <Tooltip title="Delete Product">
+                  <IconButton size="small" onClick={() => onDelete(product)} color="error">
+                    <DeleteIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
               )}
             </Box>
           </Box>
@@ -212,6 +227,38 @@ const ProductCard = ({ product, onEdit, onDelete, onIssue, viewMode = 'grid' }) 
               variant="outlined"
               sx={{ fontSize: '0.7rem' }}
             />
+          )}
+        </Box>
+
+        {/* Action Buttons */}
+        <Box display="flex" gap={0.5} mt={2} justifyContent="center" borderTop="1px solid #e0e0e0" pt={1.5}>
+          {onEdit && (
+            <Tooltip title="Edit Product">
+              <IconButton size="small" onClick={() => onEdit(product)} color="primary">
+                <EditIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          )}
+          {onIssue && (
+            <Tooltip title="Issue Product">
+              <IconButton size="small" onClick={() => onIssue(product)} color="success">
+                <CartIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          )}
+          {onViewHistory && (
+            <Tooltip title="View History">
+              <IconButton size="small" onClick={() => onViewHistory(product)} color="info">
+                <HistoryIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          )}
+          {onDelete && (
+            <Tooltip title="Delete Product">
+              <IconButton size="small" onClick={() => onDelete(product)} color="error">
+                <DeleteIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
           )}
         </Box>
       </CardContent>

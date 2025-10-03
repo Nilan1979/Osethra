@@ -64,25 +64,22 @@ const IssueManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [products, setProducts] = useState([]);
   const [cart, setCart] = useState([]);
-  // eslint-disable-next-line no-unused-vars
   const [showInvoice, setShowInvoice] = useState(false);
-  // eslint-disable-next-line no-unused-vars
   const [printFormat, setPrintFormat] = useState('a4'); // 'a4' or 'thermal'
   const [createdIssue, setCreatedIssue] = useState(null);
-  // eslint-disable-next-line no-unused-vars
   const [error, setError] = useState(null);
-  // eslint-disable-next-line no-unused-vars
   const [success, setSuccess] = useState(null);
   
   // Issue details
-  const [issueType, setIssueType] = useState('outpatient');
+  const [issueType, setIssueType] = useState('outpatient'); // eslint-disable-line no-unused-vars
   const [patientInfo, setPatientInfo] = useState({
     name: '',
+    contactNumber: '',
     id: '',
     bedNumber: '',
     wardId: ''
   });
-  const [departmentInfo, setDepartmentInfo] = useState({
+  const [departmentInfo, setDepartmentInfo] = useState({ // eslint-disable-line no-unused-vars
     name: '',
     id: '',
   });
@@ -196,28 +193,7 @@ const IssueManagement = () => {
       return false;
     }
 
-    if (issueType === 'outpatient' || issueType === 'inpatient' || issueType === 'emergency') {
-      if (!patientInfo.name.trim()) {
-        setError('Patient name is required');
-        return false;
-      }
-      if (!patientInfo.id.trim()) {
-        setError('Patient ID is required');
-        return false;
-      }
-      if (issueType === 'inpatient' && (!patientInfo.wardId.trim() || !patientInfo.bedNumber.trim())) {
-        setError('Ward ID and Bed Number are required for inpatient');
-        return false;
-      }
-    }
-
-    if (issueType === 'department') {
-      if (!departmentInfo.name.trim() || !departmentInfo.id.trim()) {
-        setError('Department name and ID are required');
-        return false;
-      }
-    }
-
+    // Patient info is optional, no validation needed
     return true;
   };
 
@@ -230,7 +206,7 @@ const IssueManagement = () => {
       setError(null);
 
       const issueData = {
-        type: issueType,
+        type: 'general', // Set a default type since we removed issue type selection
         items: cart.map(item => ({
           productId: item._id,
           quantity: item.quantity,
@@ -241,13 +217,11 @@ const IssueManagement = () => {
         notes: notes.trim(),
       };
 
-      // Add patient or department info
-      if (issueType === 'department') {
-        issueData.department = departmentInfo;
-      } else {
+      // Add patient info only if name or contact is provided
+      if (patientInfo.name.trim() || patientInfo.contactNumber?.trim()) {
         issueData.patient = {
-          ...patientInfo,
-          type: issueType,
+          name: patientInfo.name.trim() || 'N/A',
+          contactNumber: patientInfo.contactNumber?.trim() || 'N/A',
         };
       }
 
@@ -256,9 +230,8 @@ const IssueManagement = () => {
 
       setCreatedIssue({
         ...issue,
-        issueType,
-        patient: issueData.patient,
-        department: issueData.department,
+        issueType: 'general',
+        patient: issueData.patient || null,
         items: cart,
       });
 
@@ -306,7 +279,6 @@ const IssueManagement = () => {
   });
 
   // Print handlers
-  // eslint-disable-next-line no-unused-vars
   const handlePrint = () => {
     if (printFormat === 'thermal') {
       handlePrintThermal();
@@ -316,12 +288,11 @@ const IssueManagement = () => {
   };
 
   // Reset form after printing
-  // eslint-disable-next-line no-unused-vars
   const handleCompleteIssue = () => {
     setShowInvoice(false);
     setCreatedIssue(null);
     setCart([]);
-    setPatientInfo({ name: '', id: '', bedNumber: '', wardId: '' });
+    setPatientInfo({ name: '', contactNumber: '', id: '', bedNumber: '', wardId: '' });
     setDepartmentInfo({ name: '', id: '' });
     setNotes('');
     setIssueType('outpatient');
@@ -373,92 +344,83 @@ const IssueManagement = () => {
           </Box>
         </Paper>
 
-        <Grid container spacing={4} alignItems="flex-start">
-          {/* Left Panel - Product Selection */}
-          <Grid item xs={12} md={7}>
-            <Card elevation={2} sx={{ borderRadius: 4, boxShadow: 2, p: 2 }}>
-              <CardContent sx={{ p: 3 }}>
-                {/* Product Search Bar */}
-                <Box mb={3}>
-                  <Autocomplete
-                    freeSolo
-                    options={filteredProducts}
-                    getOptionLabel={(option) => typeof option === 'string' ? option : `${option.name} (${option.sku})`}
-                    renderOption={(props, option) => (
-                      <Box component="li" {...props} key={option._id} display="flex" alignItems="center" gap={2}>
-                        <Box flex={1}>
-                          <Typography variant="body1" fontWeight="bold" color={option.currentStock < 10 ? 'error' : 'inherit'}>
-                            {option.name}
-                          </Typography>
-                          <Box display="flex" gap={1} alignItems="center" mt={0.5}>
-                            <Chip label={option.category} size="small" color="primary" sx={{ fontSize: '0.7rem', height: 20 }} />
-                            <Chip label={`Stock: ${option.currentStock}`} size="small" color={option.currentStock < 10 ? 'error' : 'success'} sx={{ fontSize: '0.7rem', height: 20 }} />
-                            <Chip label={`LKR ${option.sellingPrice.toFixed(2)}`} size="small" sx={{ fontSize: '0.7rem', height: 20 }} />
-                            {option.expiryDate && (
-                              <Chip label={`Exp: ${new Date(option.expiryDate).toLocaleDateString('en-GB')}`} size="small" color={new Date(option.expiryDate) < new Date() ? 'error' : 'warning'} sx={{ fontSize: '0.7rem', height: 20 }} />
-                            )}
-                          </Box>
-                        </Box>
-                        <IconButton size="small" color="primary" onClick={(e) => { e.stopPropagation(); handleAddToCart(option); }}>
-                          <AddIcon />
-                        </IconButton>
-                      </Box>
-                    )}
-                    inputValue={searchTerm}
-                    onInputChange={(_, newValue) => setSearchTerm(newValue)}
-                    onChange={(_, value) => { if (value && typeof value === 'object') { handleAddToCart(value); } }}
-                    renderInput={(params) => (
-                      <TextField
-                        {...params}
-                        placeholder="Search products by name, SKU, or category..."
-                        variant="outlined"
-                        fullWidth
-                        autoFocus
-                        InputProps={{ ...params.InputProps, startAdornment: (<InputAdornment position="start"><SearchIcon /></InputAdornment>) }}
-                        sx={{ fontSize: '1.2rem', mb: 2, bgcolor: '#f5f5f5', borderRadius: 2, boxShadow: 1 }}
-                      />
-                    )}
-                    loading={loading}
-                    loadingText="Loading products..."
-                    noOptionsText="No products found"
-                  />
-                </Box>
-
-                {/* Quick Add Section (Top 5 products) */}
-                <Box mb={3}>
-                  <Typography variant="subtitle1" fontWeight="bold" mb={1}>
-                    Quick Add
+        {/* Product Search Bar - Full Width */}
+        <Paper elevation={2} sx={{ p: 3, mb: 3, borderRadius: 3 }}>
+          <Autocomplete
+            key={cart.length}
+            freeSolo
+            options={filteredProducts}
+            getOptionLabel={(option) => typeof option === 'string' ? option : `${option.name} (${option.sku})`}
+            renderOption={(props, option) => (
+              <Box component="li" {...props} key={option._id} display="flex" alignItems="center" gap={2}>
+                <Box flex={1}>
+                  <Typography variant="body1" fontWeight="bold" color={option.currentStock < 10 ? 'error' : 'inherit'}>
+                    {option.name}
                   </Typography>
-                  <Box display="flex" gap={2} flexWrap="wrap">
-                    {products.slice(0, 5).map((product) => (
-                      <Button key={product._id} variant="outlined" color="primary" sx={{ borderRadius: 2, minWidth: 120 }} onClick={() => handleAddToCart(product)}>
-                        {product.name}
-                      </Button>
-                    ))}
+                  <Box display="flex" gap={1} alignItems="center" mt={0.5}>
+                    <Chip label={option.category} size="small" color="primary" sx={{ fontSize: '0.7rem', height: 20 }} />
+                    <Chip label={`Stock: ${option.currentStock}`} size="small" color={option.currentStock < 10 ? 'error' : 'success'} sx={{ fontSize: '0.7rem', height: 20 }} />
+                    <Chip label={`LKR ${option.sellingPrice.toFixed(2)}`} size="small" sx={{ fontSize: '0.7rem', height: 20 }} />
+                    {option.expiryDate && (
+                      <Chip label={`Exp: ${new Date(option.expiryDate).toLocaleDateString('en-GB')}`} size="small" color={new Date(option.expiryDate) < new Date() ? 'error' : 'warning'} sx={{ fontSize: '0.7rem', height: 20 }} />
+                    )}
                   </Box>
                 </Box>
+                <IconButton size="small" color="primary" onClick={(e) => { e.stopPropagation(); handleAddToCart(option); }}>
+                  <AddIcon />
+                </IconButton>
+              </Box>
+            )}
+            inputValue={searchTerm}
+            onInputChange={(_, newValue) => setSearchTerm(newValue)}
+            onChange={(_, value) => { if (value && typeof value === 'object') { handleAddToCart(value); } }}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                placeholder="Search products by name, SKU, or category..."
+                variant="outlined"
+                fullWidth
+                autoFocus
+                InputProps={{ ...params.InputProps, startAdornment: (<InputAdornment position="start"><SearchIcon /></InputAdornment>) }}
+                sx={{ bgcolor: 'white', borderRadius: 2 }}
+              />
+            )}
+            loading={loading}
+            loadingText="Loading products..."
+            noOptionsText="No products found"
+          />
+        </Paper>
 
+        {/* Cart and Order Summary - Side by Side */}
+        <Box display="flex" gap={4} flexDirection={{ xs: 'column', md: 'row' }} alignItems="flex-start">
+          {/* Left Panel - Cart (2/3) */}
+          <Box flex="2" minWidth={0}>
+            <Card elevation={2} sx={{ borderRadius: 4, boxShadow: 2 }}>
+              <CardContent sx={{ p: 3 }}>
                 {/* Cart Items */}
-                <Box mb={2}>
-                  <Typography variant="h6" fontWeight="bold" mb={1}>
-                    Cart Items <Chip label={cart.length} color="primary" size="small" sx={{ ml: 1 }} />
-                  </Typography>
+                <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                  <Box display="flex" alignItems="center" gap={1}>
+                    <Typography variant="h6" fontWeight="bold">
+                      Cart Items
+                    </Typography>
+                    <Chip label={cart.length} color="primary" size="small" />
+                  </Box>
                   {cart.length > 0 && (
-                    <Button startIcon={<ClearAllIcon />} color="error" onClick={handleClearCart} size="small" sx={{ float: 'right', mb: 2 }}>
+                    <Button startIcon={<ClearAllIcon />} color="error" onClick={handleClearCart} size="small" variant="outlined">
                       Clear All
                     </Button>
                   )}
                 </Box>
 
-                <Paper variant="outlined" sx={{ maxHeight: 400, overflow: 'auto', borderRadius: 2, boxShadow: 1 }}>
+                <Paper variant="outlined" sx={{ maxHeight: 500, overflow: 'auto', borderRadius: 2, boxShadow: 1 }}>
                   <Table stickyHeader>
                     <TableHead>
                       <TableRow>
-                        <TableCell sx={{ fontWeight: 'bold', bgcolor: '#f5f5f5' }}>Product</TableCell>
-                        <TableCell sx={{ fontWeight: 'bold', bgcolor: '#f5f5f5' }} align="center">Qty</TableCell>
-                        <TableCell sx={{ fontWeight: 'bold', bgcolor: '#f5f5f5' }} align="right">Unit Price</TableCell>
-                        <TableCell sx={{ fontWeight: 'bold', bgcolor: '#f5f5f5' }} align="right">Total</TableCell>
-                        <TableCell sx={{ fontWeight: 'bold', bgcolor: '#f5f5f5' }} align="center">Action</TableCell>
+                        <TableCell sx={{ fontWeight: 'bold', bgcolor: '#f5f5f5', py: 2 }}>Product</TableCell>
+                        <TableCell sx={{ fontWeight: 'bold', bgcolor: '#f5f5f5', py: 2, minWidth: 200 }} align="center">Qty</TableCell>
+                        <TableCell sx={{ fontWeight: 'bold', bgcolor: '#f5f5f5', py: 2 }} align="right">Unit Price</TableCell>
+                        <TableCell sx={{ fontWeight: 'bold', bgcolor: '#f5f5f5', py: 2 }} align="right">Total</TableCell>
+                        <TableCell sx={{ fontWeight: 'bold', bgcolor: '#f5f5f5', py: 2 }} align="center">Action</TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
@@ -471,23 +433,70 @@ const IssueManagement = () => {
                         </TableRow>
                       ) : (
                         cart.map((item) => (
-                          <TableRow key={item._id} hover>
-                            <TableCell>
-                              <Typography variant="body2" fontWeight="bold">{item.productName}</Typography>
+                          <TableRow key={item._id} hover sx={{ '&:hover': { bgcolor: '#f9f9f9' } }}>
+                            <TableCell sx={{ py: 2.5 }}>
+                              <Typography variant="body2" fontWeight="600" sx={{ mb: 0.5 }}>{item.productName}</Typography>
                               <Typography variant="caption" color="text.secondary">{item.sku}</Typography>
-                              {item.availableStock < 10 && (<Chip label={`Only ${item.availableStock} left!`} size="small" color="warning" sx={{ height: 20, fontSize: '0.65rem', mt: 0.5 }} />)}
+                              {item.availableStock < 10 && (
+                                <Box mt={0.5}>
+                                  <Chip label={`Only ${item.availableStock} left!`} size="small" color="warning" sx={{ height: 20, fontSize: '0.65rem' }} />
+                                </Box>
+                              )}
                             </TableCell>
-                            <TableCell align="center">
-                              <Box display="flex" alignItems="center" justifyContent="center">
-                                <IconButton size="small" onClick={() => handleUpdateQuantity(item._id, item.quantity - 1)} color="primary"><RemoveIcon fontSize="small" /></IconButton>
-                                <TextField value={item.quantity} onChange={(e) => { const val = parseInt(e.target.value) || 0; handleUpdateQuantity(item._id, val); }} type="number" size="small" sx={{ width: 60, mx: 1, '& input': { textAlign: 'center', fontWeight: 'bold' } }} inputProps={{ min: 1, max: item.availableStock }} />
-                                <IconButton size="small" onClick={() => handleUpdateQuantity(item._id, item.quantity + 1)} color="primary" disabled={item.quantity >= item.availableStock}><AddIcon fontSize="small" /></IconButton>
+                            <TableCell align="center" sx={{ py: 2.5 }}>
+                              <Box display="flex" flexDirection="column" alignItems="center" gap={1}>
+                                <Box display="flex" alignItems="center" justifyContent="center" gap={0.5}>
+                                  <IconButton 
+                                    size="small" 
+                                    onClick={() => handleUpdateQuantity(item._id, item.quantity - 1)} 
+                                    color="primary" 
+                                    sx={{ border: '1px solid #e0e0e0' }}
+                                  >
+                                    <RemoveIcon fontSize="small" />
+                                  </IconButton>
+                                  <TextField 
+                                    value={item.quantity} 
+                                    onChange={(e) => { const val = parseInt(e.target.value) || 0; handleUpdateQuantity(item._id, val); }} 
+                                    type="number" 
+                                    size="small" 
+                                    sx={{ 
+                                      width: 70, 
+                                      '& input': { textAlign: 'center', fontWeight: 'bold', fontSize: '1rem', py: 1 },
+                                      '& .MuiOutlinedInput-root': { borderRadius: 2 }
+                                    }} 
+                                    inputProps={{ min: 1, max: item.availableStock }} 
+                                  />
+                                  <IconButton 
+                                    size="small" 
+                                    onClick={() => handleUpdateQuantity(item._id, item.quantity + 1)} 
+                                    color="primary" 
+                                    disabled={item.quantity >= item.availableStock} 
+                                    sx={{ border: '1px solid #e0e0e0' }}
+                                  >
+                                    <AddIcon fontSize="small" />
+                                  </IconButton>
+                                </Box>
+                                <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>Max: {item.availableStock}</Typography>
                               </Box>
-                              <Typography variant="caption" color="text.secondary">Max: {item.availableStock}</Typography>
                             </TableCell>
-                            <TableCell align="right"><Typography variant="body2">LKR {item.unitPrice.toFixed(2)}</Typography></TableCell>
-                            <TableCell align="right"><Typography variant="body2" fontWeight="bold">LKR {item.totalPrice.toFixed(2)}</Typography></TableCell>
-                            <TableCell align="center"><Tooltip title="Remove from cart"><IconButton size="small" color="error" onClick={() => handleRemoveFromCart(item._id)}><DeleteIcon fontSize="small" /></IconButton></Tooltip></TableCell>
+                            <TableCell align="right" sx={{ py: 2.5 }}>
+                              <Typography variant="body2" fontWeight="500">LKR {item.unitPrice.toFixed(2)}</Typography>
+                            </TableCell>
+                            <TableCell align="right" sx={{ py: 2.5 }}>
+                              <Typography variant="body2" fontWeight="700" color="primary">LKR {item.totalPrice.toFixed(2)}</Typography>
+                            </TableCell>
+                            <TableCell align="center" sx={{ py: 2.5 }}>
+                              <Tooltip title="Remove from cart">
+                                <IconButton 
+                                  size="small" 
+                                  color="error" 
+                                  onClick={() => handleRemoveFromCart(item._id)} 
+                                  sx={{ '&:hover': { bgcolor: '#ffebee' } }}
+                                >
+                                  <DeleteIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                            </TableCell>
                           </TableRow>
                         ))
                       )}
@@ -496,12 +505,12 @@ const IssueManagement = () => {
                 </Paper>
               </CardContent>
             </Card>
-          </Grid>
+          </Box>
 
-          {/* Right Panel - Sticky Summary Sidebar */}
-          <Grid item xs={12} md={5}>
+          {/* Right Panel - Order Summary (1/3) */}
+          <Box flex="1" minWidth={0}>
             <Box sx={{ position: 'sticky', top: 32 }}>
-              <Card elevation={4} sx={{ borderRadius: 4, boxShadow: 4, p: 2, bgcolor: '#f8f9fa' }}>
+              <Card elevation={4} sx={{ borderRadius: 4, boxShadow: 4, bgcolor: '#f8f9fa' }}>
                 <CardContent sx={{ p: 3 }}>
                   <Typography variant="h5" fontWeight="bold" gutterBottom color="primary">Order Summary</Typography>
                   <Divider sx={{ mb: 2 }} />
@@ -525,29 +534,24 @@ const IssueManagement = () => {
                   </Box>
                   <Divider sx={{ my: 2 }} />
                   <Box mb={2}>
-                    <TextField select fullWidth label="Issue Type" value={issueType} onChange={(e) => setIssueType(e.target.value)} sx={{ mb: 2 }} SelectProps={{ native: true }}>
-                      <option value="outpatient">Outpatient</option>
-                      <option value="inpatient">Inpatient</option>
-                      <option value="department">Department</option>
-                      <option value="emergency">Emergency</option>
-                    </TextField>
-                    {issueType === 'department' ? (
-                      <>
-                        <TextField fullWidth label="Department Name" value={departmentInfo.name} onChange={(e) => setDepartmentInfo({ ...departmentInfo, name: e.target.value })} sx={{ mb: 2 }} />
-                        <TextField fullWidth label="Department ID" value={departmentInfo.id} onChange={(e) => setDepartmentInfo({ ...departmentInfo, id: e.target.value })} sx={{ mb: 2 }} />
-                      </>
-                    ) : (
-                      <>
-                        <TextField fullWidth label="Patient Name" value={patientInfo.name} onChange={(e) => setPatientInfo({ ...patientInfo, name: e.target.value })} sx={{ mb: 2 }} InputProps={{ startAdornment: (<InputAdornment position="start"><HospitalIcon fontSize="small" /></InputAdornment>) }} />
-                        <TextField fullWidth label="Patient ID" value={patientInfo.id} onChange={(e) => setPatientInfo({ ...patientInfo, id: e.target.value })} sx={{ mb: 2 }} />
-                        {issueType === 'inpatient' && (
-                          <Grid container spacing={2} sx={{ mb: 2 }}>
-                            <Grid item xs={6}><TextField fullWidth label="Ward ID" value={patientInfo.wardId} onChange={(e) => setPatientInfo({ ...patientInfo, wardId: e.target.value })} /></Grid>
-                            <Grid item xs={6}><TextField fullWidth label="Bed Number" value={patientInfo.bedNumber} onChange={(e) => setPatientInfo({ ...patientInfo, bedNumber: e.target.value })} /></Grid>
-                          </Grid>
-                        )}
-                      </>
-                    )}
+                    <Typography variant="subtitle1" fontWeight="600" gutterBottom>Patient Information (Optional)</Typography>
+                    <TextField 
+                      fullWidth 
+                      label="Patient Name" 
+                      value={patientInfo.name} 
+                      onChange={(e) => setPatientInfo({ ...patientInfo, name: e.target.value })} 
+                      sx={{ mb: 2 }} 
+                      placeholder="Enter patient name (optional)"
+                    />
+                    <TextField 
+                      fullWidth 
+                      label="Patient Contact Number" 
+                      value={patientInfo.contactNumber || ''} 
+                      onChange={(e) => setPatientInfo({ ...patientInfo, contactNumber: e.target.value })} 
+                      sx={{ mb: 2 }} 
+                      placeholder="Enter contact number (optional)"
+                      type="tel"
+                    />
                     <TextField fullWidth label="Notes (Optional)" value={notes} onChange={(e) => setNotes(e.target.value)} multiline rows={2} sx={{ mb: 2 }} />
                   </Box>
                   <Divider sx={{ my: 2 }} />
@@ -560,12 +564,112 @@ const IssueManagement = () => {
                 </CardContent>
               </Card>
             </Box>
-          </Grid>
-        </Grid>
+          </Box>
+        </Box>
 
-        {/* Confirmation Modal before finalizing issue */}
-        {/* ...existing code for Invoice Dialog, Snackbar, etc... */}
-        {/* ...existing code... */}
+        {/* Invoice Dialog */}
+        <Dialog
+          open={showInvoice}
+          onClose={() => {}}
+          maxWidth={printFormat === 'thermal' ? 'xs' : 'md'}
+          fullWidth
+          PaperProps={{
+            sx: { minHeight: printFormat === 'thermal' ? 'auto' : '80vh' }
+          }}
+        >
+          <DialogTitle sx={{ bgcolor: '#2e7d32', color: 'white', display: 'flex', alignItems: 'center', gap: 1 }}>
+            <CheckCircleIcon />
+            <Typography component="span" variant="h6" fontWeight="bold">
+              Issue Completed Successfully!
+            </Typography>
+          </DialogTitle>
+          <DialogContent sx={{ p: 0 }}>
+            {/* Print Format Toggle */}
+            <Box sx={{ p: 2, bgcolor: '#f5f5f5', borderBottom: '1px solid #e0e0e0' }}>
+              <Box display="flex" justifyContent="center" alignItems="center" gap={2}>
+                <Typography variant="body2" fontWeight="500">
+                  Print Format:
+                </Typography>
+                <ToggleButtonGroup
+                  value={printFormat}
+                  exclusive
+                  onChange={(e, newFormat) => newFormat && setPrintFormat(newFormat)}
+                  size="small"
+                >
+                  <ToggleButton value="a4">
+                    <DescriptionIcon fontSize="small" sx={{ mr: 0.5 }} />
+                    A4 Invoice
+                  </ToggleButton>
+                  <ToggleButton value="thermal">
+                    <ReceiptLongIcon fontSize="small" sx={{ mr: 0.5 }} />
+                    Thermal Receipt
+                  </ToggleButton>
+                </ToggleButtonGroup>
+              </Box>
+            </Box>
+
+            {/* Invoice Preview */}
+            <Box sx={{ maxHeight: '70vh', overflow: 'auto', bgcolor: printFormat === 'thermal' ? 'white' : '#f5f5f5', p: printFormat === 'thermal' ? 0 : 2 }}>
+              {createdIssue && (
+                <>
+                  {printFormat === 'a4' ? (
+                    <InvoiceBill ref={invoiceRef} issueData={createdIssue} />
+                  ) : (
+                    <Box display="flex" justifyContent="center">
+                      <ThermalReceipt ref={thermalRef} issueData={createdIssue} />
+                    </Box>
+                  )}
+                </>
+              )}
+            </Box>
+          </DialogContent>
+          <DialogActions sx={{ p: 3, bgcolor: '#f5f5f5' }}>
+            <Button
+              variant="contained"
+              startIcon={<PrintIcon />}
+              onClick={handlePrint}
+              size="large"
+            >
+              Print {printFormat === 'thermal' ? 'Receipt' : 'Invoice'}
+            </Button>
+            <Button
+              variant="outlined"
+              onClick={handleCompleteIssue}
+              size="large"
+            >
+              New Issue
+            </Button>
+            <Button
+              onClick={() => navigate('/pharmacist/dashboard')}
+              size="large"
+            >
+              Go to Dashboard
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Notifications */}
+        <Snackbar
+          open={!!error}
+          autoHideDuration={6000}
+          onClose={() => setError(null)}
+          anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+        >
+          <Alert severity="error" onClose={() => setError(null)} sx={{ width: '100%' }}>
+            {error}
+          </Alert>
+        </Snackbar>
+
+        <Snackbar
+          open={!!success}
+          autoHideDuration={3000}
+          onClose={() => setSuccess(null)}
+          anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+        >
+          <Alert severity="success" onClose={() => setSuccess(null)} sx={{ width: '100%' }}>
+            {success}
+          </Alert>
+        </Snackbar>
       </Container>
     </Layout>
   );

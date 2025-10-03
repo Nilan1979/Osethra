@@ -65,15 +65,16 @@ const ThermalReceipt = forwardRef(({ issueData, hospitalInfo = {
         <Typography sx={{ fontSize: '11px', fontFamily: 'inherit' }}>
           Date: {currentDate.toLocaleDateString('en-GB')} {currentDate.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
         </Typography>
-        <Typography sx={{ fontSize: '11px', fontFamily: 'inherit' }}>
-          Type: {issueData.issueType?.toUpperCase()}
-        </Typography>
-        <Typography sx={{ fontSize: '11px', fontFamily: 'inherit' }}>
-          Patient: {issueData.patient?.name || issueData.department?.name || 'N/A'}
-        </Typography>
-        <Typography sx={{ fontSize: '11px', fontFamily: 'inherit' }}>
-          ID: {issueData.patient?.id || issueData.department?.id || 'N/A'}
-        </Typography>
+        {issueData.patient && (
+          <>
+            <Typography sx={{ fontSize: '11px', fontFamily: 'inherit' }}>
+              Patient: {issueData.patient.name}
+            </Typography>
+            <Typography sx={{ fontSize: '11px', fontFamily: 'inherit' }}>
+              Contact: {issueData.patient.contactNumber}
+            </Typography>
+          </>
+        )}
         <Typography sx={{ fontSize: '11px', fontFamily: 'inherit' }}>
           Cashier: {user?.name || 'Pharmacist'}
         </Typography>

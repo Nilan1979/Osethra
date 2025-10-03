@@ -39,13 +39,13 @@ const issueItemSchema = new Schema({
 const issueSchema = new Schema({
     issueNumber: {
         type: String,
-        required: true,
-        unique: true
+        unique: true,
+        sparse: true // Allow undefined during creation, but enforce uniqueness when present
     },
     type: {
         type: String,
         required: [true, 'Issue type is required'],
-        enum: ['outpatient', 'inpatient', 'department', 'emergency']
+        enum: ['outpatient', 'inpatient', 'department', 'emergency', 'general']
     },
     
     // Patient Information (for outpatient and inpatient)
@@ -54,6 +54,9 @@ const issueSchema = new Schema({
             type: String
         },
         name: {
+            type: String
+        },
+        contactNumber: {
             type: String
         },
         type: {
@@ -157,7 +160,7 @@ issueSchema.pre('save', async function(next) {
 });
 
 // Indexes for performance
-issueSchema.index({ issueNumber: 1 });
+// issueNumber index is automatically created by unique: true, so we don't need to declare it again
 issueSchema.index({ type: 1, status: 1 });
 issueSchema.index({ issueDate: -1 }); // For sorting by date
 issueSchema.index({ 'issuedBy.id': 1 });

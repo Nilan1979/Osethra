@@ -13,15 +13,15 @@ const productSchema = new Schema({
     sku: { 
         type: String, 
         required: [true, 'SKU is required'],
-        unique: true,
+        unique: true, // This automatically creates an index
         uppercase: true,
-        trim: true,
-        index: true
+        trim: true
+        // Removed index: true to avoid duplicate with unique: true
     },
     category: { 
         type: String, 
-        required: [true, 'Category is required'],
-        index: true
+        required: [true, 'Category is required']
+        // Removed index: true as it's included in compound index below
     },
     description: { 
         type: String,
@@ -94,7 +94,7 @@ const productSchema = new Schema({
     },
     expiryDate: { 
         type: Date,
-        index: true,
+        // Removed index: true as it's included in compound index below
         validate: {
             validator: function(value) {
                 if (!value || !this.manufactureDate) return true;
@@ -122,8 +122,8 @@ const productSchema = new Schema({
     status: { 
         type: String, 
         enum: ['active', 'inactive', 'discontinued'],
-        default: 'active',
-        index: true
+        default: 'active'
+        // Removed index: true as it's included in compound indexes below
     },
     notes: { 
         type: String,
@@ -138,7 +138,37 @@ const productSchema = new Schema({
     updatedBy: {
         type: Schema.Types.ObjectId,
         ref: 'User'
-    }
+    },
+    
+    // Order History - Track all issue transactions
+    orderHistory: [{
+        issueId: {
+            type: Schema.Types.ObjectId,
+            ref: 'Issue'
+        },
+        issueNumber: String,
+        type: {
+            type: String,
+            enum: ['issue', 'return', 'adjustment']
+        },
+        quantity: Number,
+        unitPrice: Number,
+        totalPrice: Number,
+        issuedTo: {
+            type: String,  // Patient name, department name, or 'General Issue'
+            default: 'General Issue'
+        },
+        issuedBy: {
+            id: Schema.Types.ObjectId,
+            name: String,
+            role: String
+        },
+        date: {
+            type: Date,
+            default: Date.now
+        },
+        notes: String
+    }]
 }, { 
     timestamps: true 
 });

@@ -337,47 +337,49 @@ const PrescriptionsManagement = () => {
                             </Box>
                           }
                           secondary={
-                            <Grid container spacing={2} mt={0.5}>
-                              <Grid item xs={12} sm={6} md={3}>
-                                <Typography variant="caption" color="text.secondary" display="block">
-                                  Prescription ID
-                                </Typography>
-                                <Typography variant="body2" fontWeight="500">
-                                  {prescription.id}
-                                </Typography>
+                            <Box component="div">
+                              <Grid container spacing={2} mt={0.5}>
+                                <Grid item xs={12} sm={6} md={3}>
+                                  <Typography variant="caption" color="text.secondary" display="block">
+                                    Prescription ID
+                                  </Typography>
+                                  <Typography variant="body2" fontWeight="500">
+                                    {prescription.id}
+                                  </Typography>
+                                </Grid>
+                                <Grid item xs={12} sm={6} md={3}>
+                                  <Typography variant="caption" color="text.secondary" display="block">
+                                    Patient ID
+                                  </Typography>
+                                  <Typography variant="body2" fontWeight="500">
+                                    {prescription.patientId}
+                                  </Typography>
+                                </Grid>
+                                <Grid item xs={12} sm={6} md={3}>
+                                  <Typography variant="caption" color="text.secondary" display="block">
+                                    Doctor
+                                  </Typography>
+                                  <Typography variant="body2" fontWeight="500">
+                                    {prescription.doctorName}
+                                  </Typography>
+                                </Grid>
+                                <Grid item xs={12} sm={6} md={3}>
+                                  <Typography variant="caption" color="text.secondary" display="block">
+                                    Date & Time
+                                  </Typography>
+                                  <Typography variant="body2" fontWeight="500">
+                                    {prescription.date} {prescription.time}
+                                  </Typography>
+                                </Grid>
+                                <Grid item xs={12}>
+                                  <Chip 
+                                    label={`${prescription.medications.length} medication${prescription.medications.length > 1 ? 's' : ''}`}
+                                    size="small"
+                                    variant="outlined"
+                                  />
+                                </Grid>
                               </Grid>
-                              <Grid item xs={12} sm={6} md={3}>
-                                <Typography variant="caption" color="text.secondary" display="block">
-                                  Patient ID
-                                </Typography>
-                                <Typography variant="body2" fontWeight="500">
-                                  {prescription.patientId}
-                                </Typography>
-                              </Grid>
-                              <Grid item xs={12} sm={6} md={3}>
-                                <Typography variant="caption" color="text.secondary" display="block">
-                                  Doctor
-                                </Typography>
-                                <Typography variant="body2" fontWeight="500">
-                                  {prescription.doctorName}
-                                </Typography>
-                              </Grid>
-                              <Grid item xs={12} sm={6} md={3}>
-                                <Typography variant="caption" color="text.secondary" display="block">
-                                  Date & Time
-                                </Typography>
-                                <Typography variant="body2" fontWeight="500">
-                                  {prescription.date} {prescription.time}
-                                </Typography>
-                              </Grid>
-                              <Grid item xs={12}>
-                                <Chip 
-                                  label={`${prescription.medications.length} medication${prescription.medications.length > 1 ? 's' : ''}`}
-                                  size="small"
-                                  variant="outlined"
-                                />
-                              </Grid>
-                            </Grid>
+                            </Box>
                           }
                         />
                         <IconButton>

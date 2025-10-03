@@ -80,7 +80,7 @@ const InvoiceBill = forwardRef(({ issueData, hospitalInfo = {
           PHARMACY INVOICE
         </Typography>
         <Typography variant="body2" color="text.secondary" mt={1}>
-          {issueData.issueType?.toUpperCase()} ISSUE
+          PRODUCT ISSUE
         </Typography>
       </Box>
 
@@ -89,15 +89,18 @@ const InvoiceBill = forwardRef(({ issueData, hospitalInfo = {
         <Grid item xs={6}>
           <Box>
             <Typography variant="subtitle2" fontWeight="bold">BILL TO:</Typography>
-            <Typography variant="body2">
-              {issueData.patient?.name || issueData.department?.name || 'N/A'}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              ID: {issueData.patient?.id || issueData.department?.id || 'N/A'}
-            </Typography>
-            {issueData.patient?.bedNumber && (
-              <Typography variant="body2" color="text.secondary">
-                Ward: {issueData.patient?.wardId} | Bed: {issueData.patient?.bedNumber}
+            {issueData.patient ? (
+              <>
+                <Typography variant="body2">
+                  {issueData.patient.name}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Contact: {issueData.patient.contactNumber}
+                </Typography>
+              </>
+            ) : (
+              <Typography variant="body2">
+                General Issue
               </Typography>
             )}
           </Box>

@@ -27,6 +27,7 @@ import Layout from '../../components/Layout/Layout';
 import ProductCard from '../../components/Inventory/molecules/ProductCard';
 import ProductSearchBar from '../../components/Inventory/molecules/ProductSearchBar';
 import CategorySelector from '../../components/Inventory/molecules/CategorySelector';
+import ProductHistory from '../../components/Inventory/ProductHistory';
 import inventoryAPI from '../../api/inventory';
 
 const ProductsManagement = () => {
@@ -41,6 +42,7 @@ const ProductsManagement = () => {
   const [error, setError] = useState(null);
   const [totalPages, setTotalPages] = useState(1);
   const [totalProducts, setTotalProducts] = useState(0);
+  const [historyDialog, setHistoryDialog] = useState({ open: false, productId: null, productName: '' });
   const itemsPerPage = 12;
 
   // Fetch products from API
@@ -102,6 +104,18 @@ const ProductsManagement = () => {
 
   const handleIssue = (product) => {
     navigate(`/pharmacist/issues/new?productId=${product._id}`);
+  };
+
+  const handleViewHistory = (product) => {
+    setHistoryDialog({
+      open: true,
+      productId: product._id,
+      productName: product.name
+    });
+  };
+
+  const handleCloseHistory = () => {
+    setHistoryDialog({ open: false, productId: null, productName: '' });
   };
 
   return (
@@ -266,6 +280,7 @@ const ProductsManagement = () => {
                         onEdit={handleEdit}
                         onDelete={handleDelete}
                         onIssue={handleIssue}
+                        onViewHistory={handleViewHistory}
                       />
                     </Box>
                   ))}
@@ -284,6 +299,7 @@ const ProductsManagement = () => {
                       onEdit={handleEdit}
                       onDelete={handleDelete}
                       onIssue={handleIssue}
+                      onViewHistory={handleViewHistory}
                       viewMode="list"
                     />
                   ))}
@@ -328,6 +344,14 @@ const ProductsManagement = () => {
           </>
         )}
       </Container>
+
+      {/* Product History Dialog */}
+      <ProductHistory
+        open={historyDialog.open}
+        onClose={handleCloseHistory}
+        productId={historyDialog.productId}
+        productName={historyDialog.productName}
+      />
     </Layout>
   );
 };

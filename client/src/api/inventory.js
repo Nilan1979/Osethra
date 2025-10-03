@@ -78,6 +78,17 @@ export const productsAPI = {
       throw error;
     }
   },
+
+  // Get product order history
+  getProductHistory: async (id, params = {}) => {
+    try {
+      const response = await api.get(`/api/inventory/products/${id}/history`, { params });
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching product history:', error);
+      throw error;
+    }
+  },
 };
 
 // Categories API
