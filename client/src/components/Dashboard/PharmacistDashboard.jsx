@@ -307,18 +307,6 @@ const PharmacistDashboard = () => {
             </Box>
             <Box display="flex" gap={2} flexWrap="wrap">
               <Button
-                variant="contained"
-                startIcon={<AddIcon />}
-                sx={{ 
-                  bgcolor: 'white', 
-                  color: '#2e7d32',
-                  '&:hover': { bgcolor: '#f5f5f5' }
-                }}
-                onClick={() => navigate('/pharmacist/products/add')}
-              >
-                Add Product
-              </Button>
-              <Button
                 variant="outlined"
                 startIcon={<ShippingIcon />}
                 sx={{ 

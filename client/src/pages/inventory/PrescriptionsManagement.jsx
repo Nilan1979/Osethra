@@ -82,11 +82,12 @@ const PrescriptionsManagement = () => {
           time: prescription.time,
           status: prescription.status,
           medications: prescription.medications.map(med => ({
-            name: med.medicationName,
+            name: med.name,  // Changed from med.medicationName to med.name
             dosage: med.dosage,
             quantity: med.quantity,
             duration: med.duration,
-            instructions: med.instructions
+            instructions: med.instructions,
+            frequency: med.frequency
           })),
           diagnosis: prescription.diagnosis,
           notes: prescription.notes,

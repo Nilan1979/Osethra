@@ -68,9 +68,11 @@ const ProductsManagement = () => {
 
       const response = await inventoryAPI.products.getAll(params);
       
+      console.log('API Response:', response.data); // Debug log
+      
       setProducts(response.data.products || []);
-      setTotalPages(response.data.pages || 1);
-      setTotalProducts(response.data.total || 0);
+      setTotalPages(response.data.pagination?.totalPages || 1);
+      setTotalProducts(response.data.pagination?.total || 0);
     } catch (err) {
       console.error('Error fetching products:', err);
       setError(err.response?.data?.message || 'Failed to fetch products');
@@ -237,10 +239,42 @@ const ProductsManagement = () => {
                 Showing {products.length} of {totalProducts} products
               </Typography>
               
-              <Grid container spacing={3}>
-                {products.map((product) => (
-                  <Grid item xs={12} sm={6} md={4} lg={3} key={product._id}>
+              {viewMode === 'grid' ? (
+                <Grid 
+                  container 
+                  spacing={3} 
+                  sx={{
+                    display: 'grid',
+                    gridTemplateColumns: {
+                      xs: '1fr',
+                      sm: 'repeat(2, 1fr)',
+                      md: 'repeat(3, 1fr)',
+                      lg: 'repeat(4, 1fr)'
+                    },
+                    gap: 3
+                  }}
+                >
+                  {products.map((product) => (
+                    <Box key={product._id}>
+                      <ProductCard 
+                        product={{
+                          ...product,
+                          id: product._id,
+                          stock: product.currentStock,
+                          unitPrice: product.sellingPrice,
+                        }}
+                        onEdit={handleEdit}
+                        onDelete={handleDelete}
+                        onIssue={handleIssue}
+                      />
+                    </Box>
+                  ))}
+                </Grid>
+              ) : (
+                <Box display="flex" flexDirection="column" gap={2}>
+                  {products.map((product) => (
                     <ProductCard 
+                      key={product._id}
                       product={{
                         ...product,
                         id: product._id,
@@ -250,10 +284,11 @@ const ProductsManagement = () => {
                       onEdit={handleEdit}
                       onDelete={handleDelete}
                       onIssue={handleIssue}
+                      viewMode="list"
                     />
-                  </Grid>
-                ))}
-              </Grid>
+                  ))}
+                </Box>
+              )}
 
               {products.length === 0 && (
                 <Card elevation={0} sx={{ p: 4, textAlign: 'center', border: '1px solid #e0e0e0' }}>
@@ -268,15 +303,26 @@ const ProductsManagement = () => {
             </Box>
 
             {/* Pagination */}
-            {totalPages > 1 && (
-              <Box display="flex" justifyContent="center" mt={4}>
-                <Pagination 
-                  count={totalPages}
-                  page={page}
-                  onChange={(e, value) => setPage(value)}
-                  color="primary"
-                  size="large"
-                />
+            {totalPages > 0 && (
+              <Box mt={4}>
+                <Box display="flex" justifyContent="center" alignItems="center" gap={3} mb={2}>
+                  <Typography variant="body2" color="text.secondary">
+                    Page {page} of {totalPages}
+                  </Typography>
+                </Box>
+                <Box display="flex" justifyContent="center">
+                  <Pagination 
+                    count={totalPages}
+                    page={page}
+                    onChange={(e, value) => setPage(value)}
+                    color="primary"
+                    size="large"
+                    showFirstButton
+                    showLastButton
+                    siblingCount={1}
+                    boundaryCount={1}
+                  />
+                </Box>
               </Box>
             )}
           </>
