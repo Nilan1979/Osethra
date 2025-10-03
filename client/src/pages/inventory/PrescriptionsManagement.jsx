@@ -128,8 +128,38 @@ const PrescriptionsManagement = () => {
   };
 
   const handleDispensePrescription = async (prescription) => {
-    // You can navigate to issues page or handle inline dispensing
-    navigate('/pharmacist/issues/new', { state: { prescription } });
+    try {
+      // Navigate to IssueManagement with prescription medications in cart
+      navigate('/pharmacist/issues', { 
+        state: { 
+          prescriptionData: {
+            prescription: prescription,
+            medications: prescription.medications,
+            patient: {
+              name: prescription.patientName,
+              id: prescription.patientId,
+            }
+          }
+        } 
+      });
+    } catch (err) {
+      setError(err.message || 'Failed to navigate to issue management');
+    }
+  };
+
+  const handleStatusChange = async (prescriptionId, newStatus) => {
+    try {
+      const response = await inventoryAPI.prescriptions.updatePrescriptionStatus(prescriptionId, newStatus);
+      
+      if (response.success) {
+        // Refresh prescriptions list
+        await fetchPrescriptions();
+        setError(null);
+      }
+    } catch (err) {
+      setError(err.message || 'Failed to update prescription status');
+      throw err;
+    }
   };
 
   return (
@@ -381,6 +411,7 @@ const PrescriptionsManagement = () => {
                               </Grid>
                             </Box>
                           }
+                          secondaryTypographyProps={{ component: 'div' }}
                         />
                         <IconButton>
                           <VisibilityIcon />
@@ -401,6 +432,7 @@ const PrescriptionsManagement = () => {
           onClose={() => setPrescriptionModalOpen(false)}
           prescription={selectedPrescription}
           onDispense={handleDispensePrescription}
+          onStatusChange={handleStatusChange}
         />
       </Container>
     </Layout>

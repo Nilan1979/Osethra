@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -16,6 +16,8 @@ import {
   Grid,
   Chip,
   Paper,
+  CircularProgress,
+  Alert,
 } from '@mui/material';
 import {
   Person as PersonIcon,
@@ -23,10 +25,69 @@ import {
   CalendarToday as CalendarIcon,
   AccessTime as TimeIcon,
   MedicalServices as MedicalIcon,
+  Undo as UndoIcon,
+  CheckCircle as CheckIcon,
 } from '@mui/icons-material';
 
-const PrescriptionDetailsModal = ({ open, onClose, prescription, onDispense }) => {
+const PrescriptionDetailsModal = ({ open, onClose, prescription, onDispense, onStatusChange }) => {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
   if (!prescription) return null;
+
+  const isPending = prescription.status === 'pending';
+  const isCompleted = prescription.status === 'completed';
+
+  const handleDispense = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      await onDispense(prescription);
+      onClose();
+    } catch (err) {
+      setError(err.message || 'Failed to dispense prescription');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleToggleStatus = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const newStatus = isCompleted ? 'pending' : 'completed';
+      await onStatusChange(prescription._id, newStatus);
+      onClose();
+    } catch (err) {
+      setError(err.message || 'Failed to update status');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getStatusChip = () => {
+    const statusConfig = {
+      pending: { label: 'Pending', color: 'warning', bgcolor: '#fff3e0', textColor: '#e65100' },
+      completed: { label: 'Completed', color: 'success', bgcolor: '#e8f5e9', textColor: '#2e7d32' },
+      cancelled: { label: 'Cancelled', color: 'error', bgcolor: '#ffebee', textColor: '#c62828' },
+      partial: { label: 'Partial', color: 'info', bgcolor: '#e3f2fd', textColor: '#1565c0' },
+    };
+
+    const config = statusConfig[prescription.status] || statusConfig.pending;
+
+    return (
+      <Chip 
+        label={config.label}
+        size="small" 
+        sx={{ 
+          bgcolor: config.bgcolor, 
+          color: config.textColor, 
+          fontWeight: 600,
+          border: `1px solid ${config.textColor}`
+        }}
+      />
+    );
+  };
 
   return (
     <Dialog 
@@ -40,18 +101,26 @@ const PrescriptionDetailsModal = ({ open, onClose, prescription, onDispense }) =
     >
       <DialogTitle sx={{ bgcolor: '#2e7d32', color: 'white', py: 2 }}>
         <Box display="flex" justifyContent="space-between" alignItems="center">
-          <Typography variant="h6" fontWeight="bold">
+          <Typography component="span" variant="h6" fontWeight="bold">
             Prescription Details
           </Typography>
-          <Chip 
-            label={prescription.id} 
-            size="small" 
-            sx={{ bgcolor: 'white', color: '#2e7d32', fontWeight: 600 }}
-          />
+          <Box display="flex" gap={1} alignItems="center">
+            {getStatusChip()}
+            <Chip 
+              label={prescription.id} 
+              size="small" 
+              sx={{ bgcolor: 'white', color: '#2e7d32', fontWeight: 600 }}
+            />
+          </Box>
         </Box>
       </DialogTitle>
 
       <DialogContent sx={{ mt: 2 }}>
+        {error && (
+          <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
+            {error}
+          </Alert>
+        )}
         {/* Patient & Doctor Info */}
         <Paper elevation={0} sx={{ p: 2, mb: 3, bgcolor: '#f5f5f5', borderRadius: 2 }}>
           <Grid container spacing={2}>
@@ -159,20 +228,44 @@ const PrescriptionDetailsModal = ({ open, onClose, prescription, onDispense }) =
       </DialogContent>
 
       <DialogActions sx={{ p: 2, gap: 1 }}>
-        <Button onClick={onClose} variant="outlined" color="inherit">
+        <Button onClick={onClose} variant="outlined" color="inherit" disabled={loading}>
           Close
         </Button>
-        <Button 
-          onClick={() => {
-            onDispense(prescription);
-            onClose();
-          }} 
-          variant="contained" 
-          color="primary"
-          startIcon={<MedicalIcon />}
-        >
-          Dispense Medication
-        </Button>
+        
+        {isCompleted && (
+          <Button 
+            onClick={handleToggleStatus}
+            variant="outlined"
+            color="warning"
+            startIcon={loading ? <CircularProgress size={16} /> : <UndoIcon />}
+            disabled={loading}
+          >
+            Revert to Pending
+          </Button>
+        )}
+        
+        {isPending && (
+          <>
+            <Button 
+              onClick={handleToggleStatus}
+              variant="outlined"
+              color="success"
+              startIcon={loading ? <CircularProgress size={16} /> : <CheckIcon />}
+              disabled={loading}
+            >
+              Mark as Completed
+            </Button>
+            <Button 
+              onClick={handleDispense}
+              variant="contained" 
+              color="primary"
+              startIcon={loading ? <CircularProgress size={16} /> : <MedicalIcon />}
+              disabled={loading}
+            >
+              Dispense & Print Bill
+            </Button>
+          </>
+        )}
       </DialogActions>
     </Dialog>
   );

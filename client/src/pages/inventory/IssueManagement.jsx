@@ -46,7 +46,7 @@ import {
   Description as DescriptionIcon,
   ReceiptLong as ReceiptLongIcon,
 } from '@mui/icons-material';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useReactToPrint } from 'react-to-print';
 import Layout from '../../components/Layout/Layout';
 import InvoiceBill from '../../components/Inventory/molecules/InvoiceBill';
@@ -55,6 +55,7 @@ import inventoryAPI from '../../api/inventory';
 
 const IssueManagement = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const invoiceRef = useRef();
   const thermalRef = useRef();
   
@@ -89,6 +90,80 @@ const IssueManagement = () => {
   useEffect(() => {
     fetchProducts();
   }, []);
+
+  // Handle prescription data from navigation
+  useEffect(() => {
+    const prescriptionData = location.state?.prescriptionData;
+    
+    if (prescriptionData && prescriptionData.medications) {
+      // Set patient info if available
+      if (prescriptionData.patient) {
+        setPatientInfo({
+          name: prescriptionData.patient.name || '',
+          contactNumber: '',
+          id: prescriptionData.patient.id || '',
+          bedNumber: '',
+          wardId: ''
+        });
+      }
+
+      // Set notes with prescription reference
+      if (prescriptionData.prescription?.id) {
+        setNotes(`Dispensed from prescription: ${prescriptionData.prescription.id}`);
+      }
+
+      // Load medications into cart
+      const loadPrescriptionToCart = async () => {
+        try {
+          setLoading(true);
+          const cartItems = [];
+
+          for (const med of prescriptionData.medications) {
+            // Find matching product by medication name
+            const product = products.find(p => 
+              p.name.toLowerCase() === med.name.toLowerCase()
+            );
+
+            if (product) {
+              cartItems.push({
+                _id: product._id,
+                productName: product.name,
+                sku: product.sku,
+                quantity: parseInt(med.quantity) || 1,
+                unitPrice: product.sellingPrice,
+                totalPrice: product.sellingPrice * (parseInt(med.quantity) || 1),
+                availableStock: product.currentStock,
+                batchNumber: product.batchNumber,
+                expiryDate: product.expiryDate,
+              });
+            } else {
+              console.warn(`Product not found for medication: ${med.name}`);
+            }
+          }
+
+          if (cartItems.length > 0) {
+            setCart(cartItems);
+            setSuccess(`Added ${cartItems.length} item(s) from prescription to cart`);
+          } else {
+            setError('No matching products found for prescription medications');
+          }
+        } catch (err) {
+          console.error('Error loading prescription to cart:', err);
+          setError('Failed to load prescription items');
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      // Only load if products are available
+      if (products.length > 0) {
+        loadPrescriptionToCart();
+      }
+
+      // Clear the location state to prevent reloading on component updates
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location, products, navigate]);
 
   const fetchProducts = async () => {
     try {
