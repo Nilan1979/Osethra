@@ -2,6 +2,8 @@ const express = require('express');
 const mongoose = require('mongoose');
 const appointmentRoutes = require('./Routes/AppointmentRoutes');
 const treatmentRoutes = require('./Routes/TreatmentRoutes');
+const patientRoutes = require('./Routes/patientRoute');
+const medicalRequestRoutes = require('./Routes/medicalRequestRoutes');
 
 const cors = require('cors');
 const dotenv = require('dotenv');
@@ -24,6 +26,9 @@ app.use("/api/treatments", treatmentRoutes);
 // Routes
 const userRoutes = require('./Routes/UserRoutes');
 app.use('/users', userRoutes);
+
+app.use('/api/patients', patientRoutes);
+app.use('/api/medical-requests', medicalRequestRoutes);
 
 // Connect DB
 mongoose.connect(process.env.MONGO_URI)
