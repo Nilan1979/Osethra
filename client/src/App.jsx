@@ -17,6 +17,7 @@ import NurseDashboard from './components/Dashboard/NurseDashboard';
 import PharmacistDashboard from './components/Dashboard/PharmacistDashboard';
 import ReceptionistDashboard from './components/Dashboard/ReceptionistDashboard';
 import ProtectedRoute from './components/ProtectedRoute';
+import Nurse from './components/NurseComponent/NurseD'; 
 
 // Appointment Management
 import NavBar from './components/NavBar';
@@ -130,6 +131,7 @@ function AppRoutes() {
       <Route path="/appointments/add" element={<ProtectedRoute><AddAppointment /></ProtectedRoute>} />
       <Route path="/appointments/:id/edit" element={<ProtectedRoute><EditAppointment /></ProtectedRoute>} />
       <Route path="/appointments/:id" element={<ProtectedRoute><AppointmentDetails /></ProtectedRoute>} />
+
       
       {/* Treatment Routes */}
       <Route
@@ -163,34 +165,45 @@ function AppRoutes() {
   );
 }
 
+function AppContent() {
+  const location = useLocation(); 
+
+  return (
+    <Box
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        minHeight: '100vh',
+        width: '100%',
+        bgcolor: 'background.default',
+      }}
+    >
+      {/* Hide navbar only on nurse dashboard */}
+      {location.pathname !== '/nurse/dashboard' && <NavBar />}
+
+      <Box
+        component="main"
+        sx={{
+          flex: 1,
+          width: '100%',
+          pt: { xs: 2, sm: 3, md: 4 },
+        }}
+      >
+        <AppRoutes />
+      </Box>
+
+      {location.pathname !== '/nurse/dashboard' && <Footer />}
+    </Box>
+  );
+}
+
 function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <AuthProvider>
         <Router>
-          <Box 
-            sx={{ 
-              display: 'flex', 
-              flexDirection: 'column', 
-              minHeight: '100vh',
-              width: '100%',
-              bgcolor: 'background.default'
-            }}
-          >
-            <NavBar />
-            <Box 
-              component="main" 
-              sx={{ 
-                flex: 1,
-                width: '100%',
-                pt: { xs: 2, sm: 3, md: 4 }
-              }}
-            >
-              <AppRoutes />
-            </Box>
-            <Footer />
-          </Box>
+          <AppContent />
         </Router>
       </AuthProvider>
     </ThemeProvider>
