@@ -39,12 +39,6 @@ import {
 
 const genders = ["Male", "Female", "Other"];
 
-// Background image
-const backgroundImage = `
-  linear-gradient(135deg, rgba(76, 175, 80, 0.05) 0%, rgba(56, 142, 60, 0.08) 100%),
-  url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%234caf50' fill-opacity='0.03' fill-rule='evenodd'/%3E%3C/svg%3E")
-`;
-
 const steps = ['Patient Information', 'Appointment Details', 'Review & Confirm'];
 
 export default function AddAppointment() {
@@ -55,8 +49,8 @@ export default function AddAppointment() {
     contact: "", 
     age: "", 
     gender: "", 
-    doctor: "", // Full doctor name with Dr. prefix
-    doctorId: "", // Store doctor's ID
+    doctor: "", 
+    doctorId: "", 
     date: "", 
     time: "", 
     reason: ""
@@ -66,6 +60,84 @@ export default function AddAppointment() {
   const [activeStep, setActiveStep] = useState(0);
   const [doctors, setDoctors] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [formErrors, setFormErrors] = useState({
+    name: "",
+    address: "",
+    contact: "",
+    age: "",
+    gender: "",
+    doctor: "",
+    date: "",
+    time: "",
+    reason: ""
+  });
+
+  // Validation
+  const validateField = (name, value) => {
+    switch (name) {
+      case 'name':
+        if (!value?.trim()) return 'Patient name is required';
+        if (!/^[a-zA-Z\s]{2,50}$/.test(value.trim())) {
+          return 'Name must be between 2-50 characters and contain only letters';
+        }
+        break;
+      case 'contact':
+        if (!value?.trim()) return 'Contact number is required';
+        if (!/^[0-9]{10}$/.test(value.trim())) {
+          return 'Contact number must be 10 digits';
+        }
+        break;
+      case 'age':
+        if (!value) return 'Age is required';
+        const age = parseInt(value);
+        if (isNaN(age) || age < 0 || age > 150) {
+          return 'Please enter a valid age between 0 and 150';
+        }
+        break;
+      case 'gender':
+        if (!value) return 'Gender is required';
+        if (!genders.includes(value)) {
+          return 'Please select a valid gender';
+        }
+        break;
+      case 'address':
+        if (!value?.trim()) return 'Address is required';
+        if (value.length < 5) {
+          return 'Address must be at least 5 characters long';
+        }
+        break;
+      case 'doctor':
+        if (!value) return 'Doctor selection is required';
+        break;
+      case 'date':
+        if (!value) return 'Appointment date is required';
+        const appointmentDate = new Date(value);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        if (appointmentDate < today) {
+          return 'Appointment date cannot be in the past';
+        }
+        break;
+      case 'time':
+        if (!value) return 'Appointment time is required';
+        const [hours, minutes] = value.split(':');
+        const appointmentTime = new Date();
+        appointmentTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+        const workStart = new Date().setHours(8, 0, 0, 0);
+        const workEnd = new Date().setHours(17, 0, 0, 0);
+        if (appointmentTime < workStart || appointmentTime > workEnd) {
+          return 'Appointment time must be between 8:00 AM and 5:00 PM';
+        }
+        break;
+      case 'reason':
+        if (!value?.trim()) return 'Reason for appointment is required';
+        if (value.length < 10) {
+          return 'Please provide a more detailed reason (minimum 10 characters)';
+        }
+        break;
+    }
+    return '';
+  };
 
   useEffect(() => {
     const fetchDoctors = async () => {
@@ -82,28 +154,66 @@ export default function AddAppointment() {
         setLoading(false);
       }
     };
-
     fetchDoctors();
   }, []);
+
   const navigate = useNavigate();
 
   const handleChange = (e) => {
-    if (e.target.name === 'doctor') {
-      const selectedDoctor = doctors.find(doc => doc._id === e.target.value);
+    const { name, value } = e.target;
+    if (name === 'doctor') {
+      const selectedDoctor = doctors.find(doc => doc._id === value);
       if (selectedDoctor) {
-        setForm({
-          ...form,
-          doctor: `Dr. ${selectedDoctor.name}`, // Store full doctor name with prefix
-          doctorId: selectedDoctor._id // Store doctor's ID
-        });
+        setForm(prev => ({
+          ...prev,
+          doctor: `Dr. ${selectedDoctor.name}`,
+          doctorId: selectedDoctor._id
+        }));
       }
     } else {
-      setForm({ ...form, [e.target.name]: e.target.value });
+      setForm(prev => ({ ...prev, [name]: value }));
     }
+    const error = validateField(name, value);
+    setFormErrors(prev => ({ ...prev, [name]: error }));
+  };
+
+  const validateStep = (step) => {
+    let isValid = true;
+    const fieldsToValidate = step === 0
+      ? ['name', 'contact', 'age', 'gender', 'address']
+      : step === 1
+      ? ['doctor', 'date', 'time', 'reason']
+      : [];
+    
+    // Clear previous errors
+    const newErrors = {};
+    fieldsToValidate.forEach(field => {
+      // Check for empty required fields
+      if (!form[field] && field !== 'reason') {
+        newErrors[field] = `${field.charAt(0).toUpperCase() + field.slice(1)} is required`;
+        isValid = false;
+      } else {
+        // Validate field value if not empty
+        const error = validateField(field, form[field]);
+        if (error) {
+          newErrors[field] = error;
+          isValid = false;
+        }
+      }
+    });
+    
+    setFormErrors(prev => ({ ...prev, ...newErrors }));
+    return isValid;
   };
 
   const handleNext = () => {
+    const isValid = validateStep(activeStep);
+    if (!isValid) {
+      setError('Please fill in all required fields correctly');
+      return;
+    }
     setActiveStep((prev) => prev + 1);
+    setError('');
   };
 
   const handleBack = () => {
@@ -112,21 +222,26 @@ export default function AddAppointment() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    if (!form.name || !form.contact || !form.doctor || !form.date || !form.time) {
-      setError("Please fill all required fields (name, contact, doctor, date, time).");
-      return;
+    for (const [field, value] of Object.entries(form)) {
+      const fieldError = validateField(field, value);
+      if (fieldError) {
+        setError(`${fieldError}`);
+        return;
+      }
     }
-
     try {
+      setLoading(true);
       await createAppointment(form);
       setSuccess("Appointment created successfully!");
+      setError("");
       setTimeout(() => {
         navigate("/appointments");
       }, 2000);
     } catch (err) {
       console.error(err);
       setError("Failed to create appointment. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -134,7 +249,7 @@ export default function AddAppointment() {
     switch (step) {
       case 0:
         return (
-          <Grid container spacing={3}>
+          <Grid container spacing={{ xs: 1.5, sm: 2 }}>
             <Grid item xs={12} md={6}>
               <TextField
                 name="name"
@@ -143,10 +258,12 @@ export default function AddAppointment() {
                 value={form.name}
                 onChange={handleChange}
                 required
+                error={!!formErrors.name}
+                helperText={formErrors.name}
+                sx={textFieldStyle}
                 InputProps={{
                   startAdornment: <Person sx={{ color: 'text.secondary', mr: 1 }} />
                 }}
-                sx={{ mb: 2 }}
               />
             </Grid>
             <Grid item xs={12} md={6}>
@@ -157,10 +274,12 @@ export default function AddAppointment() {
                 value={form.contact}
                 onChange={handleChange}
                 required
+                error={!!formErrors.contact}
+                helperText={formErrors.contact}
+                sx={textFieldStyle}
                 InputProps={{
                   startAdornment: <Phone sx={{ color: 'text.secondary', mr: 1 }} />
                 }}
-                sx={{ mb: 2 }}
               />
             </Grid>
             <Grid item xs={12}>
@@ -170,10 +289,13 @@ export default function AddAppointment() {
                 fullWidth
                 value={form.address}
                 onChange={handleChange}
+                required
+                error={!!formErrors.address}
+                helperText={formErrors.address}
+                sx={textFieldStyle}
                 InputProps={{
                   startAdornment: <Home sx={{ color: 'text.secondary', mr: 1 }} />
                 }}
-                sx={{ mb: 2 }}
               />
             </Grid>
             <Grid item xs={12} md={6}>
@@ -184,10 +306,13 @@ export default function AddAppointment() {
                 fullWidth
                 value={form.age}
                 onChange={handleChange}
+                required
+                error={!!formErrors.age}
+                helperText={formErrors.age}
+                sx={textFieldStyle}
                 InputProps={{
                   startAdornment: <Cake sx={{ color: 'text.secondary', mr: 1 }} />
                 }}
-                sx={{ mb: 2 }}
               />
             </Grid>
             <Grid item xs={12} md={6}>
@@ -198,30 +323,33 @@ export default function AddAppointment() {
                 fullWidth
                 value={form.gender}
                 onChange={handleChange}
+                required
+                error={!!formErrors.gender}
+                helperText={formErrors.gender}
+                sx={textFieldStyle}
                 InputProps={{
                   startAdornment: <Transgender sx={{ color: 'text.secondary', mr: 1 }} />
                 }}
-                sx={{ mb: 2 }}
               >
                 {genders.map(g => <MenuItem key={g} value={g}>{g}</MenuItem>)}
               </TextField>
             </Grid>
           </Grid>
         );
-      
       case 1:
         return (
-          <Grid container spacing={3}>
+          <Grid container spacing={{ xs: 1.5, sm: 2 }}>
             <Grid item xs={12} md={6}>
               <TextField
                 select
                 name="doctor"
                 label="Select Doctor"
                 fullWidth
-                value={form.doctorId} // Use doctor ID as value
+                value={form.doctorId}
                 onChange={handleChange}
                 required
                 disabled={loading}
+                sx={textFieldStyle}
                 InputProps={{
                   startAdornment: loading ? (
                     <CircularProgress size={20} sx={{ mr: 1 }} />
@@ -229,7 +357,6 @@ export default function AddAppointment() {
                     <MedicalServices sx={{ color: 'text.secondary', mr: 1 }} />
                   )
                 }}
-                sx={{ mb: 2 }}
               >
                 {doctors && doctors.length > 0 ? (
                   doctors.map(doctor => (
@@ -252,10 +379,12 @@ export default function AddAppointment() {
                 value={form.date}
                 onChange={handleChange}
                 required
+                error={!!formErrors.date}
+                helperText={formErrors.date}
+                sx={textFieldStyle}
                 InputProps={{
                   startAdornment: <CalendarToday sx={{ color: 'text.secondary', mr: 1 }} />
                 }}
-                sx={{ mb: 2 }}
               />
             </Grid>
             <Grid item xs={12} md={6}>
@@ -268,10 +397,12 @@ export default function AddAppointment() {
                 value={form.time}
                 onChange={handleChange}
                 required
+                error={!!formErrors.time}
+                helperText={formErrors.time}
+                sx={textFieldStyle}
                 InputProps={{
                   startAdornment: <Schedule sx={{ color: 'text.secondary', mr: 1 }} />
                 }}
-                sx={{ mb: 2 }}
               />
             </Grid>
             <Grid item xs={12}>
@@ -283,22 +414,20 @@ export default function AddAppointment() {
                 rows={4}
                 value={form.reason}
                 onChange={handleChange}
+                sx={textFieldStyle}
                 InputProps={{
                   startAdornment: <Description sx={{ color: 'text.secondary', mr: 1, mt: 1, alignSelf: 'flex-start' }} />
                 }}
-                sx={{ mb: 2 }}
               />
             </Grid>
           </Grid>
         );
-      
       case 2:
         return (
-          <Box sx={{ p: 2 }}>
+          <Box sx={reviewBoxStyle}>
             <Typography variant="h6" gutterBottom sx={{ color: theme.palette.primary.main, mb: 3 }}>
               Review Appointment Details
             </Typography>
-            
             <Grid container spacing={2}>
               <Grid item xs={12} md={6}>
                 <InfoRow label="Patient Name" value={form.name} />
@@ -318,7 +447,6 @@ export default function AddAppointment() {
             </Grid>
           </Box>
         );
-      
       default:
         return 'Unknown step';
     }
@@ -327,14 +455,14 @@ export default function AddAppointment() {
   return (
     <Box
       sx={{
-        minHeight: '100vh',
-        background: backgroundImage,
-        backgroundSize: 'cover',
-        py: 4
+        minHeight: 'calc(100vh - 64px)',
+        background: `linear-gradient(135deg, rgba(76,175,80,0.12), rgba(56,142,60,0.2))`,
+        backgroundSize: "cover",
+        pt: 4,
+        pb: 4
       }}
     >
-      <Container maxWidth="lg">
-        {/* Header Card */}
+      <Container maxWidth="lg" sx={{ px: { xs: 1, sm: 2 }, mt: 2 }}>
         <Card 
           sx={{ 
             mb: 3, 
@@ -342,24 +470,24 @@ export default function AddAppointment() {
             background: `linear-gradient(135deg, ${alpha('#4CAF50', 0.9)} 0%, ${alpha('#2E7D32', 0.9)} 100%)`,
             color: 'white',
             boxShadow: '0 8px 32px rgba(76, 175, 80, 0.3)',
-            overflow: 'hidden',
-            position: 'relative'
+            position: 'relative',
+            overflow: 'hidden'
           }}
         >
-          <CardContent sx={{ p: 4, position: 'relative' }}>
+          <CardContent sx={{ p: { xs: 2, sm: 2.5, md: 3 } }}>
             <Box sx={{ display: "flex", alignItems: "center", gap: 2, flexWrap: 'wrap' }}>
               <Avatar
                 sx={{
-                  width: 60,
-                  height: 60,
+                  width: 48,
+                  height: 48,
                   background: 'rgba(255,255,255,0.2)',
                   backdropFilter: 'blur(10px)'
                 }}
               >
-                <LocalHospital sx={{ fontSize: 32 }} />
+                <LocalHospital sx={{ fontSize: 24 }} />
               </Avatar>
               <Box>
-                <Typography variant="h4" fontWeight="700" gutterBottom>
+                <Typography variant="h5" fontWeight="700" gutterBottom>
                   New Appointment
                 </Typography>
                 <Typography variant="subtitle1" sx={{ opacity: 0.9 }}>
@@ -370,27 +498,38 @@ export default function AddAppointment() {
           </CardContent>
         </Card>
 
-        {/* Main Form Card */}
         <Card 
           sx={{ 
             borderRadius: 3,
             background: 'rgba(255,255,255,0.95)',
-            backdropFilter: 'blur(10px)',
+            backdropFilter: 'blur(12px)',
             border: `1px solid ${alpha('#4CAF50', 0.1)}`,
             boxShadow: '0 4px 20px rgba(76, 175, 80, 0.1)'
           }}
         >
-          <CardContent sx={{ p: 4 }}>
-            {/* Stepper */}
-            <Stepper activeStep={activeStep} sx={{ mb: 4 }}>
-              {steps.map((label) => (
+          <CardContent sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
+            <Stepper activeStep={activeStep} sx={{ mb: { xs: 1.5, sm: 2, md: 3 }, px: { xs: 0, sm: 1 } }}>
+              {steps.map((label, index) => (
                 <Step key={label}>
-                  <StepLabel>{label}</StepLabel>
+                  <StepLabel
+                    sx={{
+                      "& .MuiStepLabel-label": {
+                        fontWeight: activeStep === index ? "700" : "400",
+                        color: activeStep === index ? theme.palette.primary.main : "text.secondary",
+                        transition: "all 0.3s ease",
+                      },
+                      "& .MuiStepIcon-root.Mui-active": {
+                        color: theme.palette.primary.main,
+                        filter: "drop-shadow(0 0 6px rgba(76,175,80,0.6))",
+                      },
+                    }}
+                  >
+                    {label}
+                  </StepLabel>
                 </Step>
               ))}
             </Stepper>
 
-            {/* Alerts */}
             {error && (
               <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>
                 {error}
@@ -405,15 +544,21 @@ export default function AddAppointment() {
             <form onSubmit={handleSubmit}>
               {getStepContent(activeStep)}
               
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 4 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 3 }}>
                 <Button
                   variant="outlined"
                   startIcon={<ArrowBack />}
                   onClick={activeStep === 0 ? () => navigate("/appointments") : handleBack}
                   sx={{ 
-                    borderRadius: 2,
+                    borderRadius: 3,
                     textTransform: 'none',
-                    px: 3
+                    px: 3,
+                    fontWeight: 600,
+                    transition: "all 0.3s ease",
+                    "&:hover": {
+                      transform: "translateY(-2px)",
+                      boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                    }
                   }}
                 >
                   {activeStep === 0 ? 'Back to List' : 'Back'}
@@ -424,12 +569,7 @@ export default function AddAppointment() {
                     <Button
                       variant="contained"
                       onClick={handleNext}
-                      sx={{ 
-                        borderRadius: 2,
-                        textTransform: 'none',
-                        px: 4,
-                        background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`
-                      }}
+                      sx={nextBtnStyle(theme)}
                     >
                       Next
                     </Button>
@@ -438,13 +578,7 @@ export default function AddAppointment() {
                       variant="contained"
                       type="submit"
                       startIcon={<Check />}
-                      sx={{ 
-                        borderRadius: 2,
-                        textTransform: 'none',
-                        px: 4,
-                        background: `linear-gradient(135deg, ${theme.palette.success.main} 0%, ${theme.palette.success.dark} 100%)`,
-                        boxShadow: '0 4px 16px rgba(76, 175, 80, 0.3)'
-                      }}
+                      sx={confirmBtnStyle(theme)}
                     >
                       Confirm Appointment
                     </Button>
@@ -459,14 +593,71 @@ export default function AddAppointment() {
   );
 }
 
-// Reusable Info Row Component for Review Step
-const InfoRow = ({ label, value, multiline = false }) => (
-  <Box sx={{ mb: 2, p: 2, borderRadius: 2, background: 'rgba(76, 175, 80, 0.05)' }}>
+// Helper Components & Styles
+const InfoRow = ({ label, value, multiline }) => (
+  <Box sx={{ mb: 2 }}>
     <Typography variant="subtitle2" color="text.secondary" gutterBottom>
       {label}
     </Typography>
-    <Typography variant="body1" sx={{ whiteSpace: multiline ? 'pre-wrap' : 'nowrap' }}>
-      {value || 'Not provided'}
+    <Typography variant="body1" sx={{ whiteSpace: multiline ? 'pre-line' : 'nowrap' }}>
+      {value || '-'}
     </Typography>
   </Box>
 );
+
+const textFieldStyle = {
+  "& .MuiOutlinedInput-root": {
+    borderRadius: 2,
+    background: "rgba(255,255,255,0.6)",
+    backdropFilter: "blur(8px)",
+    "&:hover fieldset": { borderColor: "#4CAF50" },
+    "&.Mui-focused fieldset": { borderColor: "#2E7D32", borderWidth: 2 }
+  },
+  "& .MuiInputBase-input": {
+    padding: "10px 14px"
+  },
+  "& .MuiInputLabel-root": {
+    transform: "translate(14px, 12px) scale(1)"
+  },
+  "& .MuiInputLabel-shrink": {
+    transform: "translate(14px, -6px) scale(0.75)"
+  }
+};
+
+const reviewBoxStyle = {
+  p: 3,
+  borderRadius: 2,
+  background: "rgba(250,250,250,0.8)",
+  border: "1px solid rgba(76,175,80,0.15)",
+  boxShadow: "inset 0 2px 6px rgba(0,0,0,0.05)"
+};
+
+const nextBtnStyle = (theme) => ({
+  borderRadius: 3,
+  px: 4,
+  py: 1.2,
+  textTransform: "none",
+  fontWeight: 600,
+  background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.success.main} 100%)`,
+  boxShadow: "0 4px 12px rgba(76,175,80,0.3)",
+  transition: "all 0.3s ease",
+  "&:hover": {
+    transform: "translateY(-2px)",
+    boxShadow: "0 6px 16px rgba(76,175,80,0.4)",
+  }
+});
+
+const confirmBtnStyle = (theme) => ({
+  borderRadius: 3,
+  px: 4,
+  py: 1.2,
+  textTransform: "none",
+  fontWeight: 600,
+  background: `linear-gradient(135deg, ${theme.palette.success.dark} 0%, ${theme.palette.success.main} 100%)`,
+  boxShadow: "0 4px 12px rgba(56,142,60,0.3)",
+  transition: "all 0.3s ease",
+  "&:hover": {
+    transform: "translateY(-2px)",
+    boxShadow: "0 6px 16px rgba(56,142,60,0.4)",
+  }
+});

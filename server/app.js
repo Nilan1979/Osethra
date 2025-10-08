@@ -2,6 +2,10 @@ const express = require('express');
 const mongoose = require('mongoose');
 const appointmentRoutes = require('./Routes/AppointmentRoutes');
 const treatmentRoutes = require('./Routes/TreatmentRoutes');
+const inventoryRoutes = require('./Routes/InventoryRoutes');
+const prescriptionRoutes = require('./Routes/PrescriptionRoutes');
+const patientRoutes = require('./Routes/patientRoute');
+const medicalRequestRoutes = require('./Routes/medicalRequestRoutes');
 
 const cors = require('cors');
 const dotenv = require('dotenv');
@@ -12,7 +16,7 @@ const app = express();
 // Middleware
 app.use(cors({
     origin: ['http://localhost:5173', 'http://localhost:5174'], // Allow both ports
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true
 }));
@@ -24,6 +28,12 @@ app.use("/api/treatments", treatmentRoutes);
 // Routes
 const userRoutes = require('./Routes/UserRoutes');
 app.use('/users', userRoutes);
+
+// Inventory Management Routes
+app.use('/api/inventory', inventoryRoutes);
+app.use('/api/prescriptions', prescriptionRoutes);
+app.use('/api/patients', patientRoutes);
+app.use('/api/medical-requests', medicalRequestRoutes);
 
 // Connect DB
 mongoose.connect(process.env.MONGO_URI)

@@ -183,21 +183,37 @@ export default function EditAppointment() {
     <Box
       sx={{
         minHeight: '100vh',
-        background: backgroundImage,
+        background: '#F0F9F0',
         backgroundSize: 'cover',
-        py: 4
+        py: { xs: 3, sm: 4, md: 5 }
       }}
     >
-      <Container maxWidth="lg">
+      <Container maxWidth="md" sx={{ py: 4 }}>
         {/* Header Card */}
         <Card 
           sx={{ 
-            mb: 3, 
+            mb: 4, 
             borderRadius: 4,
-            background: `linear-gradient(135deg, ${alpha('#4CAF50', 0.9)} 0%, ${alpha('#2E7D32', 0.9)} 100%)`,
+            background: '#4CAF50',
             color: 'white',
-            boxShadow: '0 8px 32px rgba(76, 175, 80, 0.3)',
+            boxShadow: '0 8px 32px rgba(76, 175, 80, 0.2)',
             overflow: 'hidden',
+            transition: 'all 0.3s ease-in-out',
+            '&:hover': {
+              boxShadow: '0 12px 48px rgba(76, 175, 80, 0.3)'
+            },
+            position: 'relative',
+            '&::before': {
+              content: '""',
+              position: 'absolute',
+              top: 0,
+              right: 0,
+              width: '200px',
+              height: '200px',
+              background: 'radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%)',
+              borderRadius: '50%',
+              transform: 'translate(30%, -30%)'
+            },
             position: 'relative'
           }}
         >
@@ -228,35 +244,68 @@ export default function EditAppointment() {
         {/* Main Form Card */}
         <Card 
           sx={{ 
-            borderRadius: 3,
-            background: 'rgba(255,255,255,0.95)',
-            backdropFilter: 'blur(10px)',
-            border: `1px solid ${alpha('#4CAF50', 0.1)}`,
-            boxShadow: '0 4px 20px rgba(76, 175, 80, 0.1)'
+            borderRadius: 4,
+            background: '#FFFFFF',
+            border: '1px solid rgba(76, 175, 80, 0.1)',
+            boxShadow: '0 4px 20px rgba(76, 175, 80, 0.08)',
+            overflow: 'hidden',
+            maxWidth: '800px',
+            margin: '0 auto',
+            transition: 'all 0.2s ease-in-out'
           }}
         >
-          <CardContent sx={{ p: 4 }}>
+          <CardContent sx={{ p: { xs: 3, sm: 4 } }}>
             {/* Alerts */}
             {error && (
-              <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>
+              <Alert 
+                severity="error" 
+                sx={{ 
+                  mb: 3, 
+                  borderRadius: 2,
+                  backgroundColor: '#FEE2E2',
+                  color: '#991B1B',
+                  '& .MuiAlert-icon': {
+                    color: '#991B1B',
+                    fontSize: '1.25rem'
+                  }
+                }}
+              >
                 {error}
               </Alert>
             )}
             {success && (
-              <Alert severity="success" sx={{ mb: 3, borderRadius: 2 }}>
+              <Alert 
+                severity="success" 
+                sx={{ 
+                  mb: 3, 
+                  borderRadius: 2,
+                  backgroundColor: '#ECFDF5',
+                  color: '#065F46',
+                  '& .MuiAlert-icon': {
+                    color: '#065F46',
+                    fontSize: '1.25rem'
+                  }
+                }}
+              >
                 {success}
               </Alert>
             )}
 
             <form onSubmit={handleSubmit}>
-              <Grid container spacing={4}>
+              <Grid container spacing={2}>
                 {/* Patient Information Section - READ ONLY */}
                 <Grid item xs={12}>
                   <Card 
                     variant="outlined" 
                     sx={{ 
                       background: 'rgba(76, 175, 80, 0.03)',
-                      border: `1px solid ${alpha('#4CAF50', 0.2)}`
+                      border: `1px solid ${alpha('#4CAF50', 0.2)}`,
+                      borderRadius: 2,
+                      transition: 'all 0.3s ease-in-out',
+                      mb: 2,
+                      '&:hover': {
+                        boxShadow: `0 2px 12px ${alpha('#4CAF50', 0.08)}`
+                      }
                     }}
                   >
                     <CardContent>
@@ -275,21 +324,40 @@ export default function EditAppointment() {
                         Patient Information (Read Only)
                       </Typography>
                       
-                      <Grid container spacing={3}>
-                        <Grid item xs={12} md={6}>
+                      <Grid container spacing={2}>
+                        <Grid item xs={12} sm={6}>
                           <TextField 
+                            size="small"
                             label="Patient Name"
                             value={patientInfo.name}
                             fullWidth
                             InputProps={{
-                              startAdornment: <Person sx={{ color: 'text.secondary', mr: 1 }} />,
+                              startAdornment: <Person sx={{ color: 'text.secondary', mr: 1, fontSize: 20 }} />,
                               readOnly: true
                             }}
                             sx={{ 
                               mb: 2,
+                              '& .MuiOutlinedInput-root': {
+                                borderRadius: 8,
+                                backgroundColor: '#F5F9F5',
+                                '& fieldset': {
+                                  borderColor: 'rgba(76, 175, 80, 0.2)'
+                                },
+                                '&:hover fieldset': {
+                                  borderColor: theme.palette.primary.main
+                                },
+                                '&.Mui-focused fieldset': {
+                                  borderColor: theme.palette.primary.main
+                                }
+                              },
                               '& .MuiInputBase-input': {
+                                color: 'text.primary',
+                                fontSize: '0.9rem',
+                                padding: '12px 14px'
+                              },
+                              '& .MuiInputLabel-root': {
                                 color: 'text.secondary',
-                                backgroundColor: 'rgba(0,0,0,0.02)'
+                                fontSize: '0.9rem'
                               }
                             }}
                           />
@@ -308,7 +376,19 @@ export default function EditAppointment() {
                               mb: 2,
                               '& .MuiInputBase-input': {
                                 color: 'text.secondary',
-                                backgroundColor: 'rgba(0,0,0,0.02)'
+                                backgroundColor: 'rgba(0,0,0,0.02)',
+                                borderRadius: '8px'
+                              },
+                              '& .MuiOutlinedInput-root': {
+                                '& fieldset': {
+                                  borderColor: alpha('#4CAF50', 0.2)
+                                },
+                                '&:hover fieldset': {
+                                  borderColor: alpha('#4CAF50', 0.3)
+                                },
+                                '&.Mui-focused fieldset': {
+                                  borderColor: '#4CAF50'
+                                }
                               }
                             }}
                           />
@@ -382,19 +462,30 @@ export default function EditAppointment() {
                     variant="h5" 
                     gutterBottom 
                     sx={{ 
-                      color: theme.palette.primary.dark,
-                      borderBottom: `2px solid ${alpha(theme.palette.primary.main, 0.3)}`,
-                      pb: 1,
-                      mb: 3
+                      color: '#1E4620',
+                      borderBottom: '2px solid rgba(76, 175, 80, 0.2)',
+                      pb: 2,
+                      mb: 4,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1,
+                      fontSize: '1.5rem',
+                      fontWeight: 600,
+                      '& svg': {
+                        color: '#4CAF50',
+                        fontSize: 24
+                      }
                     }}
                   >
-                    Appointment Details (Editable)
+                    <MedicalServices />
+                    Appointment Details
                   </Typography>
                 </Grid>
 
-                <Grid item xs={12} md={6}>
+                <Grid item xs={12} sm={6}>
                   <TextField
                     select
+                    size="small"
                     name="doctor"
                     label="Select Doctor *"
                     fullWidth
@@ -402,9 +493,33 @@ export default function EditAppointment() {
                     onChange={handleChange}
                     required
                     InputProps={{
-                      startAdornment: <MedicalServices sx={{ color: 'text.secondary', mr: 1 }} />
+                      startAdornment: <MedicalServices sx={{ color: 'text.secondary', mr: 1, fontSize: 20 }} />
                     }}
-                    sx={{ mb: 3 }}
+                    sx={{ 
+                      mb: 2,
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: 2,
+                        backgroundColor: '#F8FAFC',
+                        '& fieldset': {
+                          borderColor: 'transparent'
+                        },
+                        '&:hover fieldset': {
+                          borderColor: theme.palette.primary.main
+                        },
+                        '&.Mui-focused fieldset': {
+                          borderColor: theme.palette.primary.main
+                        }
+                      },
+                      '& .MuiInputBase-input': {
+                        color: 'text.primary',
+                        fontSize: '0.9rem',
+                        padding: '12px 14px'
+                      },
+                      '& .MuiInputLabel-root': {
+                        color: 'text.secondary',
+                        fontSize: '0.9rem'
+                      }
+                    }}
                   >
                     {doctors.map(doctor => (
                       <MenuItem key={doctor} value={doctor}>{doctor}</MenuItem>
@@ -483,33 +598,60 @@ export default function EditAppointment() {
                 </Grid>
 
                 {/* Action Buttons */}
-                <Grid item xs={12} sx={{ display: "flex", justifyContent: "flex-end", gap: 2, mt: 2 }}>
+                <Grid item xs={12} 
+                  sx={{ 
+                    display: "flex", 
+                    justifyContent: "center", 
+                    gap: 2, 
+                    mt: 3,
+                    borderTop: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`,
+                    pt: 3
+                  }}
+                >
                   <Button 
+                    size="small"
                     variant="outlined" 
-                    startIcon={<ArrowBack />}
+                    startIcon={<ArrowBack sx={{ fontSize: 18 }} />}
                     onClick={() => navigate("/appointments")}
                     disabled={submitting}
                     sx={{ 
-                      borderRadius: 2,
+                      borderRadius: 1.5,
                       textTransform: 'none',
-                      px: 4,
+                      px: 2,
+                      py: 0.5,
+                      fontSize: '0.875rem',
                       borderColor: alpha(theme.palette.primary.main, 0.3),
-                      color: theme.palette.primary.main
+                      color: theme.palette.primary.main,
+                      '&:hover': {
+                        borderColor: theme.palette.primary.main,
+                        backgroundColor: alpha(theme.palette.primary.main, 0.05)
+                      }
                     }}
                   >
                     Cancel
                   </Button>
                   <Button 
+                    size="small"
                     variant="contained" 
                     type="submit" 
-                    startIcon={submitting ? <CircularProgress size={20} /> : <Check />}
+                    startIcon={submitting ? <CircularProgress size={16} color="inherit" /> : <Check sx={{ fontSize: 18 }} />}
                     disabled={submitting}
                     sx={{ 
-                      borderRadius: 2,
+                      borderRadius: 8,
                       textTransform: 'none',
-                      px: 4,
-                      background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-                      boxShadow: '0 4px 16px rgba(76, 175, 80, 0.3)'
+                      px: 3,
+                      py: 1,
+                      fontSize: '0.875rem',
+                      backgroundColor: '#4CAF50',
+                      boxShadow: '0 2px 8px rgba(76, 175, 80, 0.25)',
+                      '&:hover': {
+                        backgroundColor: '#43A047'
+                      },
+                      transition: 'all 0.2s ease-in-out',
+                      '&:hover': {
+                        transform: 'translateY(-1px)',
+                        boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.35)}`
+                      }
                     }}
                   >
                     {submitting ? 'Updating...' : 'Update Appointment'}
