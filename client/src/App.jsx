@@ -31,6 +31,14 @@ import UpdateTreatment from './pages/UpdateTreatment';
 import Footer from './components/Footer';
 import { Container, Box } from '@mui/material';
 
+// Inventory Management
+import ProductsManagement from './pages/inventory/ProductsManagement';
+import StockAlerts from './pages/inventory/StockAlerts';
+import IssueManagement from './pages/inventory/IssueManagement';
+import PrescriptionsManagement from './pages/inventory/PrescriptionsManagement';
+import AddProduct from './pages/inventory/AddProduct';
+import EditProduct from './pages/inventory/EditProduct';
+
 const theme = createTheme({
   palette: {
     primary: {
@@ -99,6 +107,62 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <PharmacistDashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/pharmacist/products"
+        element={
+          <ProtectedRoute>
+            <ProductsManagement />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/pharmacist/products/add"
+        element={
+          <ProtectedRoute>
+            <AddProduct />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/pharmacist/products/edit/:id"
+        element={
+          <ProtectedRoute>
+            <EditProduct />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/pharmacist/alerts"
+        element={
+          <ProtectedRoute>
+            <StockAlerts />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/pharmacist/issues"
+        element={
+          <ProtectedRoute>
+            <IssueManagement />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/pharmacist/issues/new"
+        element={
+          <ProtectedRoute>
+            <IssueManagement />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/pharmacist/prescriptions"
+        element={
+          <ProtectedRoute>
+            <PrescriptionsManagement />
           </ProtectedRoute>
         }
       />
