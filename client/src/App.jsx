@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -17,6 +17,7 @@ import NurseDashboard from './components/Dashboard/NurseDashboard';
 import PharmacistDashboard from './components/Dashboard/PharmacistDashboard';
 import ReceptionistDashboard from './components/Dashboard/ReceptionistDashboard';
 import ProtectedRoute from './components/ProtectedRoute';
+import Nurse from './components/NurseComponent/NurseD'; 
 
 // Appointment Management
 import NavBar from './components/NavBar';
@@ -68,6 +69,15 @@ const theme = createTheme({
 
 function AppRoutes() {
   const { user } = useAuth();
+  const location = useLocation();
+  
+  if (location.pathname === '/') {
+    return (
+      <Box sx={{ width: '100%', margin: 0, padding: 0 }}>
+        <Home />
+      </Box>
+    );
+  }
 
   return (
     <Routes>
@@ -111,62 +121,6 @@ function AppRoutes() {
         }
       />
       <Route
-        path="/pharmacist/products"
-        element={
-          <ProtectedRoute>
-            <ProductsManagement />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/pharmacist/products/add"
-        element={
-          <ProtectedRoute>
-            <AddProduct />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/pharmacist/products/edit/:id"
-        element={
-          <ProtectedRoute>
-            <EditProduct />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/pharmacist/alerts"
-        element={
-          <ProtectedRoute>
-            <StockAlerts />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/pharmacist/issues"
-        element={
-          <ProtectedRoute>
-            <IssueManagement />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/pharmacist/issues/new"
-        element={
-          <ProtectedRoute>
-            <IssueManagement />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/pharmacist/prescriptions"
-        element={
-          <ProtectedRoute>
-            <PrescriptionsManagement />
-          </ProtectedRoute>
-        }
-      />
-      <Route
         path="/appointments"
         element={
           <ProtectedRoute>
@@ -189,10 +143,11 @@ function AppRoutes() {
       />
 
       {/* Appointment Management Routes */}
-      <Route path="/appointments" element={<AppointmentsList />} />
-      <Route path="/appointments/add" element={<AddAppointment />} />
-      <Route path="/appointments/:id/edit" element={<EditAppointment />} />
-      <Route path="/appointments/:id" element={<AppointmentDetails />} />
+      <Route path="/appointments" element={<ProtectedRoute><AppointmentsList /></ProtectedRoute>} />
+      <Route path="/appointments/add" element={<ProtectedRoute><AddAppointment /></ProtectedRoute>} />
+      <Route path="/appointments/:id/edit" element={<ProtectedRoute><EditAppointment /></ProtectedRoute>} />
+      <Route path="/appointments/:id" element={<ProtectedRoute><AppointmentDetails /></ProtectedRoute>} />
+
       
       {/* Treatment Routes */}
       <Route
@@ -226,32 +181,45 @@ function AppRoutes() {
   );
 }
 
+function AppContent() {
+  const location = useLocation(); 
+
+  return (
+    <Box
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        minHeight: '100vh',
+        width: '100%',
+        bgcolor: 'background.default',
+      }}
+    >
+      {/* Hide navbar only on nurse dashboard */}
+      {location.pathname !== '/nurse/dashboard' && <NavBar />}
+
+      <Box
+        component="main"
+        sx={{
+          flex: 1,
+          width: '100%',
+          pt: { xs: 2, sm: 3, md: 4 },
+        }}
+      >
+        <AppRoutes />
+      </Box>
+
+      {location.pathname !== '/nurse/dashboard' && <Footer />}
+    </Box>
+  );
+}
+
 function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <AuthProvider>
         <Router>
-          <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', width: '100%' }}>
-            <NavBar />
-            <Box component="main" sx={{ flex: 1, width: '100%' }}>
-              <Routes>
-                <Route path="/" element={
-                  <Box sx={{ width: '100%', margin: 0, padding: 0 }}>
-                    <Home />
-                  </Box>
-                } />
-                <Route path="/*" element={
-                  <Box sx={{ pt: 10, backgroundColor: 'background.default' }}>
-                    <Container maxWidth="lg">
-                      <AppRoutes />
-                    </Container>
-                  </Box>
-                } />
-              </Routes>
-            </Box>
-            <Footer />
-          </Box>
+          <AppContent />
         </Router>
       </AuthProvider>
     </ThemeProvider>
