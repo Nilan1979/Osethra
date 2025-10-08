@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Container,
   Grid,
@@ -15,6 +15,9 @@ import {
   Divider,
   Chip,
   Button,
+  IconButton,
+  CircularProgress,
+  Alert,
 } from '@mui/material';
 import {
   Warning as WarningIcon,
@@ -26,30 +29,102 @@ import {
 import { useNavigate } from 'react-router-dom';
 import Layout from '../../components/Layout/Layout';
 import StockAlert from '../../components/Inventory/molecules/StockAlert';
+import inventoryAPI from '../../api/inventory';
 
 const StockAlerts = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [lowStockItems, setLowStockItems] = useState([]);
+  const [outOfStockItems, setOutOfStockItems] = useState([]);
+  const [expiryWarnings, setExpiryWarnings] = useState([]);
+  const [expiredItems, setExpiredItems] = useState([]);
 
-  const lowStockItems = [
-    { id: 1, name: 'Amoxicillin 250mg', sku: 'MED-AMO-250', stock: 12, minStock: 50, category: 'Medications' },
-    { id: 2, name: 'Surgical Gloves (M)', sku: 'SUP-GLV-M', stock: 25, minStock: 200, category: 'Medical Supplies' },
-    { id: 3, name: 'Ibuprofen 400mg', sku: 'MED-IBU-400', stock: 30, minStock: 80, category: 'Medications' },
-  ];
+  useEffect(() => {
+    fetchAlerts();
+  }, []);
 
-  const outOfStockItems = [
-    { id: 4, name: 'Bandages (Large)', sku: 'SUP-BAN-L', stock: 0, minStock: 100, category: 'Medical Supplies' },
-    { id: 5, name: 'Antiseptic Solution', sku: 'SUP-ANT-500', stock: 0, minStock: 50, category: 'Medical Supplies' },
-  ];
+  const fetchAlerts = async () => {
+    try {
+      setLoading(true);
+      setError(null);
 
-  const expiryWarnings = [
-    { id: 6, name: 'Vaccine Doses', sku: 'MED-VAC-001', stock: 45, category: 'Medications', expiryDate: '2025-10-08', daysLeft: 6 },
-    { id: 7, name: 'Insulin Vials', sku: 'MED-INS-100', stock: 80, category: 'Medications', expiryDate: '2025-10-15', daysLeft: 13 },
-  ];
+      // Fetch stock alerts
+      const response = await inventoryAPI.alerts.getStockAlerts();
+      const alerts = response.data || response;
 
-  const expiredItems = [
-    { id: 8, name: 'Pain Relief Cream', sku: 'MED-PRE-050', stock: 15, category: 'Medications', expiryDate: '2025-09-28', daysLeft: -4 },
-  ];
+      // Process low stock items
+      if (alerts.lowStock) {
+        setLowStockItems(alerts.lowStock.map(item => ({
+          id: item._id,
+          name: item.name,
+          sku: item.sku || 'N/A',
+          stock: item.currentStock,
+          minStock: item.minStock,
+          category: item.category,
+        })));
+      }
+
+      // Process out of stock items (items with 0 stock)
+      if (alerts.outOfStock) {
+        setOutOfStockItems(alerts.outOfStock.map(item => ({
+          id: item._id,
+          name: item.name,
+          sku: item.sku || 'N/A',
+          stock: item.currentStock,
+          minStock: item.minStock,
+          category: item.category,
+        })));
+      }
+
+      // Process expiry warnings and expired items
+      if (alerts.expiringItems) {
+        const today = new Date();
+        const expiringItems = alerts.expiringItems.map(item => {
+          const expiryDate = new Date(item.expiryDate);
+          const daysLeft = Math.ceil((expiryDate - today) / (1000 * 60 * 60 * 24));
+          
+          return {
+            id: item._id,
+            name: item.name,
+            sku: item.sku || item.batchNumber || 'N/A',
+            stock: item.currentStock,
+            category: item.category,
+            expiryDate: item.expiryDate,
+            daysLeft,
+          };
+        });
+
+        setExpiryWarnings(expiringItems);
+      }
+
+      if (alerts.expiredItems) {
+        const today = new Date();
+        const expiredItemsList = alerts.expiredItems.map(item => {
+          const expiryDate = new Date(item.expiryDate);
+          const daysLeft = Math.ceil((expiryDate - today) / (1000 * 60 * 60 * 24));
+          
+          return {
+            id: item._id,
+            name: item.name,
+            sku: item.sku || item.batchNumber || 'N/A',
+            stock: item.currentStock,
+            category: item.category,
+            expiryDate: item.expiryDate,
+            daysLeft,
+          };
+        });
+
+        setExpiredItems(expiredItemsList);
+      }
+    } catch (err) {
+      console.error('Error fetching alerts:', err);
+      setError(err.response?.data?.message || 'Failed to load stock alerts');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleAction = (product) => {
     navigate(`/pharmacist/products/${product.id}`);
@@ -120,7 +195,20 @@ const StockAlerts = () => {
           </Box>
         </Paper>
 
-        <Grid container spacing={3}>
+        {/* Error Alert */}
+        {error && (
+          <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>
+            {error}
+          </Alert>
+        )}
+
+        {/* Loading State */}
+        {loading ? (
+          <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
+            <CircularProgress size={60} />
+          </Box>
+        ) : (
+          <Grid container spacing={3}>
           {/* Summary Cards */}
           <Grid item xs={12} sm={6} md={3}>
             <Card elevation={0} sx={{ border: '1px solid #e0e0e0', borderRadius: 2 }}>
@@ -278,6 +366,7 @@ const StockAlerts = () => {
             </Card>
           </Grid>
         </Grid>
+        )}
       </Container>
     </Layout>
   );

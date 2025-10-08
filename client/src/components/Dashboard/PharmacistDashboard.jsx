@@ -103,9 +103,9 @@ const PharmacistDashboard = () => {
       }
 
       // Set expiry alerts
-      if (alerts.expiring) {
+      if (alerts.expiringItems) {
         const today = new Date();
-        setExpiryAlerts(alerts.expiring.slice(0, 3).map(item => {
+        setExpiryAlerts(alerts.expiringItems.slice(0, 3).map(item => {
           const expiryDate = new Date(item.expiryDate);
           const daysLeft = Math.ceil((expiryDate - today) / (1000 * 60 * 60 * 24));
           return {
@@ -266,10 +266,35 @@ const PharmacistDashboard = () => {
     return 'info';
   };
 
-  const handleDispensePrescription = (prescription) => {
-    console.log('Dispensing prescription:', prescription);
-    // Navigate to issue management with prescription data
-    navigate('/pharmacist/issues/new', { state: { prescription } });
+  const handleDispensePrescription = async (prescription) => {
+    try {
+      // Navigate to IssueManagement with prescription medications in cart
+      navigate('/pharmacist/issues', { 
+        state: { 
+          prescriptionData: {
+            prescription: prescription,
+            medications: prescription.medications,
+            patient: {
+              name: prescription.patientName,
+              id: prescription.patientId,
+            }
+          }
+        } 
+      });
+    } catch (err) {
+      console.error('Failed to navigate to issue management:', err);
+    }
+  };
+
+  const handleStatusChange = async (prescriptionId, newStatus) => {
+    try {
+      await inventoryAPI.prescriptions.updatePrescriptionStatus(prescriptionId, newStatus);
+      // Refresh the dashboard data to update prescriptions
+      fetchDashboardData();
+    } catch (err) {
+      console.error('Failed to update prescription status:', err);
+      setError(err.response?.data?.message || 'Failed to update prescription status');
+    }
   };
 
   if (loading) {
@@ -449,8 +474,8 @@ const PharmacistDashboard = () => {
           </Grid>
 
           {/* Pending Prescriptions */}
-          <Grid item xs={12} md={6}>
-            <Card elevation={0} sx={{ borderRadius: 3, border: '1px solid #e0e0e0', height: '100%', minHeight: '500px', maxHeight: '500px', display: 'flex', flexDirection: 'column' }}>
+          <Grid item xs={12} md={4}>
+            <Card elevation={0} sx={{ borderRadius: 3, border: '1px solid #e0e0e0', height: '100%', minHeight: '450px', maxHeight: '450px', display: 'flex', flexDirection: 'column' }}>
               <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column', p: 2.5 }}>
                 <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
                   <Typography variant="h6" fontWeight="600" sx={{ fontSize: '1.1rem' }}>
@@ -466,7 +491,7 @@ const PharmacistDashboard = () => {
                 <Divider sx={{ mb: 2 }} />
                 <Box sx={{ flex: 1, overflowY: 'auto', pr: 1 }}>
                   <List dense sx={{ py: 0 }}>
-                    {pendingPrescriptions.slice(0, 4).map((prescription) => (
+                    {pendingPrescriptions.slice(0, 2).map((prescription) => (
                       <ListItem 
                         key={prescription.id}
                         sx={{ 
@@ -522,6 +547,7 @@ const PharmacistDashboard = () => {
                               </Box>
                             </Box>
                           }
+                          secondaryTypographyProps={{ component: 'div' }}
                         />
                         <IconButton size="small" sx={{ alignSelf: 'flex-start' }}>
                           <VisibilityIcon fontSize="small" />
@@ -530,7 +556,7 @@ const PharmacistDashboard = () => {
                     ))}
                   </List>
                 </Box>
-                {pendingPrescriptions.length > 4 && (
+                {pendingPrescriptions.length > 2 && (
                   <Button
                     fullWidth
                     variant="text"
@@ -545,8 +571,8 @@ const PharmacistDashboard = () => {
           </Grid>
 
           {/* Low Stock Alerts */}
-          <Grid item xs={12} md={6}>
-            <Card elevation={0} sx={{ borderRadius: 3, border: '1px solid #e0e0e0', height: '100%', minHeight: '500px', maxHeight: '500px', display: 'flex', flexDirection: 'column' }}>
+          <Grid item xs={12} md={4}>
+            <Card elevation={0} sx={{ borderRadius: 3, border: '1px solid #e0e0e0', height: '100%', minHeight: '450px', maxHeight: '450px', display: 'flex', flexDirection: 'column' }}>
               <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column', p: 2.5 }}>
                 <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
                   <Typography variant="h6" fontWeight="600" sx={{ fontSize: '1.1rem' }}>
@@ -562,7 +588,7 @@ const PharmacistDashboard = () => {
                 <Divider sx={{ mb: 2 }} />
                 <Box sx={{ flex: 1, overflowY: 'auto', pr: 1 }}>
                   <List dense sx={{ py: 0 }}>
-                    {lowStockItems.slice(0, 5).map((item) => {
+                    {lowStockItems.slice(0, 2).map((item) => {
                       const percentage = getStockPercentage(item.stock, item.minStock);
                       return (
                         <ListItem 
@@ -599,13 +625,14 @@ const PharmacistDashboard = () => {
                                 />
                               </Box>
                             }
+                            secondaryTypographyProps={{ component: 'div' }}
                           />
                         </ListItem>
                       );
                     })}
                   </List>
                 </Box>
-                {lowStockItems.length > 5 && (
+                {lowStockItems.length > 2 && (
                   <Button
                     fullWidth
                     variant="text"
@@ -620,8 +647,8 @@ const PharmacistDashboard = () => {
           </Grid>
 
           {/* Expiry Alerts */}
-          <Grid item xs={12} md={6}>
-            <Card elevation={0} sx={{ borderRadius: 3, border: '1px solid #e0e0e0', height: '100%', minHeight: '400px', maxHeight: '400px', display: 'flex', flexDirection: 'column' }}>
+          <Grid item xs={12} md={4}>
+            <Card elevation={0} sx={{ borderRadius: 3, border: '1px solid #e0e0e0', height: '100%', minHeight: '450px', maxHeight: '450px', display: 'flex', flexDirection: 'column' }}>
               <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column', p: 2.5 }}>
                 <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
                   <Typography variant="h6" fontWeight="600" sx={{ fontSize: '1.1rem' }}>
@@ -675,6 +702,7 @@ const PharmacistDashboard = () => {
                               </Box>
                             </Box>
                           }
+                          secondaryTypographyProps={{ component: 'div' }}
                         />
                       </ListItem>
                     ))}
@@ -685,8 +713,8 @@ const PharmacistDashboard = () => {
           </Grid>
 
           {/* Recent Activity */}
-          <Grid item xs={12} md={6}>
-            <Card elevation={0} sx={{ borderRadius: 3, border: '1px solid #e0e0e0', minHeight: '400px', maxHeight: '400px', display: 'flex', flexDirection: 'column' }}>
+          <Grid item xs={12} md={12}>
+            <Card elevation={0} sx={{ borderRadius: 3, border: '1px solid #e0e0e0', minHeight: '300px', maxHeight: '300px', display: 'flex', flexDirection: 'column' }}>
               <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column', p: 2.5 }}>
                 <Typography variant="h6" fontWeight="600" mb={2} sx={{ fontSize: '1.1rem' }}>
                   <AssignmentIcon sx={{ verticalAlign: 'middle', mr: 1, fontSize: 24 }} />
@@ -747,6 +775,7 @@ const PharmacistDashboard = () => {
           onClose={() => setPrescriptionModalOpen(false)}
           prescription={selectedPrescription}
           onDispense={handleDispensePrescription}
+          onStatusChange={handleStatusChange}
         />
       </Container>
     </Layout>

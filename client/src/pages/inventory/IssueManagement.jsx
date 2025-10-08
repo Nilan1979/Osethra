@@ -66,7 +66,7 @@ const IssueManagement = () => {
   const [products, setProducts] = useState([]);
   const [cart, setCart] = useState([]);
   const [showInvoice, setShowInvoice] = useState(false);
-  const [printFormat, setPrintFormat] = useState('a4'); // 'a4' or 'thermal'
+  const [printFormat, setPrintFormat] = useState('a4'); 
   const [createdIssue, setCreatedIssue] = useState(null);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
