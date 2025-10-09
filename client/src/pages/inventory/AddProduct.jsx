@@ -126,7 +126,7 @@ const AddProduct = () => {
       [name]: value
     }));
 
-    // Auto-calculate profit margin when prices change
+    // Auto-calculate profit margin when prices changeD
     if (name === 'buyingPrice' || name === 'sellingPrice') {
       const buying = name === 'buyingPrice' ? parseFloat(value) : parseFloat(formData.buyingPrice);
       const selling = name === 'sellingPrice' ? parseFloat(value) : parseFloat(formData.sellingPrice);
