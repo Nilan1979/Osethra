@@ -129,6 +129,17 @@ export const categoriesAPI = {
 
 // Issues API
 export const issuesAPI = {
+  // Get all issues with filters (alias)
+  getAll: async (params = {}) => {
+    try {
+      const response = await api.get('/api/inventory/issues', { params });
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching issues:', error);
+      throw error;
+    }
+  },
+
   // Get all issues with filters
   getIssues: async (params = {}) => {
     try {
@@ -283,12 +294,19 @@ export const dashboardAPI = {
   },
 
   // Get recent activities
-  getRecentActivities: async (limit = 10, type = null, severity = null) => {
+  getRecentActivities: async (limitOrParams = 10, type = null, severity = null) => {
     try {
-      const params = { limit };
-      if (type) params.type = type;
-      if (severity) params.severity = severity;
-      
+      let params = {};
+
+      // Support both formats: number or object
+      if (typeof limitOrParams === 'object') {
+        params = limitOrParams;
+      } else {
+        params.limit = limitOrParams;
+        if (type) params.type = type;
+        if (severity) params.severity = severity;
+      }
+
       const response = await api.get('/api/inventory/dashboard/activities', { params });
       return response.data;
     } catch (error) {

@@ -53,7 +53,7 @@ const PharmacistDashboard = () => {
   const [selectedPrescription, setSelectedPrescription] = useState(null);
   const [prescriptionModalOpen, setPrescriptionModalOpen] = useState(false);
   const [error, setError] = useState(null);
-  
+
   const [stats, setStats] = useState({
     totalProducts: 0,
     lowStock: 0,
@@ -71,7 +71,7 @@ const PharmacistDashboard = () => {
 
   const getTimeAgo = (date) => {
     const seconds = Math.floor((new Date() - date) / 1000);
-    
+
     if (seconds < 60) return `${seconds} seconds ago`;
     if (seconds < 3600) return `${Math.floor(seconds / 60)} mins ago`;
     if (seconds < 86400) return `${Math.floor(seconds / 3600)} hours ago`;
@@ -83,14 +83,20 @@ const PharmacistDashboard = () => {
       setLoading(true);
       setError(null);
 
-      // Fetch dashboard stats
-      const statsResponse = await inventoryAPI.dashboard.getDashboardStats();
+      // Fetch all data in parallel for faster loading
+      const [statsResponse, alertsResponse, prescriptionsResponse, activitiesResponse] = await Promise.all([
+        inventoryAPI.dashboard.getDashboardStats(),
+        inventoryAPI.alerts.getStockAlerts(),
+        inventoryAPI.prescriptions.getPrescriptions({ status: 'pending' }),
+        inventoryAPI.dashboard.getRecentActivities(10),
+      ]);
+
+      // Process dashboard stats
       setStats(statsResponse.data || statsResponse);
 
-      // Fetch stock alerts
-      const alertsResponse = await inventoryAPI.alerts.getStockAlerts();
+      // Process stock alerts
       const alerts = alertsResponse.data || alertsResponse;
-      
+
       // Set low stock items
       if (alerts.lowStock) {
         setLowStockItems(alerts.lowStock.slice(0, 5).map(item => ({
@@ -118,8 +124,7 @@ const PharmacistDashboard = () => {
         }));
       }
 
-      // Fetch pending prescriptions
-      const prescriptionsResponse = await inventoryAPI.prescriptions.getPrescriptions({ status: 'pending' });
+      // Process pending prescriptions
       const prescriptions = prescriptionsResponse.data?.prescriptions || prescriptionsResponse.prescriptions || [];
       setPendingPrescriptions(prescriptions.slice(0, 5).map(rx => ({
         id: rx.prescriptionNumber || rx._id,
@@ -132,8 +137,7 @@ const PharmacistDashboard = () => {
         medications: rx.medications || [],
       })));
 
-      // Fetch recent activities
-      const activitiesResponse = await inventoryAPI.dashboard.getRecentActivities(10);
+      // Process recent activities
       const activities = activitiesResponse.data?.activities || activitiesResponse.activities || [];
       setRecentActivities(activities.map(activity => ({
         id: activity._id,
@@ -242,6 +246,20 @@ const PharmacistDashboard = () => {
       description: 'View low stock & expiry',
     },
     {
+      title: 'Activity Logs',
+      icon: <AssessmentIcon />,
+      color: '#1976d2',
+      route: '/pharmacist/logs',
+      description: 'View all system activities',
+    },
+    {
+      title: 'Issue History',
+      icon: <ShoppingCartIcon />,
+      color: '#2e7d32',
+      route: '/pharmacist/issue-history',
+      description: 'View past product issues',
+    },
+    {
       title: 'Reports',
       icon: <AssessmentIcon />,
       color: '#9c27b0',
@@ -269,8 +287,8 @@ const PharmacistDashboard = () => {
   const handleDispensePrescription = async (prescription) => {
     try {
       // Navigate to IssueManagement with prescription medications in cart
-      navigate('/pharmacist/issues', { 
-        state: { 
+      navigate('/pharmacist/issues', {
+        state: {
           prescriptionData: {
             prescription: prescription,
             medications: prescription.medications,
@@ -279,7 +297,7 @@ const PharmacistDashboard = () => {
               id: prescription.patientId,
             }
           }
-        } 
+        }
       });
     } catch (err) {
       console.error('Failed to navigate to issue management:', err);
@@ -311,11 +329,11 @@ const PharmacistDashboard = () => {
     <Layout showContactInfo={false}>
       <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
         {/* Header Section */}
-        <Paper 
+        <Paper
           elevation={0}
-          sx={{ 
-            p: 3, 
-            mb: 3, 
+          sx={{
+            p: 3,
+            mb: 3,
             background: 'linear-gradient(135deg, #2e7d32 0%, #1b5e20 100%)',
             color: 'white',
             borderRadius: 3,
@@ -334,8 +352,8 @@ const PharmacistDashboard = () => {
               <Button
                 variant="outlined"
                 startIcon={<ShippingIcon />}
-                sx={{ 
-                  borderColor: 'white', 
+                sx={{
+                  borderColor: 'white',
                   color: 'white',
                   '&:hover': { borderColor: '#f5f5f5', bgcolor: 'rgba(255,255,255,0.1)' }
                 }}
@@ -357,21 +375,21 @@ const PharmacistDashboard = () => {
         <Grid container spacing={3}>
           {/* Statistics Cards */}
           <Grid item xs={12}>
-            <Box sx={{ 
-              display: 'grid', 
-              gridTemplateColumns: { 
-                xs: '1fr', 
-                sm: 'repeat(2, 1fr)', 
-                md: 'repeat(3, 1fr)', 
-                lg: 'repeat(6, 1fr)' 
+            <Box sx={{
+              display: 'grid',
+              gridTemplateColumns: {
+                xs: '1fr',
+                sm: 'repeat(2, 1fr)',
+                md: 'repeat(3, 1fr)',
+                lg: 'repeat(6, 1fr)'
               },
-              gap: 3 
+              gap: 3
             }}>
               {statCards.map((stat, index) => (
-                <Card 
+                <Card
                   key={index}
                   elevation={0}
-                  sx={{ 
+                  sx={{
                     minHeight: '180px',
                     borderRadius: 3,
                     border: '1px solid #e0e0e0',
@@ -427,15 +445,15 @@ const PharmacistDashboard = () => {
             <Typography variant="h6" gutterBottom fontWeight="600" sx={{ mb: 2, mt: 2 }}>
               Quick Actions
             </Typography>
-            <Box sx={{ 
-              display: 'grid', 
-              gridTemplateColumns: { 
-                xs: '1fr', 
-                sm: 'repeat(2, 1fr)', 
-                md: 'repeat(3, 1fr)', 
-                lg: 'repeat(5, 1fr)' 
+            <Box sx={{
+              display: 'grid',
+              gridTemplateColumns: {
+                xs: '1fr',
+                sm: 'repeat(2, 1fr)',
+                md: 'repeat(3, 1fr)',
+                lg: 'repeat(5, 1fr)'
               },
-              gap: 2 
+              gap: 2
             }}>
               {quickActions.map((action, index) => (
                 <Card
@@ -492,15 +510,15 @@ const PharmacistDashboard = () => {
                 <Box sx={{ flex: 1, overflowY: 'auto', pr: 1 }}>
                   <List dense sx={{ py: 0 }}>
                     {pendingPrescriptions.slice(0, 2).map((prescription) => (
-                      <ListItem 
+                      <ListItem
                         key={prescription.id}
-                        sx={{ 
-                          mb: 1.5, 
-                          bgcolor: '#fafafa', 
+                        sx={{
+                          mb: 1.5,
+                          bgcolor: '#fafafa',
                           borderRadius: 1.5,
                           cursor: 'pointer',
                           p: 1.5,
-                          '&:hover': { 
+                          '&:hover': {
                             bgcolor: '#e3f2fd',
                             transform: 'translateX(4px)',
                             transition: 'all 0.2s ease'
@@ -533,14 +551,14 @@ const PharmacistDashboard = () => {
                                 Dr. {prescription.doctorName.replace('Dr. ', '')}
                               </Typography>
                               <Box display="flex" gap={0.5} mt={0.5}>
-                                <Chip 
+                                <Chip
                                   label={`${prescription.medications.length} items`}
-                                  size="small" 
+                                  size="small"
                                   sx={{ fontSize: '0.65rem', height: 20 }}
                                 />
-                                <Chip 
+                                <Chip
                                   label={prescription.time}
-                                  size="small" 
+                                  size="small"
                                   variant="outlined"
                                   sx={{ fontSize: '0.65rem', height: 20 }}
                                 />
@@ -591,11 +609,11 @@ const PharmacistDashboard = () => {
                     {lowStockItems.slice(0, 2).map((item) => {
                       const percentage = getStockPercentage(item.stock, item.minStock);
                       return (
-                        <ListItem 
+                        <ListItem
                           key={item.id}
-                          sx={{ 
-                            mb: 1.5, 
-                            bgcolor: '#fafafa', 
+                          sx={{
+                            mb: 1.5,
+                            bgcolor: '#fafafa',
                             borderRadius: 1.5,
                             p: 1.5,
                             '&:hover': { bgcolor: '#f5f5f5' }
@@ -735,14 +753,14 @@ const PharmacistDashboard = () => {
                                   activity.type === 'issue'
                                     ? '#e3f2fd'
                                     : activity.type === 'receipt'
-                                    ? '#e8f5e9'
-                                    : '#fff3e0',
+                                      ? '#e8f5e9'
+                                      : '#fff3e0',
                                 color:
                                   activity.type === 'issue'
                                     ? '#1976d2'
                                     : activity.type === 'receipt'
-                                    ? '#2e7d32'
-                                    : '#ed6c02',
+                                      ? '#2e7d32'
+                                      : '#ed6c02',
                               }}
                             >
                               {activity.type === 'issue' ? (

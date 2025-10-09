@@ -38,6 +38,8 @@ import IssueManagement from './pages/inventory/IssueManagement';
 import PrescriptionsManagement from './pages/inventory/PrescriptionsManagement';
 import AddProduct from './pages/inventory/AddProduct';
 import EditProduct from './pages/inventory/EditProduct';
+import ActivityLogs from './pages/pharmacy/ActivityLogs';
+import IssueHistory from './pages/pharmacy/IssueHistory';
 
 const theme = createTheme({
   palette: {
@@ -167,10 +169,26 @@ function AppRoutes() {
         }
       />
       <Route
+        path="/pharmacist/logs"
+        element={
+          <ProtectedRoute>
+            <ActivityLogs />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/pharmacist/issue-history"
+        element={
+          <ProtectedRoute>
+            <IssueHistory />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/appointments"
         element={
           <ProtectedRoute>
-           <AppointmentsList/>
+            <AppointmentsList />
           </ProtectedRoute>
         }
       />
@@ -179,11 +197,11 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             {user?.role === 'admin' ? <Navigate to="/admin/dashboard" /> :
-             user?.role === 'doctor' ? <Navigate to="/doctor/dashboard" /> :
-             user?.role === 'nurse' ? <Navigate to="/nurse/dashboard" /> :
-             user?.role === 'pharmacist' ? <Navigate to="/pharmacist/dashboard" /> :
-             user?.role === 'receptionist' ? <Navigate to="/appointments" /> :
-             <UserDashboard />}
+              user?.role === 'doctor' ? <Navigate to="/doctor/dashboard" /> :
+                user?.role === 'nurse' ? <Navigate to="/nurse/dashboard" /> :
+                  user?.role === 'pharmacist' ? <Navigate to="/pharmacist/dashboard" /> :
+                    user?.role === 'receptionist' ? <Navigate to="/appointments" /> :
+                      <UserDashboard />}
           </ProtectedRoute>
         }
       />
@@ -193,7 +211,7 @@ function AppRoutes() {
       <Route path="/appointments/add" element={<AddAppointment />} />
       <Route path="/appointments/:id/edit" element={<EditAppointment />} />
       <Route path="/appointments/:id" element={<AppointmentDetails />} />
-      
+
       {/* Treatment Routes */}
       <Route
         path="/add-treatment/:appointmentId"
