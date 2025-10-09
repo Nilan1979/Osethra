@@ -36,6 +36,7 @@ import {
 } from '@mui/icons-material';
 import { useNavigate, useParams } from 'react-router-dom';
 import Layout from '../../components/Layout/Layout';
+import { productsAPI, categoriesAPI } from '../../api/inventory';
 
 const EditProduct = () => {
   const navigate = useNavigate();
@@ -46,17 +47,9 @@ const EditProduct = () => {
   const [snackbarSeverity, setSnackbarSeverity] = useState('success');
   const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
+  const [loadingCategories, setLoadingCategories] = useState(false);
 
-  const [categories, setCategories] = useState([
-    'Medications',
-    'Medical Supplies',
-    'PPE',
-    'Surgical Instruments',
-    'Laboratory Supplies',
-    'First Aid',
-    'Diagnostic Equipment',
-    'Disposables',
-  ]);
+  const [categories, setCategories] = useState([]);
 
   const [originalData, setOriginalData] = useState(null);
   const [formData, setFormData] = useState({
@@ -105,50 +98,79 @@ const EditProduct = () => {
     'kg',
   ];
 
-  // Mock function to fetch product data
+  // Fetch categories from database
+  const fetchCategories = async () => {
+    setLoadingCategories(true);
+    try {
+      const response = await categoriesAPI.getCategories();
+      if (response.success && response.data) {
+        const categoryNames = response.data.map(cat => cat.name);
+        setCategories(categoryNames);
+      }
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+      setSnackbarMessage('Failed to load categories');
+      setSnackbarSeverity('error');
+      setOpenSnackbar(true);
+    } finally {
+      setLoadingCategories(false);
+    }
+  };
+
+  // Fetch product data from database
   const fetchProductData = async (productId) => {
-    // TODO: Replace with actual API call
-    // Simulate API call with mock data
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        const mockProduct = {
-          id: productId,
-          name: 'Paracetamol 500mg',
-          sku: 'MED-PAR-500',
-          category: 'Medications',
-          description: 'Pain relief and fever reduction medication',
-          manufacturer: 'Ceylon Pharmaceuticals',
-          supplier: 'MedSupply Lanka',
-          buyingPrice: '12.50',
-          sellingPrice: '15.00',
-          profitMargin: '20.00',
-          currentStock: '450',
-          minStock: '100',
-          maxStock: '1000',
-          reorderPoint: '150',
-          unit: 'tablets',
-          batchNumber: 'PAR2024-089',
-          manufactureDate: '2024-01-15',
-          expiryDate: '2026-03-15',
-          storageLocation: 'Shelf A, Row 3',
-          barcode: '8901234567890',
-          prescription: 'no',
-          status: 'active',
-          notes: 'Store in cool, dry place',
+    try {
+      const response = await productsAPI.getProduct(productId);
+      if (response.success && response.data) {
+        const product = response.data;
+
+        // Transform the data to match form structure
+        return {
+          name: product.name || '',
+          sku: product.sku || '',
+          category: product.category || '',
+          description: product.description || '',
+          manufacturer: product.manufacturer || '',
+          supplier: product.supplier || '',
+          buyingPrice: product.buyingPrice || '',
+          sellingPrice: product.sellingPrice || '',
+          profitMargin: product.profitMargin || '',
+          // Stock fields are flat in the database, not nested
+          currentStock: product.currentStock || '',
+          minStock: product.minStock || '',
+          maxStock: product.maxStock || '',
+          reorderPoint: product.reorderPoint || '',
+          unit: product.unit || 'pieces',
+          batchNumber: product.batchNumber || '',
+          manufactureDate: product.manufactureDate ? product.manufactureDate.split('T')[0] : '',
+          expiryDate: product.expiryDate ? product.expiryDate.split('T')[0] : '',
+          storageLocation: product.storageLocation || '',
+          barcode: product.barcode || '',
+          prescription: product.prescription || 'no',
+          status: product.status || 'active',
+          notes: product.notes || '',
         };
-        resolve(mockProduct);
-      }, 1000);
-    });
+      }
+      throw new Error('Failed to fetch product');
+    } catch (error) {
+      console.error('Error fetching product:', error);
+      throw error;
+    }
   };
 
   useEffect(() => {
+    // Fetch categories on mount
+    fetchCategories();
+
+    // Fetch product data
     const loadProduct = async () => {
       try {
         setLoading(true);
         const product = await fetchProductData(id);
         setFormData(product);
         setOriginalData(product);
-      } catch {
+      } catch (error) {
+        console.error('Error loading product:', error);
         setSnackbarMessage('Error loading product data');
         setSnackbarSeverity('error');
         setOpenSnackbar(true);
@@ -173,7 +195,7 @@ const EditProduct = () => {
     if (name === 'buyingPrice' || name === 'sellingPrice') {
       const buying = name === 'buyingPrice' ? parseFloat(value) : parseFloat(formData.buyingPrice);
       const selling = name === 'sellingPrice' ? parseFloat(value) : parseFloat(formData.sellingPrice);
-      
+
       if (buying && selling && buying > 0) {
         const margin = ((selling - buying) / buying * 100).toFixed(2);
         setFormData(prev => ({
@@ -248,22 +270,47 @@ const EditProduct = () => {
     }
 
     try {
-      // TODO: Replace with actual API call
-      console.log('Updating product:', formData);
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Prepare data for API (database uses flat structure, not nested)
+      const updateData = {
+        name: formData.name,
+        sku: formData.sku,
+        category: formData.category,
+        description: formData.description,
+        manufacturer: formData.manufacturer,
+        supplier: formData.supplier,
+        buyingPrice: parseFloat(formData.buyingPrice),
+        sellingPrice: parseFloat(formData.sellingPrice),
+        // Stock fields are flat in the database
+        currentStock: parseFloat(formData.currentStock),
+        minStock: parseFloat(formData.minStock),
+        maxStock: formData.maxStock ? parseFloat(formData.maxStock) : undefined,
+        reorderPoint: formData.reorderPoint ? parseFloat(formData.reorderPoint) : undefined,
+        unit: formData.unit,
+        batchNumber: formData.batchNumber,
+        manufactureDate: formData.manufactureDate,
+        expiryDate: formData.expiryDate,
+        storageLocation: formData.storageLocation,
+        barcode: formData.barcode,
+        prescription: formData.prescription,
+        status: formData.status,
+        notes: formData.notes,
+      };
 
-      setSnackbarMessage('Product updated successfully!');
-      setSnackbarSeverity('success');
-      setOpenSnackbar(true);
+      const response = await productsAPI.updateProduct(id, updateData);
 
-      // Navigate back to products page after 1.5 seconds
-      setTimeout(() => {
-        navigate('/pharmacist/products');
-      }, 1500);
-    } catch {
-      setSnackbarMessage('Error updating product. Please try again.');
+      if (response.success) {
+        setSnackbarMessage('Product updated successfully!');
+        setSnackbarSeverity('success');
+        setOpenSnackbar(true);
+
+        // Navigate back to products page after 1.5 seconds
+        setTimeout(() => {
+          navigate('/pharmacist/products');
+        }, 1500);
+      }
+    } catch (error) {
+      console.error('Error updating product:', error);
+      setSnackbarMessage(error.response?.data?.message || 'Error updating product. Please try again.');
       setSnackbarSeverity('error');
       setOpenSnackbar(true);
     }
@@ -279,25 +326,64 @@ const EditProduct = () => {
     }
   };
 
-  const handleAddCategory = () => {
-    if (newCategoryName.trim() && !categories.includes(newCategoryName.trim())) {
-      setCategories([...categories, newCategoryName.trim()]);
-      setNewCategoryName('');
-      setCategoryDialogOpen(false);
-      setSnackbarMessage('Category added successfully!');
-      setSnackbarSeverity('success');
+  const handleAddCategory = async () => {
+    if (!newCategoryName.trim()) {
+      return;
+    }
+
+    // Check if category already exists locally
+    if (categories.some(cat => cat.toLowerCase() === newCategoryName.trim().toLowerCase())) {
+      setSnackbarMessage('Category already exists');
+      setSnackbarSeverity('warning');
+      setOpenSnackbar(true);
+      return;
+    }
+
+    try {
+      const response = await categoriesAPI.createCategory({
+        name: newCategoryName.trim()
+      });
+
+      if (response.success) {
+        // Refresh categories list
+        await fetchCategories();
+        setNewCategoryName('');
+        setCategoryDialogOpen(false);
+        setSnackbarMessage('Category added successfully!');
+        setSnackbarSeverity('success');
+        setOpenSnackbar(true);
+      }
+    } catch (error) {
+      console.error('Error adding category:', error);
+      setSnackbarMessage(error.response?.data?.message || 'Failed to add category');
+      setSnackbarSeverity('error');
       setOpenSnackbar(true);
     }
   };
 
-  const handleDeleteCategory = (categoryToDelete) => {
-    setCategories(categories.filter(cat => cat !== categoryToDelete));
-    if (formData.category === categoryToDelete) {
-      setFormData(prev => ({ ...prev, category: '' }));
+  const handleDeleteCategory = async (categoryToDelete) => {
+    try {
+      const response = await categoriesAPI.deleteCategory(categoryToDelete);
+
+      if (response.success) {
+        // Refresh categories list
+        await fetchCategories();
+
+        // Clear category from form if it was selected
+        if (formData.category === categoryToDelete) {
+          setFormData(prev => ({ ...prev, category: '' }));
+        }
+
+        setSnackbarMessage('Category deleted successfully!');
+        setSnackbarSeverity('success');
+        setOpenSnackbar(true);
+      }
+    } catch (error) {
+      console.error('Error deleting category:', error);
+      setSnackbarMessage(error.response?.data?.message || 'Failed to delete category');
+      setSnackbarSeverity('error');
+      setOpenSnackbar(true);
     }
-    setSnackbarMessage('Category deleted successfully!');
-    setSnackbarSeverity('success');
-    setOpenSnackbar(true);
   };
 
   const hasChanges = () => {
@@ -410,29 +496,53 @@ const EditProduct = () => {
                         placeholder="e.g., MED-PAR-500"
                       />
                     </Grid>
-                    <Grid item xs={12} md={6}>
-                      <Box display="flex" gap={1}>
-                        <TextField
-                          fullWidth
-                          required
-                          select
-                          label="Category"
-                          name="category"
-                          value={formData.category}
-                          onChange={handleInputChange}
-                          error={!!errors.category}
-                          helperText={errors.category}
-                        >
-                          {categories.map((cat) => (
-                            <MenuItem key={cat} value={cat}>
-                              {cat}
-                            </MenuItem>
-                          ))}
-                        </TextField>
+                    <Grid item xs={12}>
+                      <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-start', width: '100%' }}>
+                        <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+                          <TextField
+                            fullWidth
+                            required
+                            select
+                            label="Category"
+                            name="category"
+                            value={formData.category}
+                            onChange={handleInputChange}
+                            error={!!errors.category}
+                            helperText={errors.category || (loadingCategories ? 'Loading categories...' : '')}
+                            disabled={loadingCategories}
+                          >
+                            {loadingCategories ? (
+                              <MenuItem disabled>
+                                <CircularProgress size={20} sx={{ mr: 1 }} />
+                                Loading categories...
+                              </MenuItem>
+                            ) : categories.length === 0 ? (
+                              <MenuItem disabled>No categories available</MenuItem>
+                            ) : (
+                              categories.map((cat) => (
+                                <MenuItem key={cat} value={cat}>
+                                  {cat}
+                                </MenuItem>
+                              ))
+                            )}
+                          </TextField>
+                        </Box>
                         <IconButton
                           color="primary"
                           onClick={() => setCategoryDialogOpen(true)}
-                          sx={{ border: '1px solid #e0e0e0' }}
+                          sx={{
+                            border: '1px solid #e0e0e0',
+                            borderRadius: 1,
+                            minWidth: 56,
+                            width: 56,
+                            height: 56,
+                            mt: 0,
+                            flexShrink: 0,
+                            '&:hover': {
+                              bgcolor: '#f5f5f5',
+                            }
+                          }}
+                          aria-label="Manage categories"
                         >
                           <CategoryIcon />
                         </IconButton>
@@ -771,8 +881,8 @@ const EditProduct = () => {
         </form>
 
         {/* Category Management Dialog */}
-        <Dialog 
-          open={categoryDialogOpen} 
+        <Dialog
+          open={categoryDialogOpen}
           onClose={() => setCategoryDialogOpen(false)}
           maxWidth="sm"
           fullWidth

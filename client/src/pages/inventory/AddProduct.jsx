@@ -205,7 +205,34 @@ const AddProduct = () => {
     }
 
     try {
-      const response = await productsAPI.createProduct(formData);
+      // Transform formData to match database schema
+      const productData = {
+        name: formData.name,
+        sku: formData.sku,
+        category: formData.category,
+        description: formData.description,
+        manufacturer: formData.manufacturer,
+        supplier: formData.supplier,
+        buyingPrice: parseFloat(formData.buyingPrice),
+        sellingPrice: parseFloat(formData.sellingPrice),
+        profitMargin: formData.profitMargin ? parseFloat(formData.profitMargin) : 0,
+        // Database uses currentStock, not initialStock
+        currentStock: parseFloat(formData.initialStock),
+        minStock: parseFloat(formData.minStock),
+        maxStock: formData.maxStock ? parseFloat(formData.maxStock) : undefined,
+        reorderPoint: formData.reorderPoint ? parseFloat(formData.reorderPoint) : undefined,
+        unit: formData.unit,
+        batchNumber: formData.batchNumber,
+        manufactureDate: formData.manufactureDate,
+        expiryDate: formData.expiryDate,
+        storageLocation: formData.storageLocation,
+        barcode: formData.barcode,
+        prescription: formData.prescription, // Ensure prescription is included
+        status: formData.status,
+        notes: formData.notes,
+      };
+
+      const response = await productsAPI.createProduct(productData);
 
       if (response.success) {
         setSnackbarMessage('Product added successfully!');
@@ -705,6 +732,7 @@ const AddProduct = () => {
                         name="prescription"
                         value={formData.prescription}
                         onChange={handleInputChange}
+                        sx={{ minWidth: '100%' }}
                       >
                         <MenuItem value="yes">Yes</MenuItem>
                         <MenuItem value="no">No</MenuItem>
@@ -718,6 +746,7 @@ const AddProduct = () => {
                         name="status"
                         value={formData.status}
                         onChange={handleInputChange}
+                        sx={{ minWidth: 150 }}
                       >
                         <MenuItem value="active">Active</MenuItem>
                         <MenuItem value="inactive">Inactive</MenuItem>

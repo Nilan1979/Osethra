@@ -1,16 +1,16 @@
 import React from 'react';
-import { 
-  Card, 
-  CardContent, 
-  Typography, 
-  Box, 
+import {
+  Card,
+  CardContent,
+  Typography,
+  Box,
   Avatar,
   IconButton,
   Chip,
   Tooltip,
 } from '@mui/material';
-import { 
-  Edit as EditIcon, 
+import {
+  Edit as EditIcon,
   Delete as DeleteIcon,
   ShoppingCart as CartIcon,
   History as HistoryIcon,
@@ -22,9 +22,9 @@ import ExpiryDateBadge from '../atoms/ExpiryDateBadge';
 const ProductCard = ({ product, onEdit, onDelete, onIssue, onViewHistory, viewMode = 'grid' }) => {
   if (viewMode === 'list') {
     return (
-      <Card 
+      <Card
         elevation={0}
-        sx={{ 
+        sx={{
           border: '1px solid #e0e0e0',
           borderRadius: 2,
           transition: 'all 0.3s ease',
@@ -35,9 +35,9 @@ const ProductCard = ({ product, onEdit, onDelete, onIssue, onViewHistory, viewMo
       >
         <CardContent>
           <Box display="flex" alignItems="center" gap={3}>
-            <Avatar 
-              sx={{ 
-                bgcolor: '#e3f2fd', 
+            <Avatar
+              sx={{
+                bgcolor: '#e3f2fd',
                 color: '#1976d2',
                 width: 56,
                 height: 56,
@@ -45,7 +45,7 @@ const ProductCard = ({ product, onEdit, onDelete, onIssue, onViewHistory, viewMo
             >
               {product.name.charAt(0)}
             </Avatar>
-            
+
             <Box flex={1}>
               <Box display="flex" alignItems="center" gap={2} mb={1}>
                 <Typography variant="h6" fontWeight="600">
@@ -70,7 +70,7 @@ const ProductCard = ({ product, onEdit, onDelete, onIssue, onViewHistory, viewMo
                   {product.stock} / {product.minStock}
                 </Typography>
               </Box>
-              
+
               <Box textAlign="center">
                 <Typography variant="caption" color="text.secondary" display="block">
                   Unit Price
@@ -118,9 +118,9 @@ const ProductCard = ({ product, onEdit, onDelete, onIssue, onViewHistory, viewMo
   }
 
   return (
-    <Card 
+    <Card
       elevation={0}
-      sx={{ 
+      sx={{
         height: '100%',
         width: '100%',
         minHeight: '380px',
@@ -137,9 +137,9 @@ const ProductCard = ({ product, onEdit, onDelete, onIssue, onViewHistory, viewMo
     >
       <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column', p: 2.5 }}>
         <Box display="flex" justifyContent="space-between" alignItems="start" mb={2}>
-          <Avatar 
-            sx={{ 
-              bgcolor: '#e3f2fd', 
+          <Avatar
+            sx={{
+              bgcolor: '#e3f2fd',
               color: '#1976d2',
               width: 48,
               height: 48,
@@ -147,30 +147,13 @@ const ProductCard = ({ product, onEdit, onDelete, onIssue, onViewHistory, viewMo
           >
             {product.name.charAt(0)}
           </Avatar>
-          <Box display="flex" gap={0.5}>
-            {onEdit && (
-              <IconButton size="small" onClick={() => onEdit(product)} color="primary">
-                <EditIcon fontSize="small" />
-              </IconButton>
-            )}
-            {onIssue && (
-              <IconButton size="small" onClick={() => onIssue(product)} color="success">
-                <CartIcon fontSize="small" />
-              </IconButton>
-            )}
-            {onDelete && (
-              <IconButton size="small" onClick={() => onDelete(product)} color="error">
-                <DeleteIcon fontSize="small" />
-              </IconButton>
-            )}
-          </Box>
         </Box>
 
-        <Typography 
-          variant="h6" 
-          fontWeight="600" 
-          gutterBottom 
-          sx={{ 
+        <Typography
+          variant="h6"
+          fontWeight="600"
+          gutterBottom
+          sx={{
             minHeight: '64px',
             overflow: 'hidden',
             textOverflow: 'ellipsis',
@@ -182,7 +165,7 @@ const ProductCard = ({ product, onEdit, onDelete, onIssue, onViewHistory, viewMo
         >
           {product.name}
         </Typography>
-        
+
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }} noWrap>
           SKU: {product.sku || 'N/A'}
         </Typography>
@@ -221,9 +204,9 @@ const ProductCard = ({ product, onEdit, onDelete, onIssue, onViewHistory, viewMo
 
         <Box sx={{ minHeight: '32px', mt: 1 }}>
           {product.batchNumber && (
-            <Chip 
-              label={`Batch: ${product.batchNumber}`} 
-              size="small" 
+            <Chip
+              label={`Batch: ${product.batchNumber}`}
+              size="small"
               variant="outlined"
               sx={{ fontSize: '0.7rem' }}
             />
