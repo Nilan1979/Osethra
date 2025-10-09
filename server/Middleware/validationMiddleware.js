@@ -7,24 +7,26 @@
  * Validate product data (for create and update operations)
  */
 exports.validateProduct = (req, res, next) => {
-    const { 
-        name, 
-        sku, 
-        category, 
-        buyingPrice, 
-        sellingPrice, 
-        currentStock, 
+    console.log('=== VALIDATION MIDDLEWARE ===');
+    console.log('Request method:', req.method);
+    console.log('Request body:', JSON.stringify(req.body, null, 2));
+
+    const {
+        name,
+        sku,
+        category,
+        buyingPrice,
+        sellingPrice,
+        currentStock,
         initialStock,
-        minStock, 
+        minStock,
         maxStock,
         unit,
         manufactureDate,
         expiryDate
     } = req.body;
 
-    const errors = [];
-
-    // Required fields validation
+    const errors = [];    // Required fields validation
     if (!name || name.trim().length === 0) {
         errors.push('Product name is required');
     } else if (name.length < 3) {
@@ -64,7 +66,7 @@ exports.validateProduct = (req, res, next) => {
     } else {
         const sellingPriceNum = Number(sellingPrice);
         const buyingPriceNum = Number(buyingPrice);
-        
+
         if (isNaN(sellingPriceNum)) {
             errors.push('Selling price must be a valid number');
         } else if (sellingPriceNum <= 0) {
@@ -75,9 +77,12 @@ exports.validateProduct = (req, res, next) => {
     }
 
     // Stock validations
-    const stockField = req.method === 'POST' ? initialStock : currentStock;
+    // Support both currentStock and initialStock for POST requests
+    const stockField = req.method === 'POST'
+        ? (currentStock !== undefined ? currentStock : initialStock)
+        : currentStock;
     const stockFieldName = req.method === 'POST' ? 'Initial stock' : 'Current stock';
-    
+
     if (stockField === undefined || stockField === null || stockField === '') {
         errors.push(`${stockFieldName} is required`);
     } else {
@@ -107,7 +112,7 @@ exports.validateProduct = (req, res, next) => {
     if (maxStock !== undefined && maxStock !== null && maxStock !== '') {
         const maxStockNum = Number(maxStock);
         const minStockNum = Number(minStock);
-        
+
         if (isNaN(maxStockNum)) {
             errors.push('Maximum stock must be a valid number');
         } else if (maxStockNum < 0) {
@@ -123,15 +128,15 @@ exports.validateProduct = (req, res, next) => {
     if (manufactureDate && expiryDate) {
         const mfgDate = new Date(manufactureDate);
         const expDate = new Date(expiryDate);
-        
+
         if (isNaN(mfgDate.getTime())) {
             errors.push('Invalid manufacture date');
         }
-        
+
         if (isNaN(expDate.getTime())) {
             errors.push('Invalid expiry date');
         }
-        
+
         if (!isNaN(mfgDate.getTime()) && !isNaN(expDate.getTime()) && expDate <= mfgDate) {
             errors.push('Expiry date must be after manufacture date');
         }
@@ -139,6 +144,7 @@ exports.validateProduct = (req, res, next) => {
 
     // If there are validation errors, return them
     if (errors.length > 0) {
+        console.log('Validation errors:', errors);
         return res.status(400).json({
             success: false,
             message: 'Validation failed',
@@ -146,6 +152,7 @@ exports.validateProduct = (req, res, next) => {
         });
     }
 
+    console.log('Validation passed!');
     next();
 };
 
@@ -159,7 +166,7 @@ exports.validateIssue = (req, res, next) => {
 
     // Type validation
     const validTypes = ['outpatient', 'inpatient', 'department', 'emergency', 'general'];
-    
+
     if (!type) {
         errors.push('Issue type is required');
     } else if (!validTypes.includes(type)) {
@@ -177,7 +184,7 @@ exports.validateIssue = (req, res, next) => {
             if (!patient.name || patient.name.trim().length === 0) {
                 errors.push('Patient name is required');
             }
-            
+
             // Additional validation for inpatient
             if (type === 'inpatient') {
                 if (!patient.bedNumber || patient.bedNumber.trim().length === 0) {
@@ -217,7 +224,7 @@ exports.validateIssue = (req, res, next) => {
                 errors.push(`Item ${index + 1}: Product ID is required`);
             }
             // productName is optional - it will be fetched from the database
-            
+
             if (item.quantity === undefined || item.quantity === null) {
                 errors.push(`Item ${index + 1}: Quantity is required`);
             } else {
@@ -419,7 +426,7 @@ exports.validateIssueStatus = (req, res, next) => {
     const errors = [];
 
     const validStatuses = ['pending', 'issued', 'partial', 'returned', 'cancelled'];
-    
+
     if (!status) {
         errors.push('Status is required');
     } else if (!validStatuses.includes(status)) {

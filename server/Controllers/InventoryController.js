@@ -112,6 +112,8 @@ exports.getProduct = async (req, res) => {
 // Create new product
 exports.createProduct = async (req, res) => {
     try {
+        console.log('Received product data:', req.body);
+
         const {
             name,
             sku,
@@ -121,7 +123,8 @@ exports.createProduct = async (req, res) => {
             supplier,
             buyingPrice,
             sellingPrice,
-            initialStock,
+            currentStock,
+            initialStock, // Support both for backwards compatibility
             minStock,
             maxStock,
             reorderPoint,
@@ -136,9 +139,13 @@ exports.createProduct = async (req, res) => {
             notes
         } = req.body;
 
+        // Use currentStock if provided, otherwise fall back to initialStock
+        const stockValue = currentStock !== undefined ? currentStock : initialStock;
+        console.log('Stock value:', stockValue, 'currentStock:', currentStock, 'initialStock:', initialStock);
+
         // Validate required fields
-        if (!name || !sku || !category || !buyingPrice || !sellingPrice || 
-            initialStock === undefined || !minStock || !unit) {
+        if (!name || !sku || !category || !buyingPrice || !sellingPrice ||
+            stockValue === undefined || !minStock || !unit) {
             return res.status(400).json({
                 success: false,
                 message: 'Please provide all required fields'
@@ -193,7 +200,7 @@ exports.createProduct = async (req, res) => {
             supplier,
             buyingPrice: parseFloat(buyingPrice),
             sellingPrice: parseFloat(sellingPrice),
-            currentStock: parseInt(initialStock),
+            currentStock: parseInt(stockValue),
             minStock: parseInt(minStock),
             maxStock: maxStock ? parseInt(maxStock) : undefined,
             reorderPoint: reorderPoint ? parseInt(reorderPoint) : undefined,
@@ -203,7 +210,7 @@ exports.createProduct = async (req, res) => {
             expiryDate,
             storageLocation,
             barcode,
-            prescription: prescription || false,
+            prescription: prescription === 'yes' || prescription === true, // Convert string to boolean
             status: status || 'active',
             notes,
             createdBy: req.user?.id // Assumes auth middleware sets req.user
@@ -234,9 +241,12 @@ exports.createProduct = async (req, res) => {
             data: product
         });
     } catch (err) {
+        console.error('Error creating product:', err);
+
         // Handle validation errors
         if (err.name === 'ValidationError') {
             const errors = Object.values(err.errors).map(e => e.message);
+            console.error('Validation errors:', errors);
             return res.status(400).json({
                 success: false,
                 message: 'Validation error',
@@ -244,6 +254,7 @@ exports.createProduct = async (req, res) => {
             });
         }
 
+        console.error('General error:', err.message);
         res.status(500).json({
             success: false,
             message: 'Error creating product',
@@ -313,7 +324,7 @@ exports.updateProduct = async (req, res) => {
         // Validate selling price >= buying price
         const newBuyingPrice = buyingPrice !== undefined ? parseFloat(buyingPrice) : product.buyingPrice;
         const newSellingPrice = sellingPrice !== undefined ? parseFloat(sellingPrice) : product.sellingPrice;
-        
+
         if (newSellingPrice < newBuyingPrice) {
             return res.status(400).json({
                 success: false,
@@ -324,7 +335,7 @@ exports.updateProduct = async (req, res) => {
         // Validate expiry date > manufacture date
         const newMfgDate = manufactureDate || product.manufactureDate;
         const newExpDate = expiryDate || product.expiryDate;
-        
+
         if (newMfgDate && newExpDate && new Date(newExpDate) <= new Date(newMfgDate)) {
             return res.status(400).json({
                 success: false,
@@ -358,7 +369,7 @@ exports.updateProduct = async (req, res) => {
         if (prescription !== undefined) product.prescription = prescription;
         if (status !== undefined) product.status = status;
         if (notes !== undefined) product.notes = notes;
-        
+
         product.updatedBy = req.user?.id;
 
         await product.save();
@@ -505,8 +516,8 @@ exports.createCategory = async (req, res) => {
         }
 
         // Check if category already exists (case-insensitive)
-        const existingCategory = await Category.findOne({ 
-            name: { $regex: new RegExp(`^${name}$`, 'i') } 
+        const existingCategory = await Category.findOne({
+            name: { $regex: new RegExp(`^${name}$`, 'i') }
         });
 
         if (existingCategory) {
@@ -683,8 +694,8 @@ exports.getStockAlerts = async (req, res) => {
                 status: 'active',
                 currentStock: 0
             })
-            .select('name sku category minStock unit sellingPrice')
-            .sort({ name: 1 });
+                .select('name sku category minStock unit sellingPrice')
+                .sort({ name: 1 });
         }
 
         // Expiring Soon: expiryDate within next 30 days
@@ -764,10 +775,10 @@ exports.getStockAlerts = async (req, res) => {
             outOfStockCount: alerts.outOfStock?.length || 0,
             expiringCount: alerts.expiringItems?.length || 0,
             expiredCount: alerts.expiredItems?.length || 0,
-            totalAlerts: (alerts.lowStock?.length || 0) + 
-                        (alerts.outOfStock?.length || 0) + 
-                        (alerts.expiringItems?.length || 0) + 
-                        (alerts.expiredItems?.length || 0)
+            totalAlerts: (alerts.lowStock?.length || 0) +
+                (alerts.outOfStock?.length || 0) +
+                (alerts.expiringItems?.length || 0) +
+                (alerts.expiredItems?.length || 0)
         };
 
         res.status(200).json({
@@ -946,7 +957,7 @@ exports.getDashboardStats = async (req, res) => {
 
         const yesterdayData = yesterdayIssuesData.length > 0 ? yesterdayIssuesData[0] : { count: 0, revenue: 0 };
 
-        const revenueTrend = yesterdayData.revenue > 0 
+        const revenueTrend = yesterdayData.revenue > 0
             ? ((todayData.revenue - yesterdayData.revenue) / yesterdayData.revenue * 100).toFixed(2)
             : 0;
 
@@ -1057,12 +1068,12 @@ exports.logActivity = async (activityData) => {
 exports.getProductOrderHistory = async (req, res) => {
     try {
         const { id } = req.params;
-        const { 
-            page = 1, 
-            limit = 50, 
-            type = '', 
-            startDate = '', 
-            endDate = '' 
+        const {
+            page = 1,
+            limit = 50,
+            type = '',
+            startDate = '',
+            endDate = ''
         } = req.query;
 
         // Find product
