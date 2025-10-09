@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Container,
   Grid,
@@ -23,6 +23,7 @@ import {
   ListItemText,
   ListItemSecondaryAction,
   Chip,
+  CircularProgress,
 } from '@mui/material';
 import {
   ArrowBack as ArrowBackIcon,
@@ -35,6 +36,7 @@ import {
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../../components/Layout/Layout';
+import { productsAPI, categoriesAPI } from '../../api/inventory';
 
 const AddProduct = () => {
   const navigate = useNavigate();
@@ -43,17 +45,9 @@ const AddProduct = () => {
   const [snackbarSeverity, setSnackbarSeverity] = useState('success');
   const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
+  const [loadingCategories, setLoadingCategories] = useState(false);
 
-  const [categories, setCategories] = useState([
-    'Medications',
-    'Medical Supplies',
-    'PPE',
-    'Surgical Instruments',
-    'Laboratory Supplies',
-    'First Aid',
-    'Diagnostic Equipment',
-    'Disposables',
-  ]);
+  const [categories, setCategories] = useState([]);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -101,6 +95,30 @@ const AddProduct = () => {
     'kg',
   ];
 
+  // Fetch categories from database on component mount
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  const fetchCategories = async () => {
+    setLoadingCategories(true);
+    try {
+      const response = await categoriesAPI.getCategories();
+      if (response.success && response.data) {
+        // Extract category names from the response
+        const categoryNames = response.data.map(cat => cat.name);
+        setCategories(categoryNames);
+      }
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+      setSnackbarMessage('Failed to load categories');
+      setSnackbarSeverity('error');
+      setOpenSnackbar(true);
+    } finally {
+      setLoadingCategories(false);
+    }
+  };
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -112,7 +130,7 @@ const AddProduct = () => {
     if (name === 'buyingPrice' || name === 'sellingPrice') {
       const buying = name === 'buyingPrice' ? parseFloat(value) : parseFloat(formData.buyingPrice);
       const selling = name === 'sellingPrice' ? parseFloat(value) : parseFloat(formData.sellingPrice);
-      
+
       if (buying && selling && buying > 0) {
         const margin = ((selling - buying) / buying * 100).toFixed(2);
         setFormData(prev => ({
@@ -187,22 +205,21 @@ const AddProduct = () => {
     }
 
     try {
-      // TODO: Replace with actual API call
-      console.log('Submitting product:', formData);
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const response = await productsAPI.createProduct(formData);
 
-      setSnackbarMessage('Product added successfully!');
-      setSnackbarSeverity('success');
-      setOpenSnackbar(true);
+      if (response.success) {
+        setSnackbarMessage('Product added successfully!');
+        setSnackbarSeverity('success');
+        setOpenSnackbar(true);
 
-      // Navigate back to products page after 1.5 seconds
-      setTimeout(() => {
-        navigate('/pharmacist/products');
-      }, 1500);
-    } catch {
-      setSnackbarMessage('Error adding product. Please try again.');
+        // Navigate back to products page after 1.5 seconds
+        setTimeout(() => {
+          navigate('/pharmacist/products');
+        }, 1500);
+      }
+    } catch (error) {
+      console.error('Error adding product:', error);
+      setSnackbarMessage(error.response?.data?.message || 'Error adding product. Please try again.');
       setSnackbarSeverity('error');
       setOpenSnackbar(true);
     }
@@ -236,25 +253,64 @@ const AddProduct = () => {
     setErrors({});
   };
 
-  const handleAddCategory = () => {
-    if (newCategoryName.trim() && !categories.includes(newCategoryName.trim())) {
-      setCategories([...categories, newCategoryName.trim()]);
-      setNewCategoryName('');
-      setCategoryDialogOpen(false);
-      setSnackbarMessage('Category added successfully!');
-      setSnackbarSeverity('success');
+  const handleAddCategory = async () => {
+    if (!newCategoryName.trim()) {
+      return;
+    }
+
+    // Check if category already exists locally
+    if (categories.some(cat => cat.toLowerCase() === newCategoryName.trim().toLowerCase())) {
+      setSnackbarMessage('Category already exists');
+      setSnackbarSeverity('warning');
+      setOpenSnackbar(true);
+      return;
+    }
+
+    try {
+      const response = await categoriesAPI.createCategory({
+        name: newCategoryName.trim()
+      });
+
+      if (response.success) {
+        // Refresh categories list
+        await fetchCategories();
+        setNewCategoryName('');
+        setCategoryDialogOpen(false);
+        setSnackbarMessage('Category added successfully!');
+        setSnackbarSeverity('success');
+        setOpenSnackbar(true);
+      }
+    } catch (error) {
+      console.error('Error adding category:', error);
+      setSnackbarMessage(error.response?.data?.message || 'Failed to add category');
+      setSnackbarSeverity('error');
       setOpenSnackbar(true);
     }
   };
 
-  const handleDeleteCategory = (categoryToDelete) => {
-    setCategories(categories.filter(cat => cat !== categoryToDelete));
-    if (formData.category === categoryToDelete) {
-      setFormData(prev => ({ ...prev, category: '' }));
+  const handleDeleteCategory = async (categoryToDelete) => {
+    try {
+      const response = await categoriesAPI.deleteCategory(categoryToDelete);
+
+      if (response.success) {
+        // Refresh categories list
+        await fetchCategories();
+
+        // Clear category from form if it was selected
+        if (formData.category === categoryToDelete) {
+          setFormData(prev => ({ ...prev, category: '' }));
+        }
+
+        setSnackbarMessage('Category deleted successfully!');
+        setSnackbarSeverity('success');
+        setOpenSnackbar(true);
+      }
+    } catch (error) {
+      console.error('Error deleting category:', error);
+      setSnackbarMessage(error.response?.data?.message || 'Failed to delete category');
+      setSnackbarSeverity('error');
+      setOpenSnackbar(true);
     }
-    setSnackbarMessage('Category deleted successfully!');
-    setSnackbarSeverity('success');
-    setOpenSnackbar(true);
   };
 
   return (
@@ -334,29 +390,53 @@ const AddProduct = () => {
                         placeholder="e.g., MED-PAR-500"
                       />
                     </Grid>
-                    <Grid item xs={12} md={6}>
-                      <Box display="flex" gap={1}>
-                        <TextField
-                          fullWidth
-                          required
-                          select
-                          label="Category"
-                          name="category"
-                          value={formData.category}
-                          onChange={handleInputChange}
-                          error={!!errors.category}
-                          helperText={errors.category}
-                        >
-                          {categories.map((cat) => (
-                            <MenuItem key={cat} value={cat}>
-                              {cat}
-                            </MenuItem>
-                          ))}
-                        </TextField>
+                    <Grid item xs={12}>
+                      <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-start', width: '100%' }}>
+                        <Box sx={{ flexGrow: 1, minWidth: 200 }}>
+                          <TextField
+                            fullWidth
+                            required
+                            select
+                            label="Category"
+                            name="category"
+                            value={formData.category}
+                            onChange={handleInputChange}
+                            error={!!errors.category}
+                            helperText={errors.category || (loadingCategories ? 'Loading categories...' : '')}
+                            disabled={loadingCategories}
+                          >
+                            {loadingCategories ? (
+                              <MenuItem disabled>
+                                <CircularProgress size={20} sx={{ mr: 1 }} />
+                                Loading categories...
+                              </MenuItem>
+                            ) : categories.length === 0 ? (
+                              <MenuItem disabled>No categories available</MenuItem>
+                            ) : (
+                              categories.map((cat) => (
+                                <MenuItem key={cat} value={cat}>
+                                  {cat}
+                                </MenuItem>
+                              ))
+                            )}
+                          </TextField>
+                        </Box>
                         <IconButton
                           color="primary"
                           onClick={() => setCategoryDialogOpen(true)}
-                          sx={{ border: '1px solid #e0e0e0' }}
+                          sx={{
+                            border: '1px solid #e0e0e0',
+                            borderRadius: 1,
+                            minWidth: 56,
+                            width: 56,
+                            height: 56,
+                            mt: 0,
+                            flexShrink: 0,
+                            '&:hover': {
+                              bgcolor: '#f5f5f5',
+                            }
+                          }}
+                          aria-label="Manage categories"
                         >
                           <CategoryIcon />
                         </IconButton>
@@ -693,8 +773,8 @@ const AddProduct = () => {
         </form>
 
         {/* Category Management Dialog */}
-        <Dialog 
-          open={categoryDialogOpen} 
+        <Dialog
+          open={categoryDialogOpen}
           onClose={() => setCategoryDialogOpen(false)}
           maxWidth="sm"
           fullWidth
