@@ -103,9 +103,9 @@ export default function AddAppointment() {
       case 'address':
         if (!value?.trim()) return 'Address is required';
         if (value.length < 5) {
-          return 'Address must be at least 5 characters long';
+          return 'Address must be at least 5 characters long';                          
         }
-        break;
+        break;        
       case 'doctor':
         if (!value) return 'Doctor selection is required';
         break;
