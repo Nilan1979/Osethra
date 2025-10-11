@@ -8,64 +8,63 @@ const MedicalRequestsSection = () => {
     wardname: '',
     medication: '',
     quantity: '',
-    priority: 'Medium'
+    priority: 'Medium',
   });
 
-  // Fetch all medical requests on mount
   useEffect(() => {
     fetchRequests();
   }, []);
 
   const fetchRequests = () => {
-    axios.get('http://localhost:5000/api/medical-requests')
-      .then(res => setData(res.data))
-      .catch(err => console.error('Error fetching medical requests:', err));
+    axios
+      .get('http://localhost:5000/api/medical-requests')
+      .then((res) => setData(res.data))
+      .catch((err) => console.error('Error fetching medical requests:', err));
   };
 
-  // Handle form input changes
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setNewRequest(prev => ({
+    setNewRequest((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
-  // Submit new medical request
   const handleSubmit = (e) => {
     e.preventDefault();
+
     const request = {
       ...newRequest,
       status: 'Pending',
-      date: new Date().toISOString().split('T')[0]
+      date: new Date().toISOString().split('T')[0],
     };
 
-    axios.post('http://localhost:5000/api/medical-requests/add', request)
-      .then(res => {
-        setData(prev => [...prev, res.data]);
+    axios
+      .post('http://localhost:5000/api/medical-requests/add', request)
+      .then((res) => {
+        setData((prev) => [...prev, res.data]);
         setNewRequest({
           wardname: '',
           medication: '',
           quantity: '',
-          priority: 'Medium'
+          priority: 'Medium',
         });
       })
-      .catch(err => console.error('Error adding request:', err));
+      .catch((err) => console.error('Error adding request:', err));
   };
 
-  // Delete a medical request
   const handleDelete = (id) => {
     if (window.confirm('Are you sure you want to delete this request?')) {
-      axios.delete(`http://localhost:5000/api/medical-requests/delete/${id}`)
-        .then(res => {
-          setData(prev => prev.filter(item => item._id !== id));
+      axios
+        .delete(`http://localhost:5000/api/medical-requests/delete/${id}`)
+        .then(() => {
+          setData((prev) => prev.filter((item) => item._id !== id));
         })
-        .catch(err => console.error('Error deleting request:', err));
+        .catch((err) => console.error('Error deleting request:', err));
     }
   };
 
-  // Filter data based on search safely
-  const filteredData = data.filter(item =>
+  const filteredData = data.filter((item) =>
     (item.wardname || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -171,18 +170,22 @@ const MedicalRequestsSection = () => {
                 <td>{item.medication}</td>
                 <td>{item.quantity}</td>
                 <td>
-                  <span className={`priority-badge priority-${item.priority.toLowerCase()}`}>
+                  <span
+                    className={`priority-badge priority-${item.priority.toLowerCase()}`}
+                  >
                     {item.priority}
                   </span>
                 </td>
                 <td>
-                  <span className={`status-badge status-${item.status.toLowerCase()}`}>
+                  <span
+                    className={`status-badge status-${item.status.toLowerCase()}`}
+                  >
                     {item.status}
                   </span>
                 </td>
-                <td>
+                <td className="actions-cell">
                   <button
-                    className="delete-btn"
+                    className="action-btn delete-btn"
                     onClick={() => handleDelete(item._id)}
                   >
                     🗑️ Delete

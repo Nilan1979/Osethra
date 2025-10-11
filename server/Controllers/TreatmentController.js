@@ -92,6 +92,28 @@ const createTreatment = async (req, res) => {
   }
 };
 
+// Get all treatments
+const getAllTreatments = async (req, res) => {
+  try {
+    const treatments = await Treatment.find()
+      .populate('doctorId', 'name email role')
+      .populate('appointmentId', 'date time reason')
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      data: treatments
+    });
+  } catch (error) {
+    console.error('Error fetching all treatments:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch treatments',
+      error: error.message
+    });
+  }
+};
+
 // Get all treatments for a doctor
 const getTreatmentsByDoctor = async (req, res) => {
   try {
@@ -105,7 +127,6 @@ const getTreatmentsByDoctor = async (req, res) => {
       success: true,
       data: treatments
     });
-
   } catch (error) {
     console.error('Error fetching treatments by doctor:', error);
     res.status(500).json({
@@ -135,7 +156,6 @@ const getTreatmentsByPatient = async (req, res) => {
       success: true,
       data: treatments
     });
-
   } catch (error) {
     console.error('Error fetching treatments by patient:', error);
     res.status(500).json({
@@ -166,7 +186,6 @@ const getTreatmentById = async (req, res) => {
       success: true,
       data: treatment
     });
-
   } catch (error) {
     console.error('Error fetching treatment:', error);
     res.status(500).json({
@@ -211,7 +230,6 @@ const updateTreatment = async (req, res) => {
       message: 'Treatment updated successfully',
       data: treatment
     });
-
   } catch (error) {
     console.error('Error updating treatment:', error);
     res.status(500).json({
@@ -240,7 +258,6 @@ const deleteTreatment = async (req, res) => {
       success: true,
       message: 'Treatment deleted successfully'
     });
-
   } catch (error) {
     console.error('Error deleting treatment:', error);
     res.status(500).json({
@@ -251,7 +268,7 @@ const deleteTreatment = async (req, res) => {
   }
 };
 
-// Get treatments by appointment
+// Get treatment by appointment
 const getTreatmentByAppointment = async (req, res) => {
   try {
     const { appointmentId } = req.params;
@@ -271,7 +288,6 @@ const getTreatmentByAppointment = async (req, res) => {
       success: true,
       data: treatment
     });
-
   } catch (error) {
     console.error('Error fetching treatment by appointment:', error);
     res.status(500).json({
@@ -284,6 +300,7 @@ const getTreatmentByAppointment = async (req, res) => {
 
 module.exports = {
   createTreatment,
+  getAllTreatments,
   getTreatmentsByDoctor,
   getTreatmentsByPatient,
   getTreatmentById,

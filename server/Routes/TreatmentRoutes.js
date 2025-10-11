@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const {
   createTreatment,
+  getAllTreatments,          // <-- import getAllTreatments
   getTreatmentsByDoctor,
   getTreatmentsByPatient,
   getTreatmentById,
@@ -12,6 +13,9 @@ const {
 
 // POST /api/treatments - Create a new treatment
 router.post('/', createTreatment);
+
+// GET /api/treatments - Get all treatments
+router.get('/', getAllTreatments);
 
 // GET /api/treatments/doctor/:doctorId - Get all treatments by a doctor
 router.get('/doctor/:doctorId', getTreatmentsByDoctor);

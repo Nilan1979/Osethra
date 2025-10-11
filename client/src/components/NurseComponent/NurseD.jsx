@@ -1,26 +1,34 @@
 // NurseDashboard.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import TreatmentPlansSection from './TreatmentPlansSection';
 import MedicalRequestsSection from './MedicalRequestsSection';
 import PatientRecordsSection from './PatientRecordsSection';
+import DoctorReferralsSection from './DoctorReferralsSection';
 import './NurseDashboard.css';
 import AddPatientForm from './AddPatientForm';
 
 const NurseD = () => {
   const [activeCategory, setActiveCategory] = useState('treatmentPlans');
   const [sidebarOpen, setSidebarOpen] = useState(true);
-
+  const navigate = useNavigate();
 
   const [treatmentPlans, setTreatmentPlans] = useState([]);
-
-  // Sample data for medical requests
   const [medicalRequests, setMedicalRequests] = useState([]);
-
-  //You had a category for doctorReferrals but no state for it — add this if needed
   const [doctorReferrals, setDoctorReferrals] = useState([]);
+  const [selectedPatientData, setSelectedPatientData] = useState(null);
+  const [patientCounter, setPatientCounter] = useState(1); // Track patient count
 
   const { logout } = useAuth();
+
+  // Load patient counter from localStorage on component mount
+  useEffect(() => {
+    const savedCounter = localStorage.getItem('patientCounter');
+    if (savedCounter) {
+      setPatientCounter(parseInt(savedCounter));
+    }
+  }, []);
 
   // Function to handle category change
   const handleCategoryChange = (category) => {
@@ -32,13 +40,41 @@ const NurseD = () => {
     setSidebarOpen(!sidebarOpen);
   };
 
-const handleLogout = () => {
-  const confirmLogout = window.confirm("Are you sure you want to logout?");
-  if (confirmLogout) {
-    logout();           // clears auth state + localStorage + axios headers
-    navigate('/login'); // redirect to login page
-  }
-};
+  // Function to handle patient selection from referrals
+  const handlePatientSelect = (patientData) => {
+    setSelectedPatientData(patientData);
+    setActiveCategory('patientForm');
+  };
+
+  // Function to generate sequential patient ID using MongoDB ObjectId
+  const generatePatientId = () => {
+    const newCounter = patientCounter;
+    const patientId = `P${newCounter.toString().padStart(3, '0')}`;
+    return patientId;
+  };
+
+  // Function to handle patient admission
+  const handlePatientAdmitted = (admittedPatient) => {
+    // Increment patient counter and save to localStorage
+    const newCounter = patientCounter + 1;
+    setPatientCounter(newCounter);
+    localStorage.setItem('patientCounter', newCounter.toString());
+    
+    // Clear selected data
+    setSelectedPatientData(null);
+    
+    // Show success message
+    alert(`Patient ${admittedPatient.patientName} admitted successfully with ID: ${admittedPatient.patientId}`);
+  };
+
+  const handleLogout = () => {
+    const confirmLogout = window.confirm("Are you sure you want to logout?");
+    if (confirmLogout) {
+      logout();
+      navigate('/login');
+    }
+  };
+
   return (
     <div className="nurse-dashboard">
       {/* Sidebar */}
@@ -54,18 +90,26 @@ const handleLogout = () => {
           <ul>
             <li>
               <button 
-                className={`nav-btn ${activeCategory === 'treatmentPlans' ? 'active' : ''}`}
-                onClick={() => handleCategoryChange('treatmentPlans')}
+                className={`nav-btn ${activeCategory === 'doctorReferrals' ? 'active' : ''}`}
+                onClick={() => handleCategoryChange('doctorReferrals')}
               >
-                📋 Treatment Plans
+                🩺 Doctor Referrals
               </button>
             </li>
             <li>
               <button 
-                className={`nav-btn ${activeCategory === 'medicalRequests' ? 'active' : ''}`}
-                onClick={() => handleCategoryChange('medicalRequests')}
+                className={`nav-btn ${activeCategory === 'patientForm' ? 'active' : ''}`}
+                onClick={() => handleCategoryChange('patientForm')}
               >
-                💊 Medical Requests
+                🧾 Patient Form
+              </button>
+            </li>
+            <li>
+              <button 
+                className={`nav-btn ${activeCategory === 'treatmentPlans' ? 'active' : ''}`}
+                onClick={() => handleCategoryChange('treatmentPlans')}
+              >
+                📋 Treatment Plans
               </button>
             </li>
             <li>
@@ -78,10 +122,10 @@ const handleLogout = () => {
             </li>
             <li>
               <button 
-                className={`nav-btn ${activeCategory === 'patientForm' ? 'active' : ''}`}
-                onClick={() => handleCategoryChange('patientForm')}
+                className={`nav-btn ${activeCategory === 'medicalRequests' ? 'active' : ''}`}
+                onClick={() => handleCategoryChange('medicalRequests')}
               >
-                🧾 Patient Form
+                💊 Medical Requests
               </button>
             </li>
           </ul>
@@ -127,6 +171,8 @@ const handleLogout = () => {
             <DoctorReferralsSection 
               data={doctorReferrals} 
               setData={setDoctorReferrals}
+              onPatientSelect={handlePatientSelect}
+              generatePatientId={generatePatientId}
             />
           )}
           
@@ -135,7 +181,11 @@ const handleLogout = () => {
           )}
 
           {activeCategory === 'patientForm' && (
-           <AddPatientForm />
+            <AddPatientForm 
+              prefillData={selectedPatientData}
+              onAdmitted={handlePatientAdmitted}
+              generatePatientId={generatePatientId}
+            />
           )}
         </div>
       </div>

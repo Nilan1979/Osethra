@@ -1,0 +1,473 @@
+/* DoctorReferralsSection.css */
+.doctor-referrals-section {
+  padding: 20px;
+}
+
+.referrals-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
+  max-height: 80vh;
+}
+
+.referral-form-container {
+  background: white;
+  padding: 25px;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  height: fit-content;
+}
+
+.referral-form-container h3 {
+  margin-bottom: 20px;
+  color: #2c3e50;
+}
+
+.referral-form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group label {
+  margin-bottom: 5px;
+  font-weight: 600;
+  color: #555;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  font-size: 14px;
+}
+
+.form-group textarea {
+  resize: vertical;
+  min-height: 60px;
+}
+
+.submit-btn {
+  background: #3498db;
+  color: white;
+  padding: 12px 25px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 600;
+  margin-top: 10px;
+}
+
+.submit-btn:hover {
+  background: #2980b9;
+}
+
+.referrals-list-container {
+  background: white;
+  padding: 25px;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  overflow-y: auto;
+  max-height: 80vh;
+}
+
+.referrals-list-container h3 {
+  margin-bottom: 20px;
+  color: #2c3e50;
+  position: sticky;
+  top: 0;
+  background: white;
+  padding-bottom: 10px;
+}
+
+.no-referrals {
+  text-align: center;
+  padding: 40px;
+  color: #7f8c8d;
+}
+
+.referrals-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.referral-card {
+  border: 1px solid #e1e8ed;
+  border-radius: 8px;
+  padding: 20px;
+  background: #fafbfc;
+}
+
+.referral-card.urgent {
+  border-left: 4px solid #e74c3c;
+  background: #fdf2f2;
+}
+
+.referral-card.emergency {
+  border-left: 4px solid #c0392b;
+  background: #fdeaea;
+}
+
+.referral-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.referral-header h4 {
+  margin: 0;
+  color: #2c3e50;
+}
+
+.status-badge {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.status-badge.pending {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.status-badge.approved {
+  background: #d1ecf1;
+  color: #0c5460;
+}
+
+.status-badge.rejected {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.status-badge.completed {
+  background: #d4edda;
+  color: #155724;
+}
+
+.status-badge.critical {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.status-badge.active {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.referral-details {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 15px;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.detail-row .label {
+  font-weight: 600;
+  color: #555;
+  min-width: 100px;
+}
+
+.detail-row .value {
+  flex: 1;
+  text-align: right;
+  color: #2c3e50;
+}
+
+.urgency-badge {
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.urgency-badge.routine {
+  background: #d4edda;
+  color: #155724;
+}
+
+.urgency-badge.urgent {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.urgency-badge.emergency {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.referral-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.status-select {
+  padding: 5px 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.delete-btn {
+  background: #e74c3c;
+  color: white;
+  border: none;
+  padding: 5px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.delete-btn:hover {
+  background: #c0392b;
+}
+
+/* Priority Badges */
+.priority-badge {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  display: inline-block;
+  text-transform: capitalize;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.priority-low {
+  background: #dbeafe;
+  color: #1e40af;
+  border-color: #3b82f6;
+}
+
+.priority-medium {
+  background: #fef3c7;
+  color: #92400e;
+  border-color: #f59e0b;
+}
+
+.priority-high {
+  background: #fed7aa;
+  color: #9a3412;
+  border-color: #ea580c;
+}
+
+.priority-emergency {
+  background: #fee2e2;
+  color: #991b1b;
+  border-color: #ef4444;
+}
+
+.condition-badge {
+  background: #d1fae5;
+  color: #065f46;
+  border: 1px solid #10b981;
+  padding: 2px 8px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  margin: 2px;
+  display: inline-block;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .referrals-container {
+    grid-template-columns: 1fr;
+  }
+  
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .doctor-referrals-section {
+    padding: 15px;
+  }
+  
+  .referral-form-container,
+  .referrals-list-container {
+    padding: 15px;
+  }
+  
+  .referral-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  
+  .detail-row {
+    flex-direction: column;
+    gap: 5px;
+  }
+  
+  .detail-row .value {
+    text-align: left;
+  }
+  
+  .referral-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .status-select {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .referral-card {
+    padding: 15px;
+  }
+  
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    padding: 8px;
+  }
+  
+  .submit-btn {
+    padding: 10px 20px;
+    font-size: 14px;
+  }
+}
+
+/* Loading and Error States */
+.loading-container,
+.error-container {
+  text-align: center;
+  padding: 40px;
+}
+
+.error-text {
+  color: #ef4444;
+  margin-bottom: 15px;
+}
+
+/* Table specific styles for treatments */
+.treatments-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+}
+
+.treatments-table th {
+  padding: 14px 16px;
+  text-align: left;
+  font-size: 13px;
+  font-weight: 600;
+  color: #059669;
+  background: #d1fae5;
+  border-bottom: 2px solid #10b981;
+}
+
+.treatments-table td {
+  padding: 14px 16px;
+  font-size: 14px;
+  color: #1f2937;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.treatments-table tbody tr {
+  transition: all 0.3s ease;
+}
+
+.treatments-table tbody tr:hover {
+  background: rgba(16, 185, 129, 0.03);
+}
+
+/* Action buttons */
+.actions-cell {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.action-btn {
+  padding: 8px 14px;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.edit-btn {
+  background: #3b82f6;
+  color: white;
+  border-color: #2563eb;
+}
+
+.edit-btn:hover {
+  background: #2563eb;
+}
+
+.delete-btn {
+  background: #ef4444;
+  color: white;
+  border-color: #dc2626;
+}
+
+.delete-btn:hover {
+  background: #dc2626;
+}
+
+/* Text utilities */
+.text-center {
+  text-align: center;
+}
+
+.p-15 {
+  padding: 15px;
+}
+
+/* Scrollbar for referrals list */
+.referrals-list-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.referrals-list-container::-webkit-scrollbar-track {
+  background: rgba(16, 185, 129, 0.05);
+}
+
+.referrals-list-container::-webkit-scrollbar-thumb {
+  background: #a7f3d0;
+  border-radius: 8px;
+}
+
+.referrals-list-container::-webkit-scrollbar-thumb:hover {
+  background: #00da91;
+}
