@@ -146,27 +146,33 @@ exports.createIssue = async (req, res) => {
             });
         }
 
-        // Validate type-specific requirements
-        if ((type === 'outpatient' || type === 'inpatient') && !patient) {
-            await session.abortTransaction();
-            session.endSession();
-            return res.status(400).json({
-                success: false,
-                message: 'Patient information is required for outpatient/inpatient issues'
-            });
+        // Validate type-specific requirements (only for specific types)
+        if ((type === 'outpatient' || type === 'inpatient') && patient) {
+            // Patient info is provided, validate it has required fields
+            if (!patient.name) {
+                await session.abortTransaction();
+                session.endSession();
+                return res.status(400).json({
+                    success: false,
+                    message: 'Patient name is required when patient information is provided'
+                });
+            }
         }
 
-        if (type === 'department' && !department) {
-            await session.abortTransaction();
-            session.endSession();
-            return res.status(400).json({
-                success: false,
-                message: 'Department information is required for department issues'
-            });
+        if (type === 'department' && department) {
+            // Department info is provided, validate it has required fields
+            if (!department.name || !department.id) {
+                await session.abortTransaction();
+                session.endSession();
+                return res.status(400).json({
+                    success: false,
+                    message: 'Department name and ID are required for department issues'
+                });
+            }
         }
 
-        // Validate inpatient-specific fields
-        if (type === 'inpatient' && (!patient.bedNumber || !patient.wardId)) {
+        // Validate inpatient-specific fields (only if patient info is provided)
+        if (type === 'inpatient' && patient && (!patient.bedNumber || !patient.wardId)) {
             await session.abortTransaction();
             session.endSession();
             return res.status(400).json({
@@ -218,6 +224,24 @@ exports.createIssue = async (req, res) => {
 
             // Update product stock
             product.currentStock -= item.quantity;
+            
+            // Add to product order history
+            const issuedToName = patient?.name || department?.name || 'General Issue';
+            product.orderHistory.push({
+                type: 'issue',
+                quantity: item.quantity,
+                unitPrice: unitPrice,
+                totalPrice: totalPrice,
+                issuedTo: issuedToName,
+                issuedBy: {
+                    id: req.user?.id,
+                    name: req.user?.name || 'Unknown',
+                    role: req.user?.role || 'Unknown'
+                },
+                date: new Date(),
+                notes: notes || `${type} issue`
+            });
+            
             await product.save({ session });
         }
 
@@ -240,6 +264,18 @@ exports.createIssue = async (req, res) => {
         });
 
         await issue.save({ session });
+
+        // Update product order history with issue reference
+        for (const item of validatedItems) {
+            const product = await Product.findById(item.productId).session(session);
+            if (product && product.orderHistory.length > 0) {
+                // Update the last entry (the one we just added)
+                const lastHistoryEntry = product.orderHistory[product.orderHistory.length - 1];
+                lastHistoryEntry.issueId = issue._id;
+                lastHistoryEntry.issueNumber = issue.issueNumber;
+                await product.save({ session });
+            }
+        }
 
         // Log activity
         if (req.user) {

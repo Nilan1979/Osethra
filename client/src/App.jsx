@@ -39,6 +39,8 @@ import IssueManagement from './pages/inventory/IssueManagement';
 import PrescriptionsManagement from './pages/inventory/PrescriptionsManagement';
 import AddProduct from './pages/inventory/AddProduct';
 import EditProduct from './pages/inventory/EditProduct';
+import ActivityLogs from './pages/pharmacy/ActivityLogs';
+import IssueHistory from './pages/pharmacy/IssueHistory';
 
 const theme = createTheme({
   palette: {
@@ -121,10 +123,85 @@ function AppRoutes() {
         }
       />
       <Route
+<<<<<<< HEAD
+=======
+        path="/pharmacist/products"
+        element={
+          <ProtectedRoute>
+            <ProductsManagement />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/pharmacist/products/add"
+        element={
+          <ProtectedRoute>
+            <AddProduct />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/pharmacist/products/edit/:id"
+        element={
+          <ProtectedRoute>
+            <EditProduct />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/pharmacist/alerts"
+        element={
+          <ProtectedRoute>
+            <StockAlerts />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/pharmacist/issues"
+        element={
+          <ProtectedRoute>
+            <IssueManagement />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/pharmacist/issues/new"
+        element={
+          <ProtectedRoute>
+            <IssueManagement />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/pharmacist/prescriptions"
+        element={
+          <ProtectedRoute>
+            <PrescriptionsManagement />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/pharmacist/logs"
+        element={
+          <ProtectedRoute>
+            <ActivityLogs />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/pharmacist/issue-history"
+        element={
+          <ProtectedRoute>
+            <IssueHistory />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+>>>>>>> origin/udumbara
         path="/appointments"
         element={
           <ProtectedRoute>
-           <AppointmentsList/>
+            <AppointmentsList />
           </ProtectedRoute>
         }
       />
@@ -133,22 +210,30 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             {user?.role === 'admin' ? <Navigate to="/admin/dashboard" /> :
-             user?.role === 'doctor' ? <Navigate to="/doctor/dashboard" /> :
-             user?.role === 'nurse' ? <Navigate to="/nurse/dashboard" /> :
-             user?.role === 'pharmacist' ? <Navigate to="/pharmacist/dashboard" /> :
-             user?.role === 'receptionist' ? <Navigate to="/appointments" /> :
-             <UserDashboard />}
+              user?.role === 'doctor' ? <Navigate to="/doctor/dashboard" /> :
+                user?.role === 'nurse' ? <Navigate to="/nurse/dashboard" /> :
+                  user?.role === 'pharmacist' ? <Navigate to="/pharmacist/dashboard" /> :
+                    user?.role === 'receptionist' ? <Navigate to="/appointments" /> :
+                      <UserDashboard />}
           </ProtectedRoute>
         }
       />
 
       {/* Appointment Management Routes */}
+<<<<<<< HEAD
       <Route path="/appointments" element={<ProtectedRoute><AppointmentsList /></ProtectedRoute>} />
       <Route path="/appointments/add" element={<ProtectedRoute><AddAppointment /></ProtectedRoute>} />
       <Route path="/appointments/:id/edit" element={<ProtectedRoute><EditAppointment /></ProtectedRoute>} />
       <Route path="/appointments/:id" element={<ProtectedRoute><AppointmentDetails /></ProtectedRoute>} />
 
       
+=======
+      <Route path="/appointments" element={<AppointmentsList />} />
+      <Route path="/appointments/add" element={<AddAppointment />} />
+      <Route path="/appointments/:id/edit" element={<EditAppointment />} />
+      <Route path="/appointments/:id" element={<AppointmentDetails />} />
+
+>>>>>>> origin/udumbara
       {/* Treatment Routes */}
       <Route
         path="/add-treatment/:appointmentId"

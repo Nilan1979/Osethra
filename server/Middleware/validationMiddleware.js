@@ -158,14 +158,15 @@ exports.validateIssue = (req, res, next) => {
     const errors = [];
 
     // Type validation
-    const validTypes = ['outpatient', 'inpatient', 'department', 'emergency'];
+    const validTypes = ['outpatient', 'inpatient', 'department', 'emergency', 'general'];
+    
     if (!type) {
         errors.push('Issue type is required');
     } else if (!validTypes.includes(type)) {
         errors.push(`Issue type must be one of: ${validTypes.join(', ')}`);
     }
 
-    // Patient validation (required for outpatient, inpatient, emergency)
+    // Patient validation (required for outpatient, inpatient, emergency - optional for general)
     if (['outpatient', 'inpatient', 'emergency'].includes(type)) {
         if (!patient) {
             errors.push(`Patient information is required for ${type} issues`);
@@ -188,6 +189,8 @@ exports.validateIssue = (req, res, next) => {
             }
         }
     }
+
+    // For general type, patient info is optional - no validation needed
 
     // Department validation (required for department type)
     if (type === 'department') {
@@ -213,9 +216,8 @@ exports.validateIssue = (req, res, next) => {
             if (!item.productId) {
                 errors.push(`Item ${index + 1}: Product ID is required`);
             }
-            if (!item.productName || item.productName.trim().length === 0) {
-                errors.push(`Item ${index + 1}: Product name is required`);
-            }
+            // productName is optional - it will be fetched from the database
+            
             if (item.quantity === undefined || item.quantity === null) {
                 errors.push(`Item ${index + 1}: Quantity is required`);
             } else {
@@ -228,9 +230,8 @@ exports.validateIssue = (req, res, next) => {
                     errors.push(`Item ${index + 1}: Quantity must be a whole number`);
                 }
             }
-            if (item.unitPrice === undefined || item.unitPrice === null) {
-                errors.push(`Item ${index + 1}: Unit price is required`);
-            } else {
+            // unitPrice is optional - selling price will be used if not provided
+            if (item.unitPrice !== undefined && item.unitPrice !== null) {
                 const price = Number(item.unitPrice);
                 if (isNaN(price)) {
                     errors.push(`Item ${index + 1}: Unit price must be a valid number`);
@@ -238,30 +239,11 @@ exports.validateIssue = (req, res, next) => {
                     errors.push(`Item ${index + 1}: Unit price cannot be negative`);
                 }
             }
-            if (item.totalPrice === undefined || item.totalPrice === null) {
-                errors.push(`Item ${index + 1}: Total price is required`);
-            } else {
-                const totalPrice = Number(item.totalPrice);
-                if (isNaN(totalPrice)) {
-                    errors.push(`Item ${index + 1}: Total price must be a valid number`);
-                } else if (totalPrice < 0) {
-                    errors.push(`Item ${index + 1}: Total price cannot be negative`);
-                }
-            }
+            // totalPrice is optional - it will be calculated on the backend
         });
     }
 
-    // Total amount validation
-    if (totalAmount === undefined || totalAmount === null) {
-        errors.push('Total amount is required');
-    } else {
-        const amount = Number(totalAmount);
-        if (isNaN(amount)) {
-            errors.push('Total amount must be a valid number');
-        } else if (amount < 0) {
-            errors.push('Total amount cannot be negative');
-        }
-    }
+    // Total amount is optional - it will be calculated on the backend
 
     // If there are validation errors, return them
     if (errors.length > 0) {

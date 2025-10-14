@@ -48,25 +48,25 @@ exports.generateUsersPDF = async (req, res) => {
     try {
         const users = await User.find().select('-password');
         
-        // Create a new PDF document
+        
         const doc = new PDFDocument();
         
-        // Set response headers for PDF download
+        
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', 'attachment; filename=users-report.pdf');
         
-        // Pipe the PDF document to the response
+        
         doc.pipe(res);
         
-        // Add title
+        
         doc.fontSize(20).text('Healthcare System - Users Report', { align: 'center' });
         doc.moveDown();
         
-        // Add generation date
+        
         doc.fontSize(12).text(`Generated on: ${new Date().toLocaleDateString()}`, { align: 'right' });
         doc.moveDown();
         
-        // Add summary statistics
+        
         const stats = {
             total: users.length,
             admins: users.filter(u => u.role === 'admin').length,

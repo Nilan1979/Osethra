@@ -1050,3 +1050,97 @@ exports.logActivity = async (activityData) => {
         return null;
     }
 };
+
+// ==================== PRODUCT ORDER HISTORY ====================
+
+// Get product order history
+exports.getProductOrderHistory = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { 
+            page = 1, 
+            limit = 50, 
+            type = '', 
+            startDate = '', 
+            endDate = '' 
+        } = req.query;
+
+        // Find product
+        const product = await Product.findById(id);
+
+        if (!product) {
+            return res.status(404).json({
+                success: false,
+                message: 'Product not found'
+            });
+        }
+
+        // Filter order history
+        let history = product.orderHistory || [];
+
+        // Filter by type
+        if (type) {
+            history = history.filter(h => h.type === type);
+        }
+
+        // Filter by date range
+        if (startDate) {
+            const start = new Date(startDate);
+            history = history.filter(h => new Date(h.date) >= start);
+        }
+
+        if (endDate) {
+            const end = new Date(endDate);
+            end.setHours(23, 59, 59, 999); // End of day
+            history = history.filter(h => new Date(h.date) <= end);
+        }
+
+        // Sort by date (newest first)
+        history.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+        // Calculate pagination
+        const total = history.length;
+        const skip = (parseInt(page) - 1) * parseInt(limit);
+        const paginatedHistory = history.slice(skip, skip + parseInt(limit));
+
+        // Calculate statistics
+        const stats = {
+            totalTransactions: history.length,
+            totalQuantityIssued: history
+                .filter(h => h.type === 'issue')
+                .reduce((sum, h) => sum + h.quantity, 0),
+            totalQuantityReturned: history
+                .filter(h => h.type === 'return')
+                .reduce((sum, h) => sum + h.quantity, 0),
+            totalRevenue: history
+                .filter(h => h.type === 'issue')
+                .reduce((sum, h) => sum + (h.totalPrice || 0), 0)
+        };
+
+        res.status(200).json({
+            success: true,
+            data: {
+                product: {
+                    id: product._id,
+                    name: product.name,
+                    sku: product.sku,
+                    currentStock: product.currentStock
+                },
+                history: paginatedHistory,
+                stats,
+                pagination: {
+                    currentPage: parseInt(page),
+                    totalPages: Math.ceil(total / parseInt(limit)),
+                    totalItems: total,
+                    itemsPerPage: parseInt(limit)
+                }
+            }
+        });
+    } catch (err) {
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching product order history',
+            error: err.message
+        });
+    }
+};

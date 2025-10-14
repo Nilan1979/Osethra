@@ -418,7 +418,7 @@ export default function AppointmentsList() {
                       background: `linear-gradient(135deg, ${alpha('#4CAF50', 0.08)} 0%, ${alpha('#2E7D32', 0.08)} 100%)`,
                       borderBottom: `2px solid ${alpha('#4CAF50', 0.2)}`
                     }}>
-                      {['Patient', 'Contact', 'Doctor', 'Date', 'Time', 'Status', 'Actions'].map((header, index) => (
+                      {['Patient', 'Contact', 'Doctor', 'Date', 'Time', 'Status', 'Actions'].map((header) => (
                         <TableCell 
                           key={header}
                           sx={{ 

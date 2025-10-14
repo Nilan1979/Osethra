@@ -27,6 +27,19 @@ router.get('/products', authenticate, inventoryAccess(false), InventoryControlle
 router.get('/products/:id', authenticate, inventoryAccess(false), InventoryController.getProduct);
 
 /**
+ * GET /api/inventory/products/:id/history
+ * Get product order history
+ * Query params: page, limit, type, startDate, endDate
+ * Access: Authenticated users (pharmacist, admin)
+ */
+router.get(
+    '/products/:id/history', 
+    authenticate, 
+    authorize('pharmacist', 'admin'),
+    InventoryController.getProductOrderHistory
+);
+
+/**
  * POST /api/inventory/products
  * Create new product
  * Access: Pharmacist and Admin only
