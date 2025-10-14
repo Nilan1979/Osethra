@@ -37,7 +37,10 @@ import StockAlerts from './pages/inventory/StockAlerts';
 import IssueManagement from './pages/inventory/IssueManagement';
 import PrescriptionsManagement from './pages/inventory/PrescriptionsManagement';
 import AddProduct from './pages/inventory/AddProduct';
+import AddInventory from './pages/inventory/AddInventory';
+import InventoryManagement from './pages/inventory/InventoryManagement';
 import EditProduct from './pages/inventory/EditProduct';
+import EditInventory from './pages/inventory/EditInventory';
 import ActivityLogs from './pages/pharmacy/ActivityLogs';
 import IssueHistory from './pages/pharmacy/IssueHistory';
 
@@ -129,10 +132,34 @@ function AppRoutes() {
         }
       />
       <Route
+        path="/pharmacist/inventory"
+        element={
+          <ProtectedRoute>
+            <InventoryManagement />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/pharmacist/inventory/add"
+        element={
+          <ProtectedRoute>
+            <AddInventory />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/pharmacist/products/edit/:id"
         element={
           <ProtectedRoute>
             <EditProduct />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/pharmacist/inventory/edit/:id"
+        element={
+          <ProtectedRoute>
+            <EditInventory />
           </ProtectedRoute>
         }
       />

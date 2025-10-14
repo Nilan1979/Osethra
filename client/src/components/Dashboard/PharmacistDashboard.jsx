@@ -39,6 +39,7 @@ import {
   Visibility as VisibilityIcon,
   MedicalServices as MedicalIcon,
   AttachMoney as MoneyIcon,
+  Category as CategoryIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../Layout/Layout';
@@ -216,14 +217,48 @@ const PharmacistDashboard = () => {
     },
   ];
 
-  const quickActions = [
+  const productManagementActions = [
     {
-      title: 'Manage Products',
+      title: 'View Products',
       icon: <InventoryIcon />,
       color: '#2e7d32',
       route: '/pharmacist/products',
-      description: 'Add, edit or view products',
+      description: 'View all product definitions',
     },
+    {
+      title: 'Add New Product',
+      icon: <AddIcon />,
+      color: '#1b5e20',
+      route: '/pharmacist/products/add',
+      description: 'Create product master data',
+    },
+  ];
+
+  const inventoryManagementActions = [
+    {
+      title: 'View Inventory',
+      icon: <PharmacyIcon />,
+      color: '#0288d1',
+      route: '/pharmacist/inventory',
+      description: 'View all stock & batches',
+    },
+    {
+      title: 'Add Stock/Batch',
+      icon: <AddIcon />,
+      color: '#01579b',
+      route: '/pharmacist/inventory/add',
+      description: 'Add inventory to products',
+    },
+    {
+      title: 'Stock Alerts',
+      icon: <WarningIcon />,
+      color: '#ed6c02',
+      route: '/pharmacist/alerts',
+      description: 'View low stock & expiry',
+    },
+  ];
+
+  const otherQuickActions = [
     {
       title: 'Issue Products',
       icon: <ShoppingCartIcon />,
@@ -234,28 +269,14 @@ const PharmacistDashboard = () => {
     {
       title: 'Prescriptions',
       icon: <MedicalIcon />,
-      color: '#0288d1',
+      color: '#7b1fa2',
       route: '/pharmacist/prescriptions',
       description: 'View all prescriptions',
     },
     {
-      title: 'Stock Alerts',
-      icon: <WarningIcon />,
-      color: '#ed6c02',
-      route: '/pharmacist/alerts',
-      description: 'View low stock & expiry',
-    },
-    {
-      title: 'Activity Logs',
-      icon: <AssessmentIcon />,
-      color: '#1976d2',
-      route: '/pharmacist/logs',
-      description: 'View all system activities',
-    },
-    {
       title: 'Issue History',
-      icon: <ShoppingCartIcon />,
-      color: '#2e7d32',
+      icon: <AssignmentIcon />,
+      color: '#5e35b1',
       route: '/pharmacist/issue-history',
       description: 'View past product issues',
     },
@@ -440,22 +461,157 @@ const PharmacistDashboard = () => {
             </Box>
           </Grid>
 
-          {/* Quick Actions */}
+          {/* Product Management Section */}
+          <Grid item xs={12} md={6}>
+            <Card
+              elevation={0}
+              sx={{
+                borderRadius: 3,
+                border: '2px solid #2e7d32',
+                bgcolor: '#f1f8f4',
+                height: '100%',
+              }}
+            >
+              <CardContent sx={{ p: 3 }}>
+                <Box display="flex" alignItems="center" mb={2}>
+                  <Avatar sx={{ bgcolor: '#2e7d32', mr: 2, width: 48, height: 48 }}>
+                    <InventoryIcon sx={{ fontSize: 28 }} />
+                  </Avatar>
+                  <Box>
+                    <Typography variant="h6" fontWeight="700" sx={{ color: '#2e7d32' }}>
+                      Product Management
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.85rem' }}>
+                      Manage product master data & definitions
+                    </Typography>
+                  </Box>
+                </Box>
+                <Divider sx={{ mb: 2, borderColor: '#2e7d3233' }} />
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                  {productManagementActions.map((action, index) => (
+                    <Card
+                      key={index}
+                      elevation={0}
+                      sx={{
+                        cursor: 'pointer',
+                        borderRadius: 2,
+                        border: '1px solid #c8e6c9',
+                        bgcolor: 'white',
+                        transition: 'all 0.3s ease',
+                        '&:hover': {
+                          borderColor: action.color,
+                          transform: 'translateX(4px)',
+                          boxShadow: `0 4px 12px ${action.color}33`,
+                        },
+                      }}
+                      onClick={() => navigate(action.route)}
+                    >
+                      <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+                        <Box display="flex" alignItems="center">
+                          <Avatar sx={{ bgcolor: `${action.color}15`, color: action.color, mr: 1.5, width: 36, height: 36 }}>
+                            {React.cloneElement(action.icon, { sx: { fontSize: 20 } })}
+                          </Avatar>
+                          <Box flex={1}>
+                            <Typography variant="subtitle1" fontWeight="600" sx={{ fontSize: '0.95rem' }}>
+                              {action.title}
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
+                              {action.description}
+                            </Typography>
+                          </Box>
+                          <ArrowForwardIcon sx={{ color: action.color, fontSize: 20 }} />
+                        </Box>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+
+          {/* Inventory Management Section */}
+          <Grid item xs={12} md={6}>
+            <Card
+              elevation={0}
+              sx={{
+                borderRadius: 3,
+                border: '2px solid #0288d1',
+                bgcolor: '#e3f2fd',
+                height: '100%',
+              }}
+            >
+              <CardContent sx={{ p: 3 }}>
+                <Box display="flex" alignItems="center" mb={2}>
+                  <Avatar sx={{ bgcolor: '#0288d1', mr: 2, width: 48, height: 48 }}>
+                    <PharmacyIcon sx={{ fontSize: 28 }} />
+                  </Avatar>
+                  <Box>
+                    <Typography variant="h6" fontWeight="700" sx={{ color: '#0288d1' }}>
+                      Inventory Management
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.85rem' }}>
+                      Manage stock, batches & inventory tracking
+                    </Typography>
+                  </Box>
+                </Box>
+                <Divider sx={{ mb: 2, borderColor: '#0288d133' }} />
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                  {inventoryManagementActions.map((action, index) => (
+                    <Card
+                      key={index}
+                      elevation={0}
+                      sx={{
+                        cursor: 'pointer',
+                        borderRadius: 2,
+                        border: '1px solid #b3e5fc',
+                        bgcolor: 'white',
+                        transition: 'all 0.3s ease',
+                        '&:hover': {
+                          borderColor: action.color,
+                          transform: 'translateX(4px)',
+                          boxShadow: `0 4px 12px ${action.color}33`,
+                        },
+                      }}
+                      onClick={() => navigate(action.route)}
+                    >
+                      <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+                        <Box display="flex" alignItems="center">
+                          <Avatar sx={{ bgcolor: `${action.color}15`, color: action.color, mr: 1.5, width: 36, height: 36 }}>
+                            {React.cloneElement(action.icon, { sx: { fontSize: 20 } })}
+                          </Avatar>
+                          <Box flex={1}>
+                            <Typography variant="subtitle1" fontWeight="600" sx={{ fontSize: '0.95rem' }}>
+                              {action.title}
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
+                              {action.description}
+                            </Typography>
+                          </Box>
+                          <ArrowForwardIcon sx={{ color: action.color, fontSize: 20 }} />
+                        </Box>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+
+          {/* Other Quick Actions */}
           <Grid item xs={12}>
             <Typography variant="h6" gutterBottom fontWeight="600" sx={{ mb: 2, mt: 2 }}>
-              Quick Actions
+              Other Quick Actions
             </Typography>
             <Box sx={{
               display: 'grid',
               gridTemplateColumns: {
                 xs: '1fr',
                 sm: 'repeat(2, 1fr)',
-                md: 'repeat(3, 1fr)',
-                lg: 'repeat(5, 1fr)'
+                md: 'repeat(4, 1fr)',
               },
               gap: 2
             }}>
-              {quickActions.map((action, index) => (
+              {otherQuickActions.map((action, index) => (
                 <Card
                   key={index}
                   elevation={0}
@@ -463,7 +619,7 @@ const PharmacistDashboard = () => {
                     cursor: 'pointer',
                     borderRadius: 2,
                     border: '1px solid #e0e0e0',
-                    minHeight: '120px',
+                    minHeight: '110px',
                     transition: 'all 0.3s ease',
                     '&:hover': {
                       borderColor: action.color,

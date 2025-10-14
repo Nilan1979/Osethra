@@ -12,14 +12,15 @@ import {
 import {
   Edit as EditIcon,
   Delete as DeleteIcon,
-  ShoppingCart as CartIcon,
-  History as HistoryIcon,
+  Inventory as InventoryIcon,
+  Add as AddIcon,
+  Category as CategoryIcon,
 } from '@mui/icons-material';
-import StockBadge from '../atoms/StockBadge';
-import CategoryChip from '../atoms/CategoryChip';
-import ExpiryDateBadge from '../atoms/ExpiryDateBadge';
 
-const ProductCard = ({ product, onEdit, onDelete, onIssue, onViewHistory, viewMode = 'grid' }) => {
+const ProductCard = ({ product, onEdit, onDelete, onAddInventory, onViewInventory, viewMode = 'grid' }) => {
+  // Determine if prescription is required
+  const requiresPrescription = product.prescription === true || product.prescription === 'yes';
+  
   if (viewMode === 'list') {
     return (
       <Card
@@ -51,55 +52,57 @@ const ProductCard = ({ product, onEdit, onDelete, onIssue, onViewHistory, viewMo
                 <Typography variant="h6" fontWeight="600">
                   {product.name}
                 </Typography>
-                <CategoryChip category={product.category} />
-                <StockBadge quantity={product.stock} minStock={product.minStock} size="small" />
-                {product.expiryDate && <ExpiryDateBadge expiryDate={product.expiryDate} />}
+                <Chip
+                  icon={<CategoryIcon sx={{ fontSize: 16 }} />}
+                  label={product.category}
+                  size="small"
+                  sx={{
+                    bgcolor: '#f5f5f5',
+                    fontSize: '0.75rem',
+                    height: 24
+                  }}
+                />
+                {requiresPrescription && (
+                  <Chip
+                    label="Prescription Required"
+                    size="small"
+                    color="warning"
+                    sx={{ fontSize: '0.7rem', height: 22 }}
+                  />
+                )}
+                <Chip
+                  label={product.status || 'Active'}
+                  size="small"
+                  color={product.status === 'active' ? 'success' : 'default'}
+                  sx={{ fontSize: '0.7rem', height: 22 }}
+                />
               </Box>
               <Typography variant="body2" color="text.secondary">
                 SKU: {product.sku || 'N/A'}
-                {product.batchNumber && ` • Batch: ${product.batchNumber}`}
+                {product.manufacturer && ` • Manufacturer: ${product.manufacturer}`}
+                {product.unit && ` • Unit: ${product.unit}`}
               </Typography>
             </Box>
 
-            <Box display="flex" gap={3} alignItems="center">
-              <Box textAlign="center">
-                <Typography variant="caption" color="text.secondary" display="block">
-                  Stock
-                </Typography>
-                <Typography variant="h6" fontWeight="600">
-                  {product.stock} / {product.minStock}
-                </Typography>
-              </Box>
-
-              <Box textAlign="center">
-                <Typography variant="caption" color="text.secondary" display="block">
-                  Unit Price
-                </Typography>
-                <Typography variant="h6" fontWeight="600" color="primary">
-                  LKR {product.unitPrice?.toFixed(2) || '0.00'}
-                </Typography>
-              </Box>
-            </Box>
-
             <Box display="flex" gap={0.5}>
+              {onAddInventory && (
+                <Tooltip title="Add Inventory">
+                  <IconButton size="small" onClick={() => onAddInventory(product)} color="success">
+                    <AddIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+              )}
+              {onViewInventory && (
+                <Tooltip title="View Inventory">
+                  <IconButton size="small" onClick={() => onViewInventory(product)} color="info">
+                    <InventoryIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+              )}
               {onEdit && (
                 <Tooltip title="Edit Product">
                   <IconButton size="small" onClick={() => onEdit(product)} color="primary">
                     <EditIcon fontSize="small" />
-                  </IconButton>
-                </Tooltip>
-              )}
-              {onIssue && (
-                <Tooltip title="Issue Product">
-                  <IconButton size="small" onClick={() => onIssue(product)} color="success">
-                    <CartIcon fontSize="small" />
-                  </IconButton>
-                </Tooltip>
-              )}
-              {onViewHistory && (
-                <Tooltip title="View History">
-                  <IconButton size="small" onClick={() => onViewHistory(product)} color="info">
-                    <HistoryIcon fontSize="small" />
                   </IconButton>
                 </Tooltip>
               )}
@@ -123,7 +126,7 @@ const ProductCard = ({ product, onEdit, onDelete, onIssue, onViewHistory, viewMo
       sx={{
         height: '100%',
         width: '100%',
-        minHeight: '380px',
+        minHeight: '320px',
         display: 'flex',
         flexDirection: 'column',
         border: '1px solid #e0e0e0',
@@ -147,6 +150,12 @@ const ProductCard = ({ product, onEdit, onDelete, onIssue, onViewHistory, viewMo
           >
             {product.name.charAt(0)}
           </Avatar>
+          <Chip
+            label={product.status || 'Active'}
+            size="small"
+            color={product.status === 'active' ? 'success' : 'default'}
+            sx={{ fontSize: '0.7rem', height: 22 }}
+          />
         </Box>
 
         <Typography
@@ -171,68 +180,83 @@ const ProductCard = ({ product, onEdit, onDelete, onIssue, onViewHistory, viewMo
         </Typography>
 
         <Box display="flex" gap={1} mb={1.5} flexWrap="wrap" sx={{ minHeight: '32px' }}>
-          <CategoryChip category={product.category} />
-          <StockBadge quantity={product.stock} minStock={product.minStock} size="small" />
+          <Chip
+            icon={<CategoryIcon sx={{ fontSize: 16 }} />}
+            label={product.category}
+            size="small"
+            sx={{
+              bgcolor: '#f5f5f5',
+              fontSize: '0.75rem',
+              height: 24
+            }}
+          />
+          {requiresPrescription && (
+            <Chip
+              label="Rx"
+              size="small"
+              color="warning"
+              sx={{ fontSize: '0.7rem', height: 24, fontWeight: 600 }}
+            />
+          )}
         </Box>
 
-        <Box sx={{ minHeight: '40px', mb: 1.5 }}>
-          {product.expiryDate && (
-            <ExpiryDateBadge expiryDate={product.expiryDate} />
+        <Box sx={{ mb: 1.5 }}>
+          {product.manufacturer && (
+            <Typography variant="caption" color="text.secondary" display="block">
+              <strong>Manufacturer:</strong> {product.manufacturer}
+            </Typography>
+          )}
+          {product.unit && (
+            <Typography variant="caption" color="text.secondary" display="block">
+              <strong>Unit:</strong> {product.unit}
+            </Typography>
+          )}
+          {product.barcode && (
+            <Typography variant="caption" color="text.secondary" display="block">
+              <strong>Barcode:</strong> {product.barcode}
+            </Typography>
           )}
         </Box>
 
         <Box flex={1} />
 
-        <Box display="flex" justifyContent="space-between" alignItems="center" mt={2}>
-          <Box>
-            <Typography variant="caption" color="text.secondary">
-              Stock
-            </Typography>
-            <Typography variant="body1" fontWeight="600">
-              {product.stock} / {product.minStock}
-            </Typography>
-          </Box>
-          <Box textAlign="right">
-            <Typography variant="caption" color="text.secondary">
-              Unit Price
-            </Typography>
-            <Typography variant="body1" fontWeight="600" color="primary">
-              LKR {product.unitPrice?.toFixed(2) || '0.00'}
-            </Typography>
-          </Box>
-        </Box>
-
-        <Box sx={{ minHeight: '32px', mt: 1 }}>
-          {product.batchNumber && (
-            <Chip
-              label={`Batch: ${product.batchNumber}`}
-              size="small"
-              variant="outlined"
-              sx={{ fontSize: '0.7rem' }}
-            />
-          )}
-        </Box>
+        {product.description && (
+          <Typography 
+            variant="caption" 
+            color="text.secondary" 
+            sx={{ 
+              mb: 2,
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical',
+              overflow: 'hidden',
+              minHeight: '32px'
+            }}
+          >
+            {product.description}
+          </Typography>
+        )}
 
         {/* Action Buttons */}
         <Box display="flex" gap={0.5} mt={2} justifyContent="center" borderTop="1px solid #e0e0e0" pt={1.5}>
+          {onAddInventory && (
+            <Tooltip title="Add Inventory">
+              <IconButton size="small" onClick={() => onAddInventory(product)} color="success">
+                <AddIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          )}
+          {onViewInventory && (
+            <Tooltip title="View Inventory">
+              <IconButton size="small" onClick={() => onViewInventory(product)} color="info">
+                <InventoryIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          )}
           {onEdit && (
             <Tooltip title="Edit Product">
               <IconButton size="small" onClick={() => onEdit(product)} color="primary">
                 <EditIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-          )}
-          {onIssue && (
-            <Tooltip title="Issue Product">
-              <IconButton size="small" onClick={() => onIssue(product)} color="success">
-                <CartIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-          )}
-          {onViewHistory && (
-            <Tooltip title="View History">
-              <IconButton size="small" onClick={() => onViewHistory(product)} color="info">
-                <HistoryIcon fontSize="small" />
               </IconButton>
             </Tooltip>
           )}
