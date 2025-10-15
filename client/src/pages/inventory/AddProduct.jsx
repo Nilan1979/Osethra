@@ -161,6 +161,8 @@ const AddProduct = () => {
         notes: formData.notes.trim() || undefined,
       };
 
+      console.log('Submitting product data:', productData);
+
       const response = await productsAPI.createProduct(productData);
 
       if (response.success) {
@@ -175,7 +177,17 @@ const AddProduct = () => {
       }
     } catch (error) {
       console.error('Error adding product:', error);
-      setSnackbarMessage(error.response?.data?.message || 'Error adding product. Please try again.');
+      console.error('Error response:', error.response?.data);
+      console.error('Validation errors:', error.response?.data?.errors);
+      
+      let errorMessage = error.response?.data?.message || error.message || 'Error adding product. Please try again.';
+      
+      // If there are validation errors, show them
+      if (error.response?.data?.errors && Array.isArray(error.response.data.errors)) {
+        errorMessage = 'Validation errors: ' + error.response.data.errors.join(', ');
+      }
+      
+      setSnackbarMessage(errorMessage);
       setSnackbarSeverity('error');
       setOpenSnackbar(true);
     }

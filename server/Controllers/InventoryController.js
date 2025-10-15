@@ -178,13 +178,19 @@ exports.createProduct = async (req, res) => {
             await Activity.create({
                 type: 'product_added',
                 description: `Added new product: ${product.name} (${product.sku})`,
-                user: req.user._id,
-                severity: 'info',
+                user: {
+                    id: req.user._id,
+                    name: req.user.name,
+                    role: req.user.role
+                },
+                entityType: 'Product',
+                entityId: product._id,
+                entityName: product.name,
                 metadata: {
-                    productId: product._id,
                     sku: product.sku,
                     category: product.category
-                }
+                },
+                severity: 'info'
             });
         }
 

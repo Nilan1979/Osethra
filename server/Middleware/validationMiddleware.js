@@ -348,6 +348,71 @@ exports.validatePrescription = (req, res, next) => {
 };
 
 /**
+ * Validate product master data (for update operations - no inventory fields)
+ */
+exports.validateProductMasterData = (req, res, next) => {
+    console.log('=== PRODUCT MASTER DATA VALIDATION ===');
+    console.log('Request method:', req.method);
+    console.log('Request body:', JSON.stringify(req.body, null, 2));
+
+    const {
+        name,
+        sku,
+        category,
+        unit,
+        description,
+        manufacturer,
+        barcode,
+        prescription,
+        status,
+        notes
+    } = req.body;
+
+    const errors = [];
+
+    // Required fields validation
+    if (!name || name.trim().length === 0) {
+        errors.push('Product name is required');
+    } else if (name.length < 3) {
+        errors.push('Product name must be at least 3 characters long');
+    } else if (name.length > 200) {
+        errors.push('Product name must not exceed 200 characters');
+    }
+
+    if (!sku || sku.trim().length === 0) {
+        errors.push('SKU is required');
+    } else if (!/^[A-Za-z0-9\-_]+$/.test(sku)) {
+        errors.push('SKU can only contain letters, numbers, hyphens, and underscores');
+    }
+
+    if (!category || category.trim().length === 0) {
+        errors.push('Category is required');
+    }
+
+    if (!unit || unit.trim().length === 0) {
+        errors.push('Unit is required');
+    }
+
+    // Optional field validations
+    if (status && !['active', 'inactive', 'discontinued'].includes(status)) {
+        errors.push('Status must be active, inactive, or discontinued');
+    }
+
+    // If there are validation errors, return them
+    if (errors.length > 0) {
+        console.log('Validation errors:', errors);
+        return res.status(400).json({
+            success: false,
+            message: 'Validation failed',
+            errors: errors
+        });
+    }
+
+    console.log('Validation passed!');
+    next();
+};
+
+/**
  * Validate category data
  */
 exports.validateCategory = (req, res, next) => {

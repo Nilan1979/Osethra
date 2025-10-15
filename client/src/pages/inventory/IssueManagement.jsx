@@ -168,15 +168,90 @@ const IssueManagement = () => {
   const fetchProducts = async () => {
     try {
       setLoading(true);
-      const response = await inventoryAPI.products.getProducts({ 
-        page: 1, 
-        limit: 100,
-        status: 'active' 
+      console.log('Fetching products and inventory items...');
+      
+      // Fetch both products and inventory items
+      const [productsResponse, inventoryResponse] = await Promise.all([
+        inventoryAPI.products.getProducts({ 
+          page: 1, 
+          limit: 100,
+          status: 'active' 
+        }),
+        inventoryAPI.inventoryItems.getInventoryItems({
+          page: 1,
+          limit: 1000,
+          status: 'available'
+        })
+      ]);
+      
+      console.log('Products Response:', productsResponse);
+      console.log('Inventory Response:', inventoryResponse);
+      
+      const productsData = productsResponse.data?.products || productsResponse.products || [];
+      const inventoryData = inventoryResponse.data?.items || inventoryResponse.data?.inventoryItems || inventoryResponse.inventoryItems || [];
+      
+      console.log('Products Data:', productsData.length, 'items');
+      console.log('Inventory Data:', inventoryData.length, 'items');
+      console.log('Sample Inventory Item:', inventoryData[0]);
+      
+      // Calculate aggregated stock per product
+      const productsWithStock = productsData.map(product => {
+        // Find all inventory items for this product
+        // Convert IDs to strings for comparison
+        const productId = typeof product._id === 'string' ? product._id : product._id.toString();
+        const productInventory = inventoryData.filter(item => {
+          // Handle both populated and non-populated product field
+          let itemProductId;
+          if (typeof item.product === 'string') {
+            itemProductId = item.product;
+          } else if (item.product?._id) {
+            // Product is populated
+            itemProductId = typeof item.product._id === 'string' 
+              ? item.product._id 
+              : item.product._id.toString();
+          } else if (item.product) {
+            // Product is an ObjectId
+            itemProductId = item.product.toString();
+          }
+          return itemProductId === productId;
+        });
+        
+        console.log(`Product: ${product.name} (${productId}), Inventory Items:`, productInventory.length);
+        if (productInventory.length > 0) {
+          console.log('  Sample inventory item:', productInventory[0]);
+        }
+        
+        // Calculate total available stock (non-expired only)
+        const now = new Date();
+        const totalStock = productInventory
+          .filter(item => new Date(item.expiryDate) > now && item.quantity > 0)
+          .reduce((sum, item) => sum + item.quantity, 0);
+        
+        // Get the batch with earliest expiry (FEFO)
+        const sortedBatches = productInventory
+          .filter(item => new Date(item.expiryDate) > now && item.quantity > 0)
+          .sort((a, b) => new Date(a.expiryDate) - new Date(b.expiryDate));
+        
+        const primaryBatch = sortedBatches[0];
+        
+        console.log(`  Total Stock: ${totalStock}, Batches: ${sortedBatches.length}`);
+        
+        return {
+          ...product,
+          currentStock: totalStock, // Aggregated stock
+          batches: sortedBatches, // All available batches
+          batchNumber: primaryBatch?.batchNumber,
+          expiryDate: primaryBatch?.expiryDate,
+          sellingPrice: primaryBatch?.sellingPrice || product.sellingPrice || 0
+        };
       });
-      const productsData = response.data?.products || response.products || [];
-      setProducts(productsData);
+      
+      console.log('Products with Stock:', productsWithStock);
+      setProducts(productsWithStock);
+      setError(null);
     } catch (err) {
       console.error('Error fetching products:', err);
+      setError(`Failed to load products: ${err.message}`);
     } finally {
       setLoading(false);
     }

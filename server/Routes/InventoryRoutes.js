@@ -5,6 +5,7 @@ const IssueController = require('../Controllers/IssueController');
 const { authenticate, authorize, requirePharmacistOrAdmin, inventoryAccess } = require('../Middleware/authMiddleware');
 const { 
     validateProduct, 
+    validateProductMasterData,
     validateIssue, 
     validateCategory,
     validateIssueStatus 
@@ -48,7 +49,7 @@ router.post(
     '/products', 
     authenticate, 
     requirePharmacistOrAdmin,
-    validateProduct,
+    validateProductMasterData,
     InventoryController.createProduct
 );
 
@@ -61,7 +62,7 @@ router.put(
     '/products/:id', 
     authenticate, 
     requirePharmacistOrAdmin,
-    validateProduct,
+    validateProductMasterData,
     InventoryController.updateProduct
 );
 

@@ -14,6 +14,11 @@ import {
   Pagination,
   CircularProgress,
   Alert,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -21,6 +26,7 @@ import {
   ViewList as ListIcon,
   FilterList as FilterIcon,
   ArrowBack as ArrowBackIcon,
+  Warning as WarningIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../../components/Layout/Layout';
@@ -43,6 +49,7 @@ const ProductsManagement = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [totalProducts, setTotalProducts] = useState(0);
   const [historyDialog, setHistoryDialog] = useState({ open: false, productId: null, productName: '' });
+  const [deleteDialog, setDeleteDialog] = useState({ open: false, product: null });
   const itemsPerPage = 12;
 
   // Fetch products from API
@@ -91,15 +98,23 @@ const ProductsManagement = () => {
     navigate(`/pharmacist/products/edit/${product._id}`);
   };
 
-  const handleDelete = async (product) => {
-    if (window.confirm(`Are you sure you want to delete ${product.name}?`)) {
-      try {
-        await inventoryAPI.products.delete(product._id);
-        fetchProducts(); // Refresh the list
-      } catch (err) {
-        alert(err.response?.data?.message || 'Failed to delete product');
-      }
+  const handleDelete = (product) => {
+    setDeleteDialog({ open: true, product });
+  };
+
+  const handleConfirmDelete = async () => {
+    try {
+      await inventoryAPI.products.delete(deleteDialog.product._id);
+      setDeleteDialog({ open: false, product: null });
+      fetchProducts(); // Refresh the list
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to delete product');
+      setDeleteDialog({ open: false, product: null });
     }
+  };
+
+  const handleCancelDelete = () => {
+    setDeleteDialog({ open: false, product: null });
   };
 
   const handleIssue = (product) => {
@@ -352,6 +367,44 @@ const ProductsManagement = () => {
         productId={historyDialog.productId}
         productName={historyDialog.productName}
       />
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteDialog.open}
+        onClose={handleCancelDelete}
+        aria-labelledby="delete-dialog-title"
+        aria-describedby="delete-dialog-description"
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle id="delete-dialog-title" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <WarningIcon color="error" />
+          Confirm Delete
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="delete-dialog-description">
+            Are you sure you want to delete <strong>{deleteDialog.product?.name}</strong>?
+            <br />
+            <br />
+            SKU: <strong>{deleteDialog.product?.sku}</strong>
+            <br />
+            Category: <strong>{deleteDialog.product?.category}</strong>
+            <br />
+            <br />
+            <Typography component="span" color="error" variant="body2">
+              Warning: This action cannot be undone. All associated inventory items and history will also be affected.
+            </Typography>
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={handleCancelDelete} variant="outlined" color="inherit">
+            Cancel
+          </Button>
+          <Button onClick={handleConfirmDelete} variant="contained" color="error" autoFocus>
+            Delete Product
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Layout>
   );
 };

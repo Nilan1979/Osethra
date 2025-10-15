@@ -43,6 +43,7 @@ import EditProduct from './pages/inventory/EditProduct';
 import EditInventory from './pages/inventory/EditInventory';
 import ActivityLogs from './pages/pharmacy/ActivityLogs';
 import IssueHistory from './pages/pharmacy/IssueHistory';
+import Reports from './pages/inventory/Reports';
 
 const theme = createTheme({
   palette: {
@@ -196,7 +197,15 @@ function AppRoutes() {
         }
       />
       <Route
-        path="/pharmacist/logs"
+        path="/pharmacist/reports"
+        element={
+          <ProtectedRoute>
+            <Reports />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/pharmacist/activities"
         element={
           <ProtectedRoute>
             <ActivityLogs />

@@ -4,6 +4,7 @@ const appointmentRoutes = require('./Routes/AppointmentRoutes');
 const treatmentRoutes = require('./Routes/TreatmentRoutes');
 const inventoryRoutes = require('./Routes/InventoryRoutes');
 const prescriptionRoutes = require('./Routes/PrescriptionRoutes');
+const reportsRoutes = require('./Routes/ReportsRoutes');
 
 const cors = require('cors');
 const dotenv = require('dotenv');
@@ -30,6 +31,9 @@ app.use('/users', userRoutes);
 // Inventory Management Routes
 app.use('/api/inventory', inventoryRoutes);
 app.use('/api/prescriptions', prescriptionRoutes);
+
+// Reports Routes
+app.use('/api/reports', reportsRoutes);
 
 // Connect DB
 mongoose.connect(process.env.MONGO_URI)
