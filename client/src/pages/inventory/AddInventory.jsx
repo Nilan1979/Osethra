@@ -233,7 +233,7 @@ const AddInventory = () => {
 
         // Navigate back after 2 seconds
         setTimeout(() => {
-          navigate('/pharmacist/products');
+          navigate('/pharmacist/inventory');
         }, 2000);
       }
     } catch (error) {
@@ -295,7 +295,7 @@ const AddInventory = () => {
         {/* Back Button */}
         <Box mb={2}>
           <IconButton
-            onClick={() => navigate('/pharmacist/products')}
+            onClick={() => navigate('/pharmacist/inventory')}
             sx={{
               bgcolor: 'white',
               border: '1px solid #e0e0e0',
@@ -377,16 +377,19 @@ const AddInventory = () => {
                         }}
                       />
                     )}
-                    renderOption={(props, option) => (
-                      <Box component="li" {...props}>
-                        <Box>
-                          <Typography variant="body1">{option.name}</Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            SKU: {option.sku} | Category: {option.category}
-                          </Typography>
+                    renderOption={(props, option) => {
+                      const { key, ...otherProps } = props;
+                      return (
+                        <Box component="li" key={key} {...otherProps}>
+                          <Box>
+                            <Typography variant="body1">{option.name}</Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              SKU: {option.sku} | Category: {option.category}
+                            </Typography>
+                          </Box>
                         </Box>
-                      </Box>
-                    )}
+                      );
+                    }}
                   />
                   
                   {selectedProduct && (
@@ -671,7 +674,7 @@ const AddInventory = () => {
                 </Button>
                 <Button
                   variant="outlined"
-                  onClick={() => navigate('/pharmacist/products')}
+                  onClick={() => navigate('/pharmacist/inventory')}
                   disabled={loading}
                   sx={{ minWidth: 120 }}
                 >

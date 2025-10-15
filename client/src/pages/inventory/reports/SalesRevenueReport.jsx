@@ -74,13 +74,13 @@ const SalesRevenueReport = () => {
   return (
     <Box>
       {/* Filters */}
-      <Card elevation={2} sx={{ mb: 3 }}>
+      <Card elevation={1} sx={{ mb: 3, bgcolor: '#fafafa' }}>
         <CardContent>
-          <Typography variant="h6" gutterBottom>
+          <Typography variant="subtitle1" fontWeight="600" gutterBottom>
             Filters
           </Typography>
-          <Grid container spacing={2}>
-            <Grid item xs={12} md={4}>
+          <Grid container spacing={2} alignItems="center">
+            <Grid item xs={12} sm={4}>
               <TextField
                 fullWidth
                 label="Start Date"
@@ -89,9 +89,10 @@ const SalesRevenueReport = () => {
                 onChange={(e) => handleFilterChange('startDate', e.target.value)}
                 size="small"
                 InputLabelProps={{ shrink: true }}
+                sx={{ bgcolor: 'white' }}
               />
             </Grid>
-            <Grid item xs={12} md={4}>
+            <Grid item xs={12} sm={4}>
               <TextField
                 fullWidth
                 label="End Date"
@@ -100,15 +101,16 @@ const SalesRevenueReport = () => {
                 onChange={(e) => handleFilterChange('endDate', e.target.value)}
                 size="small"
                 InputLabelProps={{ shrink: true }}
+                sx={{ bgcolor: 'white' }}
               />
             </Grid>
-            <Grid item xs={12} md={4}>
+            <Grid item xs={12} sm={4}>
               <Box display="flex" gap={1}>
                 <Button
                   variant="contained"
-                  startIcon={<RefreshIcon />}
                   onClick={fetchReport}
                   fullWidth
+                  sx={{ textTransform: 'uppercase', fontSize: '0.75rem', fontWeight: 600 }}
                 >
                   Generate
                 </Button>
@@ -117,6 +119,7 @@ const SalesRevenueReport = () => {
                   startIcon={<DownloadIcon />}
                   onClick={handleDownloadPDF}
                   disabled={!reportData}
+                  sx={{ textTransform: 'uppercase', fontSize: '0.75rem', fontWeight: 600, minWidth: '100px' }}
                 >
                   PDF
                 </Button>
@@ -130,57 +133,54 @@ const SalesRevenueReport = () => {
       {reportData && reportData.summary && (
         <Grid container spacing={2} mb={3}>
           <Grid item xs={12} sm={6} md={3}>
-            <Card elevation={2} sx={{ bgcolor: '#e3f2fd' }}>
-              <CardContent>
-                <Typography variant="body2" color="text.secondary">
+            <Card elevation={1}>
+              <CardContent sx={{ textAlign: 'center', py: 2 }}>
+                <Typography variant="caption" color="text.secondary" textTransform="uppercase" fontWeight="500">
                   Total Revenue
                 </Typography>
-                <Typography variant="h5" fontWeight="bold" color="primary.main">
+                <Typography variant="h5" fontWeight="bold" color="primary.main" mt={0.5}>
                   Rs. {reportData.summary.totalRevenue}
                 </Typography>
               </CardContent>
             </Card>
           </Grid>
           <Grid item xs={12} sm={6} md={3}>
-            <Card elevation={2} sx={{ bgcolor: '#fff3e0' }}>
-              <CardContent>
-                <Typography variant="body2" color="text.secondary">
+            <Card elevation={1}>
+              <CardContent sx={{ textAlign: 'center', py: 2 }}>
+                <Typography variant="caption" color="text.secondary" textTransform="uppercase" fontWeight="500">
                   Total Cost
                 </Typography>
-                <Typography variant="h5" fontWeight="bold" color="warning.main">
+                <Typography variant="h5" fontWeight="bold" color="warning.main" mt={0.5}>
                   Rs. {reportData.summary.totalCost}
                 </Typography>
               </CardContent>
             </Card>
           </Grid>
           <Grid item xs={12} sm={6} md={3}>
-            <Card elevation={2} sx={{ bgcolor: '#e8f5e9' }}>
-              <CardContent>
-                <Box display="flex" alignItems="center" gap={1}>
-                  <TrendingUpIcon color="success" />
-                  <Typography variant="body2" color="text.secondary">
-                    Total Profit
-                  </Typography>
-                </Box>
-                <Typography variant="h5" fontWeight="bold" color="success.main">
+            <Card elevation={1}>
+              <CardContent sx={{ textAlign: 'center', py: 2 }}>
+                <Typography variant="caption" color="text.secondary" textTransform="uppercase" fontWeight="500">
+                  Total Profit
+                </Typography>
+                <Typography variant="h5" fontWeight="bold" color="success.main" mt={0.5}>
                   Rs. {reportData.summary.totalProfit}
                 </Typography>
-                <Typography variant="caption" color="text.secondary">
+                <Typography variant="caption" color="text.secondary" display="block" mt={0.5}>
                   Margin: {reportData.summary.profitMargin}%
                 </Typography>
               </CardContent>
             </Card>
           </Grid>
           <Grid item xs={12} sm={6} md={3}>
-            <Card elevation={2}>
-              <CardContent>
-                <Typography variant="body2" color="text.secondary">
+            <Card elevation={1}>
+              <CardContent sx={{ textAlign: 'center', py: 2 }}>
+                <Typography variant="caption" color="text.secondary" textTransform="uppercase" fontWeight="500">
                   Transactions
                 </Typography>
-                <Typography variant="h4" fontWeight="bold">
+                <Typography variant="h4" fontWeight="bold" mt={0.5}>
                   {reportData.summary.totalTransactions}
                 </Typography>
-                <Typography variant="caption" color="text.secondary">
+                <Typography variant="caption" color="text.secondary" display="block" mt={0.5}>
                   Avg: Rs. {reportData.summary.averageTransactionValue}
                 </Typography>
               </CardContent>
@@ -203,23 +203,23 @@ const SalesRevenueReport = () => {
         </Alert>
       )}
 
-      {/* Category Sales */}
+      {/* Category Sales & Top Products */}
       {reportData && reportData.categorySales && (
         <Grid container spacing={3} mb={3}>
           <Grid item xs={12} md={6}>
-            <Card elevation={2}>
+            <Card elevation={1}>
               <CardContent>
-                <Typography variant="h6" gutterBottom>
+                <Typography variant="subtitle1" fontWeight="600" gutterBottom>
                   Sales by Category
                 </Typography>
-                <TableContainer component={Paper} elevation={0} sx={{ maxHeight: 400 }}>
+                <TableContainer sx={{ maxHeight: 350 }}>
                   <Table size="small" stickyHeader>
                     <TableHead>
-                      <TableRow sx={{ bgcolor: '#f5f5f5' }}>
-                        <TableCell><strong>Category</strong></TableCell>
-                        <TableCell align="right"><strong>Revenue</strong></TableCell>
-                        <TableCell align="right"><strong>Profit</strong></TableCell>
-                        <TableCell align="right"><strong>Margin</strong></TableCell>
+                      <TableRow>
+                        <TableCell sx={{ bgcolor: '#f5f5f5', fontWeight: 600 }}>Category</TableCell>
+                        <TableCell align="right" sx={{ bgcolor: '#f5f5f5', fontWeight: 600 }}>Revenue</TableCell>
+                        <TableCell align="right" sx={{ bgcolor: '#f5f5f5', fontWeight: 600 }}>Profit</TableCell>
+                        <TableCell align="right" sx={{ bgcolor: '#f5f5f5', fontWeight: 600 }}>Margin</TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
@@ -240,24 +240,24 @@ const SalesRevenueReport = () => {
 
           {/* Top Products */}
           <Grid item xs={12} md={6}>
-            <Card elevation={2}>
+            <Card elevation={1}>
               <CardContent>
-                <Typography variant="h6" gutterBottom>
+                <Typography variant="subtitle1" fontWeight="600" gutterBottom>
                   Top Selling Products
                 </Typography>
-                <TableContainer component={Paper} elevation={0} sx={{ maxHeight: 400 }}>
+                <TableContainer sx={{ maxHeight: 350 }}>
                   <Table size="small" stickyHeader>
                     <TableHead>
-                      <TableRow sx={{ bgcolor: '#f5f5f5' }}>
-                        <TableCell><strong>Product</strong></TableCell>
-                        <TableCell align="right"><strong>Qty</strong></TableCell>
-                        <TableCell align="right"><strong>Revenue</strong></TableCell>
+                      <TableRow>
+                        <TableCell sx={{ bgcolor: '#f5f5f5', fontWeight: 600 }}>Product</TableCell>
+                        <TableCell align="right" sx={{ bgcolor: '#f5f5f5', fontWeight: 600 }}>Qty</TableCell>
+                        <TableCell align="right" sx={{ bgcolor: '#f5f5f5', fontWeight: 600 }}>Revenue</TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
                       {reportData.topProducts && reportData.topProducts.map((product, index) => (
                         <TableRow key={index} sx={{ '&:hover': { bgcolor: '#f9f9f9' } }}>
-                          <TableCell>{product.product}</TableCell>
+                          <TableCell sx={{ fontSize: '0.875rem' }}>{product.product}</TableCell>
                           <TableCell align="right">{product.quantity}</TableCell>
                           <TableCell align="right">Rs. {product.revenue.toFixed(2)}</TableCell>
                         </TableRow>
@@ -273,21 +273,21 @@ const SalesRevenueReport = () => {
 
       {/* Daily Sales Trend */}
       {reportData && reportData.dailySales && reportData.dailySales.length > 0 && (
-        <Card elevation={2}>
+        <Card elevation={1}>
           <CardContent>
-            <Typography variant="h6" gutterBottom>
+            <Typography variant="subtitle1" fontWeight="600" gutterBottom>
               Daily Sales Trend
             </Typography>
-            <TableContainer component={Paper} elevation={0} sx={{ maxHeight: 400 }}>
+            <TableContainer sx={{ maxHeight: 400 }}>
               <Table size="small" stickyHeader>
                 <TableHead>
-                  <TableRow sx={{ bgcolor: '#f5f5f5' }}>
-                    <TableCell><strong>Date</strong></TableCell>
-                    <TableCell align="right"><strong>Revenue</strong></TableCell>
-                    <TableCell align="right"><strong>Cost</strong></TableCell>
-                    <TableCell align="right"><strong>Profit</strong></TableCell>
-                    <TableCell align="right"><strong>Transactions</strong></TableCell>
-                    <TableCell align="right"><strong>Items</strong></TableCell>
+                  <TableRow>
+                    <TableCell sx={{ bgcolor: '#f5f5f5', fontWeight: 600 }}>Date</TableCell>
+                    <TableCell align="right" sx={{ bgcolor: '#f5f5f5', fontWeight: 600 }}>Revenue</TableCell>
+                    <TableCell align="right" sx={{ bgcolor: '#f5f5f5', fontWeight: 600 }}>Cost</TableCell>
+                    <TableCell align="right" sx={{ bgcolor: '#f5f5f5', fontWeight: 600 }}>Profit</TableCell>
+                    <TableCell align="right" sx={{ bgcolor: '#f5f5f5', fontWeight: 600 }}>Transactions</TableCell>
+                    <TableCell align="right" sx={{ bgcolor: '#f5f5f5', fontWeight: 600 }}>Items</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>

@@ -97,41 +97,6 @@ const Reports = () => {
           </Box>
         </Box>
 
-        {/* Report Type Cards */}
-        <Grid container spacing={3} mb={4}>
-          {reportTypes.map((report, index) => (
-            <Grid item xs={12} sm={6} md={3} key={report.id}>
-              <Card
-                elevation={activeTab === index ? 8 : 2}
-                sx={{
-                  cursor: 'pointer',
-                  transition: 'all 0.3s',
-                  border: activeTab === index ? `2px solid ${report.color}` : '2px solid transparent',
-                  '&:hover': {
-                    transform: 'translateY(-4px)',
-                    boxShadow: 6
-                  }
-                }}
-                onClick={() => setActiveTab(index)}
-              >
-                <CardContent>
-                  <Box display="flex" flexDirection="column" alignItems="center" textAlign="center">
-                    <Box mb={2}>
-                      {report.icon}
-                    </Box>
-                    <Typography variant="h6" fontWeight="bold" gutterBottom>
-                      {report.title}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {report.description}
-                    </Typography>
-                  </Box>
-                </CardContent>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
-
         {/* Tabs */}
         <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
           <Tabs

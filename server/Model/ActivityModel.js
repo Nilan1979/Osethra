@@ -10,11 +10,14 @@ const activitySchema = new Schema({
             'product_added',
             'product_updated',
             'product_deleted',
+            'inventory_added',
+            'inventory_receipt',
+            'inventory_adjustment',
+            'stock_adjusted',
             'issue_created',
             'issue_updated',
             'prescription_created',
             'prescription_dispensed',
-            'stock_adjusted',
             'category_added',
             'category_deleted',
             'low_stock_alert',
@@ -50,7 +53,7 @@ const activitySchema = new Schema({
     // Reference to the entity affected
     entityType: {
         type: String,
-        enum: ['Product', 'Issue', 'Prescription', 'Category'],
+        enum: ['Product', 'InventoryItem', 'Issue', 'Prescription', 'Category'],
         index: true
     },
     

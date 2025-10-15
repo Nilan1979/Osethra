@@ -247,12 +247,6 @@ exports.getBatchExpiryReport = async (req, res) => {
     }
 };
 
-// ==================== ISSUES/DISPENSING REPORT ====================
-
-/**
- * Generate Issues/Dispensing Report
- * Shows all medication dispensing transactions
- */
 exports.getIssuesReport = async (req, res) => {
     try {
         const { startDate, endDate, type, status, format = 'json' } = req.query;
@@ -262,14 +256,14 @@ exports.getIssuesReport = async (req, res) => {
         
         // Date range filter
         if (startDate || endDate) {
-            query.createdAt = {};
+            query.issueDate = {};
             if (startDate) {
-                query.createdAt.$gte = new Date(startDate);
+                query.issueDate.$gte = new Date(startDate);
             }
             if (endDate) {
                 const end = new Date(endDate);
                 end.setHours(23, 59, 59, 999);
-                query.createdAt.$lte = end;
+                query.issueDate.$lte = end;
             }
         }
 
@@ -285,8 +279,8 @@ exports.getIssuesReport = async (req, res) => {
 
         // Get issues with populated product details
         const issues = await Issue.find(query)
-            .populate('items.product', 'name sku category unit')
-            .sort({ createdAt: -1 });
+            .populate('items.productId', 'name sku category unit')
+            .sort({ issueDate: -1 });
 
         // Process issues data
         const reportData = issues.map(issue => {
@@ -296,17 +290,17 @@ exports.getIssuesReport = async (req, res) => {
 
             return {
                 issueNumber: issue.issueNumber,
-                date: issue.createdAt,
+                date: issue.issueDate,
                 type: issue.type,
                 status: issue.status,
                 patientName: issue.patient?.name || 'N/A',
                 patientId: issue.patient?.id || 'N/A',
                 departmentName: issue.department?.name || 'N/A',
                 items: issue.items.map(item => ({
-                    productName: item.product?.name || item.productName,
-                    sku: item.product?.sku || 'N/A',
+                    productName: item.productId?.name || item.productName,
+                    sku: item.productId?.sku || 'N/A',
                     quantity: item.quantity,
-                    unit: item.product?.unit || 'units',
+                    unit: item.productId?.unit || 'units',
                     unitPrice: item.unitPrice,
                     totalPrice: item.totalPrice
                 })),
@@ -382,7 +376,7 @@ exports.getSalesRevenueReport = async (req, res) => {
         end.setHours(23, 59, 59, 999);
 
         dateQuery = {
-            createdAt: {
+            issueDate: {
                 $gte: start,
                 $lte: end
             }
@@ -392,7 +386,7 @@ exports.getSalesRevenueReport = async (req, res) => {
         const issues = await Issue.find({
             ...dateQuery,
             status: { $in: ['issued', 'partial'] } // Only completed transactions
-        }).populate('items.product', 'name sku category unit');
+        }).populate('items.productId', 'name sku category unit');
 
         // Process sales data
         let salesData = [];
@@ -401,10 +395,10 @@ exports.getSalesRevenueReport = async (req, res) => {
         let dailySales = {};
 
         issues.forEach(issue => {
-            const issueDate = new Date(issue.createdAt).toISOString().split('T')[0];
+            const issueDate = new Date(issue.issueDate).toISOString().split('T')[0];
             
             issue.items.forEach(item => {
-                const product = item.product;
+                const product = item.productId;
                 const categoryName = product?.category || 'Uncategorized';
                 const productName = product?.name || item.productName;
                 const revenue = item.totalPrice || (item.quantity * (item.unitPrice || 0));
@@ -462,7 +456,7 @@ exports.getSalesRevenueReport = async (req, res) => {
                 dailySales[issueDate].items += item.quantity;
             });
 
-            const issueDate = new Date(issue.createdAt).toISOString().split('T')[0];
+            // Count transaction for this issue
             if (dailySales[issueDate]) {
                 dailySales[issueDate].transactions += 1;
             }
@@ -530,10 +524,16 @@ exports.getSalesRevenueReport = async (req, res) => {
     }
 };
 
-// ==================== PDF GENERATION FUNCTIONS ====================
+function generateReportId(reportType) {
+    const timestamp = Date.now();
+    const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+    const prefix = reportType.substring(0, 3).toUpperCase();
+    return `${prefix}-${timestamp}-${random}`;
+}
 
 function generateStockStatusPDF(res, data, summary) {
     const doc = new PDFDocument({ margin: 50 });
+    const reportId = generateReportId('STOCK');
     
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename=stock-status-report-${new Date().toISOString().split('T')[0]}.pdf`);
@@ -543,7 +543,8 @@ function generateStockStatusPDF(res, data, summary) {
     // Header
     doc.fontSize(20).text('Stock Status Report', { align: 'center' });
     doc.moveDown();
-    doc.fontSize(10).text(`Generated: ${new Date().toLocaleString()}`, { align: 'center' });
+    doc.fontSize(10).text(`Report ID: ${reportId}`, { align: 'center' });
+    doc.text(`Generated: ${new Date().toLocaleString()}`, { align: 'center' });
     doc.moveDown(2);
 
     // Summary
@@ -598,7 +599,8 @@ function generateStockStatusPDF(res, data, summary) {
 }
 
 function generateBatchExpiryPDF(res, data, summary) {
-    const doc = new PDFDocument({ margin: 50, size: 'A4', layout: 'landscape' });
+    const doc = new PDFDocument({ margin: 50 });
+    const reportId = generateReportId('BATCH');
     
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename=batch-expiry-report-${new Date().toISOString().split('T')[0]}.pdf`);
@@ -608,7 +610,8 @@ function generateBatchExpiryPDF(res, data, summary) {
     // Header
     doc.fontSize(20).text('Batch & Expiry Report', { align: 'center' });
     doc.moveDown();
-    doc.fontSize(10).text(`Generated: ${new Date().toLocaleString()}`, { align: 'center' });
+    doc.fontSize(10).text(`Report ID: ${reportId}`, { align: 'center' });
+    doc.text(`Generated: ${new Date().toLocaleString()}`, { align: 'center' });
     doc.moveDown(2);
 
     // Summary
@@ -659,6 +662,7 @@ function generateBatchExpiryPDF(res, data, summary) {
 
 function generateIssuesReportPDF(res, data, summary, filters) {
     const doc = new PDFDocument({ margin: 50 });
+    const reportId = generateReportId('ISSUE');
     
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename=issues-report-${new Date().toISOString().split('T')[0]}.pdf`);
@@ -668,7 +672,8 @@ function generateIssuesReportPDF(res, data, summary, filters) {
     // Header
     doc.fontSize(20).text('Issues/Dispensing Report', { align: 'center' });
     doc.moveDown();
-    doc.fontSize(10).text(`Generated: ${new Date().toLocaleString()}`, { align: 'center' });
+    doc.fontSize(10).text(`Report ID: ${reportId}`, { align: 'center' });
+    doc.text(`Generated: ${new Date().toLocaleString()}`, { align: 'center' });
     if (filters.startDate || filters.endDate) {
         doc.text(`Period: ${filters.startDate || 'All'} to ${filters.endDate || 'Today'}`, { align: 'center' });
     }
@@ -713,6 +718,7 @@ function generateIssuesReportPDF(res, data, summary, filters) {
 
 function generateSalesRevenuePDF(res, reportData) {
     const doc = new PDFDocument({ margin: 50 });
+    const reportId = generateReportId('SALES');
     
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename=sales-revenue-report-${new Date().toISOString().split('T')[0]}.pdf`);
@@ -724,7 +730,8 @@ function generateSalesRevenuePDF(res, reportData) {
     // Header
     doc.fontSize(20).text('Sales & Revenue Report', { align: 'center' });
     doc.moveDown();
-    doc.fontSize(10).text(`Generated: ${new Date().toLocaleString()}`, { align: 'center' });
+    doc.fontSize(10).text(`Report ID: ${reportId}`, { align: 'center' });
+    doc.text(`Generated: ${new Date().toLocaleString()}`, { align: 'center' });
     doc.text(`Period: ${summary.dateRange.start} to ${summary.dateRange.end}`, { align: 'center' });
     doc.moveDown(2);
 

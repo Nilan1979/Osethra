@@ -1137,7 +1137,14 @@ exports.addInventoryItem = async (req, res) => {
             await Activity.create({
                 type: 'inventory_receipt',
                 description: `Added ${quantity} ${productExists.unit} of ${productExists.name} (Batch: ${batchNumber})`,
-                user: userId,
+                user: {
+                    id: req.user._id,
+                    name: req.user.name,
+                    role: req.user.role
+                },
+                entityType: 'Product',
+                entityId: product,
+                entityName: productExists.name,
                 severity: needsAlert ? 'warning' : 'info',
                 metadata: {
                     productId: product,
@@ -1401,7 +1408,14 @@ exports.adjustInventoryStock = async (req, res) => {
         await Activity.create({
             type: 'inventory_adjustment',
             description: `Adjusted stock for ${item.product.name} (Batch: ${item.batchNumber}): ${adjustment > 0 ? '+' : ''}${adjustment} ${item.product.unit}`,
-            user: req.user._id,
+            user: {
+                id: req.user._id,
+                name: req.user.name,
+                role: req.user.role
+            },
+            entityType: 'Product',
+            entityId: item.product._id,
+            entityName: item.product.name,
             severity: 'warning',
             metadata: {
                 productId: item.product._id,

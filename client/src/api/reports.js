@@ -4,7 +4,7 @@ const reportsAPI = {
     // Stock Status Report
     getStockStatusReport: async (params = {}) => {
         try {
-            const response = await axiosInstance.get('/reports/stock-status', { params });
+            const response = await axiosInstance.get('/api/reports/stock-status', { params });
             return response.data;
         } catch (error) {
             console.error('Error fetching stock status report:', error);
@@ -15,7 +15,7 @@ const reportsAPI = {
     // Batch/Expiry Report
     getBatchExpiryReport: async (params = {}) => {
         try {
-            const response = await axiosInstance.get('/reports/batch-expiry', { params });
+            const response = await axiosInstance.get('/api/reports/batch-expiry', { params });
             return response.data;
         } catch (error) {
             console.error('Error fetching batch/expiry report:', error);
@@ -26,7 +26,7 @@ const reportsAPI = {
     // Issues/Dispensing Report
     getIssuesReport: async (params = {}) => {
         try {
-            const response = await axiosInstance.get('/reports/issues', { params });
+            const response = await axiosInstance.get('/api/reports/issues', { params });
             return response.data;
         } catch (error) {
             console.error('Error fetching issues report:', error);
@@ -37,7 +37,7 @@ const reportsAPI = {
     // Sales/Revenue Report
     getSalesRevenueReport: async (params = {}) => {
         try {
-            const response = await axiosInstance.get('/reports/sales-revenue', { params });
+            const response = await axiosInstance.get('/api/reports/sales-revenue', { params });
             return response.data;
         } catch (error) {
             console.error('Error fetching sales/revenue report:', error);
@@ -48,7 +48,7 @@ const reportsAPI = {
     // Download PDF reports
     downloadStockStatusPDF: async (params = {}) => {
         try {
-            const response = await axiosInstance.get('/reports/stock-status', {
+            const response = await axiosInstance.get('/api/reports/stock-status', {
                 params: { ...params, format: 'pdf' },
                 responseType: 'blob'
             });
@@ -61,7 +61,7 @@ const reportsAPI = {
 
     downloadBatchExpiryPDF: async (params = {}) => {
         try {
-            const response = await axiosInstance.get('/reports/batch-expiry', {
+            const response = await axiosInstance.get('/api/reports/batch-expiry', {
                 params: { ...params, format: 'pdf' },
                 responseType: 'blob'
             });
@@ -74,7 +74,7 @@ const reportsAPI = {
 
     downloadIssuesPDF: async (params = {}) => {
         try {
-            const response = await axiosInstance.get('/reports/issues', {
+            const response = await axiosInstance.get('/api/reports/issues', {
                 params: { ...params, format: 'pdf' },
                 responseType: 'blob'
             });
@@ -87,7 +87,7 @@ const reportsAPI = {
 
     downloadSalesRevenuePDF: async (params = {}) => {
         try {
-            const response = await axiosInstance.get('/reports/sales-revenue', {
+            const response = await axiosInstance.get('/api/reports/sales-revenue', {
                 params: { ...params, format: 'pdf' },
                 responseType: 'blob'
             });

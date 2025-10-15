@@ -171,13 +171,13 @@ const EditInventory = () => {
 
       const response = await inventoryItemsAPI.updateInventoryItem(id, updateData);
 
-      if (response.data.success) {
+      if (response.success) {
         showSnackbar('Inventory item updated successfully', 'success');
         setTimeout(() => {
           navigate('/pharmacist/inventory');
         }, 1500);
       } else {
-        showSnackbar(response.data.message || 'Failed to update inventory item', 'error');
+        showSnackbar(response.message || 'Failed to update inventory item', 'error');
       }
     } catch (error) {
       console.error('Error updating inventory item:', error);
@@ -391,7 +391,7 @@ const EditInventory = () => {
                       ((parseFloat(formData.sellingPrice) - parseFloat(formData.buyingPrice)) / parseFloat(formData.buyingPrice) * 100).toFixed(2)
                     }%
                     {' '}
-                    (₹{(parseFloat(formData.sellingPrice) - parseFloat(formData.buyingPrice)).toFixed(2)} per unit)
+                    (LKR {(parseFloat(formData.sellingPrice) - parseFloat(formData.buyingPrice)).toFixed(2)} per unit)
                   </Alert>
                 )}
 
