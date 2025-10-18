@@ -48,25 +48,25 @@ exports.generateUsersPDF = async (req, res) => {
     try {
         const users = await User.find().select('-password');
         
-        // Create a new PDF document
+        
         const doc = new PDFDocument();
         
-        // Set response headers for PDF download
+        
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', 'attachment; filename=users-report.pdf');
         
-        // Pipe the PDF document to the response
+        
         doc.pipe(res);
         
-        // Add title
+        
         doc.fontSize(20).text('Healthcare System - Users Report', { align: 'center' });
         doc.moveDown();
         
-        // Add generation date
+        
         doc.fontSize(12).text(`Generated on: ${new Date().toLocaleDateString()}`, { align: 'right' });
         doc.moveDown();
         
-        // Add summary statistics
+        
         const stats = {
             total: users.length,
             admins: users.filter(u => u.role === 'admin').length,
@@ -321,17 +321,64 @@ exports.generateUserPDF = async (req, res) => {
 };
 
 // Add user (Admin can create staff)
+const { validationResult } = require('express-validator');
+
 exports.addUser = async (req, res) => {
-    const { name, contactNo, address, email, role, password } = req.body;
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ message: 'Validation failed', errors: errors.array() });
+    }
+
+    const {
+        fullName,
+        email,
+        contactNo,
+        address,
+        role,
+        password,
+        gender,
+        dob,
+        nic,
+        maritalStatus,
+        department,
+        emergencyContactName,
+        emergencyContactNo
+    } = req.body;
 
     try {
         const existingUser = await User.findOne({ email });
         if (existingUser) return res.status(400).json({ message: 'Email already exists' });
 
-        const newUser = new User({ name, contactNo, address, email, role, password });
+        const userData = {
+            fullName: fullName || '',
+            email,
+            contactNo,
+            address,
+            role,
+            password,
+            gender,
+            dob,
+            nic,
+            maritalStatus,
+            department,
+            emergencyContactName,
+            emergencyContactNo
+        };
+
+        // Handle profile image path correctly
+        if (req.file) {
+            // Use forward slashes for URL compatibility
+            userData.profileImage = `profileImages/${req.file.filename}`;
+            console.log('Profile image path set to:', userData.profileImage);
+        }
+
+        const newUser = new User(userData);
         await newUser.save();
 
-        res.status(201).json({ message: 'User created successfully', user: newUser });
+        const safeUser = newUser.toObject();
+        delete safeUser.password;
+
+        res.status(201).json({ message: 'User created successfully', user: safeUser });
     } catch (err) {
         res.status(500).json({ message: err.message });
     }
@@ -350,21 +397,56 @@ exports.getById = async (req, res) => {
 
 // Update user
 exports.updateUser = async (req, res) => {
-    const { name, contactNo, address, email, role, password } = req.body;
+    const { validationResult } = require('express-validator');
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        console.log("Validation errors:", errors.array());
+        return res.status(400).json({ 
+            message: 'Validation failed', 
+            errors: errors.array(),
+            requestBody: req.body // For debugging
+        });
+    }
 
     try {
         const user = await User.findById(req.params.id);
         if (!user) return res.status(404).json({ message: 'User not found' });
 
-        user.name = name || user.name;
-        user.contactNo = contactNo || user.contactNo;
-        user.address = address || user.address;
-        user.email = email || user.email;
-        user.role = role || user.role;
-        if (password) user.password = password; // will be hashed by pre-save
+        const body = req.body;
+
+        // Handle fullName and name correctly
+        user.fullName = body.fullName || body.name || user.fullName;
+        user.name = body.fullName || body.name || user.name;
+        
+        // Only update fields if they are provided, even if empty strings
+        if (body.contactNo !== undefined) user.contactNo = body.contactNo;
+        if (body.address !== undefined) user.address = body.address;
+        if (body.email !== undefined) user.email = body.email;
+        if (body.role !== undefined) user.role = body.role;
+        if (body.gender !== undefined) user.gender = body.gender;
+        if (body.dob !== undefined) user.dob = body.dob;
+        if (body.nic !== undefined) user.nic = body.nic;
+        if (body.maritalStatus !== undefined) user.maritalStatus = body.maritalStatus;
+        if (body.department !== undefined) user.department = body.department;
+        if (body.emergencyContactName !== undefined) user.emergencyContactName = body.emergencyContactName;
+        if (body.emergencyContactNo !== undefined) user.emergencyContactNo = body.emergencyContactNo;
+
+        if (body.password) user.password = body.password; // hashed by pre-save
+        // Handle profile image path correctly
+        if (req.file) {
+            // Use forward slashes for URL compatibility
+            user.profileImage = `profileImages/${req.file.filename}`;
+            console.log('Profile image path updated to:', user.profileImage);
+        }
 
         await user.save();
-        res.status(200).json({ message: 'User updated successfully', user });
+
+        // Convert to object and remove password
+        const safeUser = user.toObject();
+        delete safeUser.password;
+
+        console.log('User updated successfully:', safeUser._id);
+        res.status(200).json({ message: 'User updated successfully', user: safeUser });
     } catch (err) {
         res.status(500).json({ message: err.message });
     }
