@@ -32,6 +32,10 @@ import UpdateTreatment from './pages/UpdateTreatment';
 import Footer from './components/Footer';
 import { Container, Box } from '@mui/material';
 
+// Schedule Management
+import DoctorSchedule from './pages/DoctorSchedule';
+import AllSchedules from './pages/AllSchedules';
+
 // Inventory Management
 import ProductsManagement from './pages/inventory/ProductsManagement';
 import StockAlerts from './pages/inventory/StockAlerts';
@@ -256,6 +260,24 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <UpdateTreatment />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Schedule Management Routes */}
+      <Route
+        path="/doctor-schedule"
+        element={
+          <ProtectedRoute>
+            <DoctorSchedule />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/all-schedules"
+        element={
+          <ProtectedRoute>
+            <AllSchedules />
           </ProtectedRoute>
         }
       />

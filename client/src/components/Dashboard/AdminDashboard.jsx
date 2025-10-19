@@ -16,7 +16,8 @@ import {
   IconButton,
   Card,
   CardContent,
-  InputAdornment
+  InputAdornment,
+  Stack 
 } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
 import {
@@ -68,19 +69,37 @@ const AdminDashboard = () => {
   });
 
   const [formData, setFormData] = useState({
-    name: '',
+    fullName: '',
     email: '',
     contactNo: '',
     address: '',
     role: 'receptionist',
-    password: ''
+    password: '',
+    gender: '',
+    dob: '',
+    nic: '',
+    maritalStatus: '',
+    department: '',
+    specialty: '',
+    emergencyContactName: '',
+    emergencyContactNo: ''
   });
+
   const [formErrors, setFormErrors] = useState({
-    name: '',
+    fullName: '',
     email: '',
     contactNo: '',
     address: '',
-    password: ''
+    role: '',
+    password: '',
+    gender: '',
+    dob: '',
+    nic: '',
+    maritalStatus: '',
+    department: '',
+    specialty: '',
+    emergencyContactName: '',
+    emergencyContactNo: ''
   });
 
   const validateField = (name, value) => {
@@ -113,6 +132,25 @@ const AdminDashboard = () => {
         if (!editingUser && !value) return 'Password is required for new users';
         if (value && value.length < 6) {
           return 'Password must be at least 6 characters long';
+        }
+        break;
+      case 'emergencyContactNo':
+        if (value && !/^[0-9]{10}$/.test(value.trim())) {
+          return 'Emergency contact must be 10 digits';
+        }
+        break;
+      case 'nic':
+        if (value && !/^[0-9]{9}[vVxX]$|^[0-9]{12}$/.test(value.trim())) {
+          return 'Invalid NIC format';
+        }
+        break;
+      case 'specialty':
+        // Specialty is required only for doctors
+        if (formData.role === 'doctor' && !value.trim()) {
+          return 'Specialty is required for doctors';
+        }
+        if (value && value.trim().length < 2) {
+          return 'Specialty must be at least 2 characters';
         }
         break;
       default:
@@ -155,24 +193,55 @@ const AdminDashboard = () => {
     if (user) {
       setEditingUser(user);
       setFormData({
-        name: user.name,
-        email: user.email,
-        contactNo: user.contactNo,
-        address: user.address,
-        role: user.role,
-        password: ''
+        fullName: user.fullName || '',
+        email: user.email || '',
+        contactNo: user.contactNo || '',
+        address: user.address || '',
+        role: user.role || 'receptionist',
+        password: '',
+        gender: user.gender || '',
+        dob: user.dob || '',
+        nic: user.nic || '',
+        maritalStatus: user.maritalStatus || '',
+        department: user.department || '',
+        specialty: user.specialty || '',
+        emergencyContactName: user.emergencyContactName || '',
+        emergencyContactNo: user.emergencyContactNo || ''
       });
     } else {
       setEditingUser(null);
       setFormData({
-        name: '',
+        fullName: '',
         email: '',
         contactNo: '',
         address: '',
         role: 'receptionist',
-        password: ''
+        password: '',
+        gender: '',
+        dob: '',
+        nic: '',
+        maritalStatus: '',
+        department: '',
+        specialty: '',
+        emergencyContactName: '',
+        emergencyContactNo: ''
       });
     }
+    setFormErrors({
+      fullName: '',
+      email: '',
+      contactNo: '',
+      address: '',
+      role: '',
+      password: '',
+      gender: '',
+      dob: '',
+      nic: '',
+      maritalStatus: '',
+      department: '',
+      emergencyContactName: '',
+      emergencyContactNo: ''
+    });
     setOpenDialog(true);
   };
 
@@ -311,11 +380,19 @@ const AdminDashboard = () => {
   };
 
   const columns = [
-    { field: 'name', headerName: 'Name', width: 150 },
+    { field: 'fullName', headerName: 'Name', width: 150 },
     { field: 'email', headerName: 'Email', width: 200 },
     { field: 'contactNo', headerName: 'Contact', width: 130 },
     { field: 'role', headerName: 'Role', width: 120 },
-    { field: 'address', headerName: 'Address', width: 200 },
+    { 
+      field: 'specialty', 
+      headerName: 'Specialty', 
+      width: 150,
+      renderCell: (params) => (
+        params.row.role === 'doctor' ? (params.row.specialty || 'N/A') : '-'
+      )
+    },
+    { field: 'address', headerName: 'Address', width: 180 },
     {
       field: 'actions',
       headerName: 'Actions',
@@ -545,39 +622,37 @@ const AdminDashboard = () => {
           </div>
         </Paper>
 
-      {/* Add/Edit User Dialog */}
-      <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
-        <DialogTitle>
-          {editingUser ? 'Edit User' : 'Add New User'}
-        </DialogTitle>
-        <DialogContent>
-          {error && (
-            <Alert severity="error" sx={{ mb: 2 }}>
-              {error}
-            </Alert>
-          )}
-          
-          {success && (
-            <Alert severity="success" sx={{ mb: 2 }}>
-              {success}
-            </Alert>
-          )}
+        {/* Add/Edit User Dialog */}
+        <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
+          <DialogTitle>
+            {editingUser ? 'Edit User' : 'Add New User'}
+          </DialogTitle>
+          <DialogContent>
+            {error && (
+              <Alert severity="error" sx={{ mb: 2 }}>
+                {error}
+              </Alert>
+            )}
+            
+            {success && (
+              <Alert severity="success" sx={{ mb: 2 }}>
+                {success}
+              </Alert>
+            )}
 
-          <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1 }}>
-            <Grid container spacing={2}>
-              <Grid item xs={12}>
+            <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1 }}>
+              <Stack spacing={2}>
                 <TextField
                   required
                   fullWidth
-                  name="name"
+                  name="fullName"
                   label="Full Name"
-                  value={formData.name}
+                  value={formData.fullName}
                   onChange={handleChange}
-                  error={!!formErrors.name}
-                  helperText={formErrors.name}
+                  error={!!formErrors.fullName}
+                  helperText={formErrors.fullName}
                 />
-              </Grid>
-              <Grid item xs={12}>
+                
                 <TextField
                   required
                   fullWidth
@@ -589,8 +664,7 @@ const AdminDashboard = () => {
                   error={!!formErrors.email}
                   helperText={formErrors.email}
                 />
-              </Grid>
-              <Grid item xs={12} sm={6}>
+                
                 <TextField
                   required
                   fullWidth
@@ -601,8 +675,7 @@ const AdminDashboard = () => {
                   error={!!formErrors.contactNo}
                   helperText={formErrors.contactNo}
                 />
-              </Grid>
-              <Grid item xs={12} sm={6}>
+                
                 <TextField
                   select
                   required
@@ -618,8 +691,22 @@ const AdminDashboard = () => {
                     </MenuItem>
                   ))}
                 </TextField>
-              </Grid>
-              <Grid item xs={12}>
+
+                {/* Specialty field - only show for doctors */}
+                {formData.role === 'doctor' && (
+                  <TextField
+                    required
+                    fullWidth
+                    name="specialty"
+                    label="Specialty"
+                    placeholder="e.g., Cardiology, Pediatrics, Orthopedics"
+                    value={formData.specialty}
+                    onChange={handleChange}
+                    error={!!formErrors.specialty}
+                    helperText={formErrors.specialty || "Enter doctor's area of specialization"}
+                  />
+                )}
+                
                 <TextField
                   required
                   fullWidth
@@ -632,8 +719,7 @@ const AdminDashboard = () => {
                   error={!!formErrors.address}
                   helperText={formErrors.address}
                 />
-              </Grid>
-              <Grid item xs={12}>
+                
                 <TextField
                   fullWidth
                   name="password"
@@ -645,25 +731,97 @@ const AdminDashboard = () => {
                   error={!!formErrors.password}
                   helperText={formErrors.password}
                 />
-              </Grid>
-            </Grid>
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseDialog}>Cancel</Button>
-          <Button onClick={handleSubmit} variant="contained">
-            {editingUser ? 'Update' : 'Create'}
-          </Button>
-        </DialogActions>
-      </Dialog>
 
-      {/* User Profile Dialog */}
-      <UserProfile
-        open={profileDialogOpen}
-        onClose={handleCloseProfile}
-        userId={selectedUserId}
-        userName={selectedUserName}
-      />
+                <TextField
+                  fullWidth
+                  name="gender"
+                  label="Gender"
+                  select
+                  value={formData.gender}
+                  onChange={handleChange}
+                >
+                  <MenuItem value="male">Male</MenuItem>
+                  <MenuItem value="female">Female</MenuItem>
+                  <MenuItem value="other">Other</MenuItem>
+                </TextField>
+
+                <TextField
+                  fullWidth
+                  name="dob"
+                  label="Date of Birth"
+                  type="date"
+                  value={formData.dob}
+                  onChange={handleChange}
+                  InputLabelProps={{ shrink: true }}
+                />
+
+                <TextField
+                  fullWidth
+                  name="nic"
+                  label="NIC Number"
+                  value={formData.nic}
+                  onChange={handleChange}
+                  error={!!formErrors.nic}
+                  helperText={formErrors.nic}
+                />
+
+                <TextField
+                  fullWidth
+                  name="maritalStatus"
+                  label="Marital Status"
+                  select
+                  value={formData.maritalStatus}
+                  onChange={handleChange}
+                >
+                  <MenuItem value="single">Single</MenuItem>
+                  <MenuItem value="married">Married</MenuItem>
+                  <MenuItem value="divorced">Divorced</MenuItem>
+                  <MenuItem value="widowed">Widowed</MenuItem>
+                </TextField>
+
+                <TextField
+                  fullWidth
+                  name="department"
+                  label="Department"
+                  value={formData.department}
+                  onChange={handleChange}
+                />
+
+                <TextField
+                  fullWidth
+                  name="emergencyContactName"
+                  label="Emergency Contact Name"
+                  value={formData.emergencyContactName}
+                  onChange={handleChange}
+                />
+
+                <TextField
+                  fullWidth
+                  name="emergencyContactNo"
+                  label="Emergency Contact Number"
+                  value={formData.emergencyContactNo}
+                  onChange={handleChange}
+                  error={!!formErrors.emergencyContactNo}
+                  helperText={formErrors.emergencyContactNo}
+                />
+              </Stack>
+            </Box>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCloseDialog}>Cancel</Button>
+            <Button onClick={handleSubmit} variant="contained">
+              {editingUser ? 'Update' : 'Create'}
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* User Profile Dialog */}
+        <UserProfile
+          open={profileDialogOpen}
+          onClose={handleCloseProfile}
+          userId={selectedUserId}
+          userName={selectedUserName}
+        />
       </Container>
     </Layout>
   );

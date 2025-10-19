@@ -94,19 +94,21 @@ exports.generateUsersPDF = async (req, res) => {
         // Table headers
         const tableTop = doc.y;
         const nameX = 50;
-        const emailX = 200;
-        const roleX = 350;
-        const contactX = 450;
+        const emailX = 180;
+        const roleX = 310;
+        const specialtyX = 380;
+        const contactX = 480;
         
         doc.fontSize(10)
            .text('Name', nameX, tableTop, { bold: true })
            .text('Email', emailX, tableTop, { bold: true })
            .text('Role', roleX, tableTop, { bold: true })
+           .text('Specialty', specialtyX, tableTop, { bold: true })
            .text('Contact', contactX, tableTop, { bold: true });
         
         // Draw line under headers
         doc.moveTo(nameX, tableTop + 15)
-           .lineTo(520, tableTop + 15)
+           .lineTo(550, tableTop + 15)
            .stroke();
         
         let currentY = tableTop + 25;
@@ -119,10 +121,13 @@ exports.generateUsersPDF = async (req, res) => {
                 currentY = 50;
             }
             
+            const specialty = user.role === 'doctor' ? (user.specialty || 'N/A') : '-';
+            
             doc.fontSize(9)
                .text(user.name || 'N/A', nameX, currentY)
                .text(user.email || 'N/A', emailX, currentY)
                .text(user.role || 'N/A', roleX, currentY)
+               .text(specialty, specialtyX, currentY)
                .text(user.contactNo || 'N/A', contactX, currentY);
             
             currentY += 20;
@@ -224,6 +229,17 @@ exports.generateUserPDF = async (req, res) => {
            .fillColor('#1976d2')
            .text(` ${user.role.charAt(0).toUpperCase() + user.role.slice(1)}`, { continued: false });
         
+        // Add specialty for doctors
+        if (user.role === 'doctor' && user.specialty) {
+            currentY += 25;
+            doc.fillColor('#333')
+               .font('Helvetica')
+               .text('Specialty:', leftColumn, currentY, { continued: true })
+               .font('Helvetica-Bold')
+               .fillColor('#4caf50')
+               .text(` ${user.specialty}`, { continued: false });
+        }
+        
         // Right column
         currentY = infoStartY + 20;
         doc.fillColor('#333')
@@ -321,17 +337,66 @@ exports.generateUserPDF = async (req, res) => {
 };
 
 // Add user (Admin can create staff)
+const { validationResult } = require('express-validator');
+
 exports.addUser = async (req, res) => {
-    const { name, contactNo, address, email, role, password } = req.body;
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ message: 'Validation failed', errors: errors.array() });
+    }
+
+    const {
+        fullName,
+        email,
+        contactNo,
+        address,
+        role,
+        password,
+        gender,
+        dob,
+        nic,
+        maritalStatus,
+        department,
+        specialty,
+        emergencyContactName,
+        emergencyContactNo
+    } = req.body;
 
     try {
         const existingUser = await User.findOne({ email });
         if (existingUser) return res.status(400).json({ message: 'Email already exists' });
 
-        const newUser = new User({ name, contactNo, address, email, role, password });
+        const userData = {
+            fullName: fullName || '',
+            email,
+            contactNo,
+            address,
+            role,
+            password,
+            gender,
+            dob,
+            nic,
+            maritalStatus,
+            department,
+            specialty,
+            emergencyContactName,
+            emergencyContactNo
+        };
+
+        // Handle profile image path correctly
+        if (req.file) {
+            // Use forward slashes for URL compatibility
+            userData.profileImage = `profileImages/${req.file.filename}`;
+            console.log('Profile image path set to:', userData.profileImage);
+        }
+
+        const newUser = new User(userData);
         await newUser.save();
 
-        res.status(201).json({ message: 'User created successfully', user: newUser });
+        const safeUser = newUser.toObject();
+        delete safeUser.password;
+
+        res.status(201).json({ message: 'User created successfully', user: safeUser });
     } catch (err) {
         res.status(500).json({ message: err.message });
     }
@@ -350,21 +415,57 @@ exports.getById = async (req, res) => {
 
 // Update user
 exports.updateUser = async (req, res) => {
-    const { name, contactNo, address, email, role, password } = req.body;
+    const { validationResult } = require('express-validator');
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        console.log("Validation errors:", errors.array());
+        return res.status(400).json({ 
+            message: 'Validation failed', 
+            errors: errors.array(),
+            requestBody: req.body // For debugging
+        });
+    }
 
     try {
         const user = await User.findById(req.params.id);
         if (!user) return res.status(404).json({ message: 'User not found' });
 
-        user.name = name || user.name;
-        user.contactNo = contactNo || user.contactNo;
-        user.address = address || user.address;
-        user.email = email || user.email;
-        user.role = role || user.role;
-        if (password) user.password = password; // will be hashed by pre-save
+        const body = req.body;
+
+        // Handle fullName and name correctly
+        user.fullName = body.fullName || body.name || user.fullName;
+        user.name = body.fullName || body.name || user.name;
+        
+        // Only update fields if they are provided, even if empty strings
+        if (body.contactNo !== undefined) user.contactNo = body.contactNo;
+        if (body.address !== undefined) user.address = body.address;
+        if (body.email !== undefined) user.email = body.email;
+        if (body.role !== undefined) user.role = body.role;
+        if (body.gender !== undefined) user.gender = body.gender;
+        if (body.dob !== undefined) user.dob = body.dob;
+        if (body.nic !== undefined) user.nic = body.nic;
+        if (body.maritalStatus !== undefined) user.maritalStatus = body.maritalStatus;
+        if (body.department !== undefined) user.department = body.department;
+        if (body.specialty !== undefined) user.specialty = body.specialty;
+        if (body.emergencyContactName !== undefined) user.emergencyContactName = body.emergencyContactName;
+        if (body.emergencyContactNo !== undefined) user.emergencyContactNo = body.emergencyContactNo;
+
+        if (body.password) user.password = body.password; // hashed by pre-save
+        // Handle profile image path correctly
+        if (req.file) {
+            // Use forward slashes for URL compatibility
+            user.profileImage = `profileImages/${req.file.filename}`;
+            console.log('Profile image path updated to:', user.profileImage);
+        }
 
         await user.save();
-        res.status(200).json({ message: 'User updated successfully', user });
+
+        // Convert to object and remove password
+        const safeUser = user.toObject();
+        delete safeUser.password;
+
+        console.log('User updated successfully:', safeUser._id);
+        res.status(200).json({ message: 'User updated successfully', user: safeUser });
     } catch (err) {
         res.status(500).json({ message: err.message });
     }
@@ -406,6 +507,7 @@ exports.loginUser = async (req, res) => {
 };
 
 // Forgot password
+const { sendMail } = require('../Utils/mailer');
 exports.forgotPassword = async (req, res) => {
     try {
         const { email } = req.body;
@@ -427,15 +529,32 @@ exports.forgotPassword = async (req, res) => {
         user.resetPasswordToken = resetTokenHash;
         user.resetPasswordExpires = Date.now() + 60 * 60 * 1000; // 1 hour
         await user.save();
-        
-        // In a real app, you would send this via email
-        // For now, we'll return it in the response for testing
-        res.status(200).json({ 
-            message: 'Password reset token generated successfully',
-            resetToken, // Remove this in production
-            instructions: `Use this token to reset your password: ${resetToken}`
-        });
+
+        // Build reset URL (frontend should provide route to accept token)
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+        const resetUrl = `${frontendUrl}/reset-password?token=${resetToken}&email=${encodeURIComponent(email)}`;
+
+        const subject = 'Password reset request';
+        const html = `
+            <p>Hello ${user.fullName || user.name || ''},</p>
+            <p>You requested a password reset. Click the link below to reset your password. This link expires in 1 hour.</p>
+            <p><a href="${resetUrl}">Reset password</a></p>
+            <p>If you didn't request this, please ignore this email.</p>
+        `;
+
+        // Send email
+        const { previewUrl } = await sendMail({ to: email, subject, html, text: `Reset your password: ${resetUrl}` });
+
+        const responsePayload = { message: 'Password reset email sent' };
+        if (previewUrl) {
+            // Include Ethereal preview link for development/testing
+            responsePayload.previewUrl = previewUrl;
+            responsePayload.resetToken = resetToken; // helpful for testing; remove in production
+        }
+
+        res.status(200).json(responsePayload);
     } catch (err) {
+        console.error('forgotPassword error', err);
         res.status(500).json({ message: err.message });
     }
 };

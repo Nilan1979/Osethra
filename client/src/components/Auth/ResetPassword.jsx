@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Container,
   Paper,
@@ -9,14 +9,16 @@ import {
   Alert,
   Link,
   InputAdornment,
-  IconButton
+  IconButton,
+  CircularProgress
 } from '@mui/material';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
-import { Link as RouterLink, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { Link as RouterLink, useNavigate, useSearchParams } from 'react-router-dom';
+import axios from '../../api/axiosConfig';
 import Layout from '../Layout/Layout';
 
 const ResetPassword = () => {
+  const [searchParams] = useSearchParams();
   const [formData, setFormData] = useState({
     token: '',
     password: '',
@@ -28,6 +30,13 @@ const ResetPassword = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const token = searchParams.get('token');
+    if (token) {
+      setFormData(prev => ({ ...prev, token }));
+    }
+  }, [searchParams]);
 
   const handleChange = (e) => {
     setFormData({
@@ -90,9 +99,9 @@ const ResetPassword = () => {
             <Typography component="h1" variant="h4" className="form-title">
               Reset Password
             </Typography>
-            <Typography variant="body2" color="textSecondary" sx={{ mb: 3, textAlign: 'center' }}>
+            {/* <Typography variant="body2" color="textSecondary" sx={{ mb: 3, textAlign: 'center' }}>
               Enter your reset token and new password
-            </Typography>
+            </Typography> */}
             
             {error && (
               <Alert severity="error" sx={{ mb: 2 }}>
@@ -101,7 +110,7 @@ const ResetPassword = () => {
             )}
 
             <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1 }}>
-              <TextField
+              {/* <TextField
                 margin="normal"
                 required
                 fullWidth
@@ -113,7 +122,7 @@ const ResetPassword = () => {
                 onChange={handleChange}
                 disabled={loading}
                 helperText="Enter the reset token you received"
-              />
+              /> */}
               
               <TextField
                 margin="normal"

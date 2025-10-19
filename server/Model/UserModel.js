@@ -4,16 +4,31 @@ const bcrypt = require('bcryptjs');
 const Schema = mongoose.Schema;
 
 const userSchema = new Schema({
-    name: { type: String, required: true },
+    // Personal Information
+    fullName: { type: String, required: true },
+    gender: { type: String, enum: ['male', 'female', 'other'] },
+    dob: { type: Date, required: true },
+    nic: { type: String, required: true },
+    maritalStatus: { type: String, enum: ['single', 'married', 'divorced', 'widowed'] },
     contactNo: { type: String, required: true },
-    address: { type: String, required: true },
     email: { type: String, required: true, unique: true },
+    address: { type: String },
+
+    // Job Details
     role: { 
         type: String, 
         enum: ['admin', 'receptionist', 'doctor', 'pharmacist', 'nurse'],
         default: 'receptionist'
     },
+    department: { type: String },
+    specialty: { type: String }, // Doctor's area of specialization
     password: { type: String, required: true },
+    profileImage: { type: String },
+
+    // Emergency
+    emergencyContactName: { type: String, required: true },
+    emergencyContactNo: { type: String, required: true },
+
     resetPasswordToken: { type: String },
     resetPasswordExpires: { type: Date }
 }, { timestamps: true });

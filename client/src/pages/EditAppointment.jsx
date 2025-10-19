@@ -213,8 +213,7 @@ export default function EditAppointment() {
               background: 'radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%)',
               borderRadius: '50%',
               transform: 'translate(30%, -30%)'
-            },
-            position: 'relative'
+            }
           }}
         >
           <CardContent sx={{ p: 4, position: 'relative' }}>
@@ -644,11 +643,9 @@ export default function EditAppointment() {
                       fontSize: '0.875rem',
                       backgroundColor: '#4CAF50',
                       boxShadow: '0 2px 8px rgba(76, 175, 80, 0.25)',
-                      '&:hover': {
-                        backgroundColor: '#43A047'
-                      },
                       transition: 'all 0.2s ease-in-out',
                       '&:hover': {
+                        backgroundColor: '#43A047',
                         transform: 'translateY(-1px)',
                         boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.35)}`
                       }
