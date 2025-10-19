@@ -203,24 +203,62 @@ const NavBar = () => {
             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
               {/* Main Navigation */}
               <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                {/* About Us */}
-                <Button
-                  onClick={() => handleNavigation("/about")}
-                  sx={{ 
-                    color: "white",
-                    textTransform: 'none',
-                    fontWeight: 500,
-                    fontSize: '0.9rem',
-                    minWidth: 'auto',
-                    px: 2,
-                    borderRadius: 0,
-                    '&:hover': {
-                      backgroundColor: 'rgba(255,255,255,0.1)'
-                    }
-                  }}
-                >
-                  About Us
-                </Button>
+                {/* About Us / My Schedule (for doctors) */}
+                {user?.role === 'doctor' ? (
+                  <Button
+                    onClick={() => handleNavigation("/doctor-schedule")}
+                    sx={{ 
+                      color: "white",
+                      textTransform: 'none',
+                      fontWeight: 500,
+                      fontSize: '0.9rem',
+                      minWidth: 'auto',
+                      px: 2,
+                      borderRadius: 0,
+                      '&:hover': {
+                        backgroundColor: 'rgba(255,255,255,0.1)'
+                      }
+                    }}
+                  >
+                    My Schedule
+                  </Button>
+                ) : user?.role === 'receptionist' || user?.role === 'admin' ? (
+                  <Button
+                    onClick={() => handleNavigation("/all-schedules")}
+                    sx={{ 
+                      color: "white",
+                      textTransform: 'none',
+                      fontWeight: 500,
+                      fontSize: '0.9rem',
+                      minWidth: 'auto',
+                      px: 2,
+                      borderRadius: 0,
+                      '&:hover': {
+                        backgroundColor: 'rgba(255,255,255,0.1)'
+                      }
+                    }}
+                  >
+                    Doctor Schedules
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={() => handleNavigation("/about")}
+                    sx={{ 
+                      color: "white",
+                      textTransform: 'none',
+                      fontWeight: 500,
+                      fontSize: '0.9rem',
+                      minWidth: 'auto',
+                      px: 2,
+                      borderRadius: 0,
+                      '&:hover': {
+                        backgroundColor: 'rgba(255,255,255,0.1)'
+                      }
+                    }}
+                  >
+                    About Us
+                  </Button>
+                )}
 
                 {/* Centre of Excellence */}
                 <Button

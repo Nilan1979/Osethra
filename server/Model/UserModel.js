@@ -21,6 +21,7 @@ const userSchema = new Schema({
         default: 'receptionist'
     },
     department: { type: String },
+    specialty: { type: String }, // Doctor's area of specialization
     password: { type: String, required: true },
     profileImage: { type: String },
 

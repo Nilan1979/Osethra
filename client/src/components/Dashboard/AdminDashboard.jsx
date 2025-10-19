@@ -80,6 +80,7 @@ const AdminDashboard = () => {
     nic: '',
     maritalStatus: '',
     department: '',
+    specialty: '',
     emergencyContactName: '',
     emergencyContactNo: ''
   });
@@ -96,6 +97,7 @@ const AdminDashboard = () => {
     nic: '',
     maritalStatus: '',
     department: '',
+    specialty: '',
     emergencyContactName: '',
     emergencyContactNo: ''
   });
@@ -140,6 +142,15 @@ const AdminDashboard = () => {
       case 'nic':
         if (value && !/^[0-9]{9}[vVxX]$|^[0-9]{12}$/.test(value.trim())) {
           return 'Invalid NIC format';
+        }
+        break;
+      case 'specialty':
+        // Specialty is required only for doctors
+        if (formData.role === 'doctor' && !value.trim()) {
+          return 'Specialty is required for doctors';
+        }
+        if (value && value.trim().length < 2) {
+          return 'Specialty must be at least 2 characters';
         }
         break;
       default:
@@ -193,6 +204,7 @@ const AdminDashboard = () => {
         nic: user.nic || '',
         maritalStatus: user.maritalStatus || '',
         department: user.department || '',
+        specialty: user.specialty || '',
         emergencyContactName: user.emergencyContactName || '',
         emergencyContactNo: user.emergencyContactNo || ''
       });
@@ -210,6 +222,7 @@ const AdminDashboard = () => {
         nic: '',
         maritalStatus: '',
         department: '',
+        specialty: '',
         emergencyContactName: '',
         emergencyContactNo: ''
       });
@@ -371,7 +384,15 @@ const AdminDashboard = () => {
     { field: 'email', headerName: 'Email', width: 200 },
     { field: 'contactNo', headerName: 'Contact', width: 130 },
     { field: 'role', headerName: 'Role', width: 120 },
-    { field: 'address', headerName: 'Address', width: 200 },
+    { 
+      field: 'specialty', 
+      headerName: 'Specialty', 
+      width: 150,
+      renderCell: (params) => (
+        params.row.role === 'doctor' ? (params.row.specialty || 'N/A') : '-'
+      )
+    },
+    { field: 'address', headerName: 'Address', width: 180 },
     {
       field: 'actions',
       headerName: 'Actions',
@@ -670,6 +691,21 @@ const AdminDashboard = () => {
                     </MenuItem>
                   ))}
                 </TextField>
+
+                {/* Specialty field - only show for doctors */}
+                {formData.role === 'doctor' && (
+                  <TextField
+                    required
+                    fullWidth
+                    name="specialty"
+                    label="Specialty"
+                    placeholder="e.g., Cardiology, Pediatrics, Orthopedics"
+                    value={formData.specialty}
+                    onChange={handleChange}
+                    error={!!formErrors.specialty}
+                    helperText={formErrors.specialty || "Enter doctor's area of specialization"}
+                  />
+                )}
                 
                 <TextField
                   required

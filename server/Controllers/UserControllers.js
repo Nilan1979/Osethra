@@ -94,19 +94,21 @@ exports.generateUsersPDF = async (req, res) => {
         // Table headers
         const tableTop = doc.y;
         const nameX = 50;
-        const emailX = 200;
-        const roleX = 350;
-        const contactX = 450;
+        const emailX = 180;
+        const roleX = 310;
+        const specialtyX = 380;
+        const contactX = 480;
         
         doc.fontSize(10)
            .text('Name', nameX, tableTop, { bold: true })
            .text('Email', emailX, tableTop, { bold: true })
            .text('Role', roleX, tableTop, { bold: true })
+           .text('Specialty', specialtyX, tableTop, { bold: true })
            .text('Contact', contactX, tableTop, { bold: true });
         
         // Draw line under headers
         doc.moveTo(nameX, tableTop + 15)
-           .lineTo(520, tableTop + 15)
+           .lineTo(550, tableTop + 15)
            .stroke();
         
         let currentY = tableTop + 25;
@@ -119,10 +121,13 @@ exports.generateUsersPDF = async (req, res) => {
                 currentY = 50;
             }
             
+            const specialty = user.role === 'doctor' ? (user.specialty || 'N/A') : '-';
+            
             doc.fontSize(9)
                .text(user.name || 'N/A', nameX, currentY)
                .text(user.email || 'N/A', emailX, currentY)
                .text(user.role || 'N/A', roleX, currentY)
+               .text(specialty, specialtyX, currentY)
                .text(user.contactNo || 'N/A', contactX, currentY);
             
             currentY += 20;
@@ -223,6 +228,17 @@ exports.generateUserPDF = async (req, res) => {
            .font('Helvetica-Bold')
            .fillColor('#1976d2')
            .text(` ${user.role.charAt(0).toUpperCase() + user.role.slice(1)}`, { continued: false });
+        
+        // Add specialty for doctors
+        if (user.role === 'doctor' && user.specialty) {
+            currentY += 25;
+            doc.fillColor('#333')
+               .font('Helvetica')
+               .text('Specialty:', leftColumn, currentY, { continued: true })
+               .font('Helvetica-Bold')
+               .fillColor('#4caf50')
+               .text(` ${user.specialty}`, { continued: false });
+        }
         
         // Right column
         currentY = infoStartY + 20;
@@ -341,6 +357,7 @@ exports.addUser = async (req, res) => {
         nic,
         maritalStatus,
         department,
+        specialty,
         emergencyContactName,
         emergencyContactNo
     } = req.body;
@@ -361,6 +378,7 @@ exports.addUser = async (req, res) => {
             nic,
             maritalStatus,
             department,
+            specialty,
             emergencyContactName,
             emergencyContactNo
         };
@@ -428,6 +446,7 @@ exports.updateUser = async (req, res) => {
         if (body.nic !== undefined) user.nic = body.nic;
         if (body.maritalStatus !== undefined) user.maritalStatus = body.maritalStatus;
         if (body.department !== undefined) user.department = body.department;
+        if (body.specialty !== undefined) user.specialty = body.specialty;
         if (body.emergencyContactName !== undefined) user.emergencyContactName = body.emergencyContactName;
         if (body.emergencyContactNo !== undefined) user.emergencyContactNo = body.emergencyContactNo;
 

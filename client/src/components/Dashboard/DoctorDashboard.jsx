@@ -541,13 +541,23 @@ const DoctorDashboard = () => {
         <Grid container spacing={3}>
           {/* Welcome Section */}
           <Grid size={{ xs: 12 }}>
-            <Paper sx={{ p: 3, display: 'flex', flexDirection: 'column' }}>
-              <Typography variant="h4" gutterBottom>
-                Welcome, {user?.name}
-              </Typography>
-              <Typography variant="body1" color="text.secondary">
-                Manage your appointments and patient schedule
-              </Typography>
+            <Paper sx={{ p: 3, display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Box>
+                <Typography variant="h4" gutterBottom>
+                  Welcome, {user?.name}
+                </Typography>
+                <Typography variant="body1" color="text.secondary">
+                  Manage your appointments and patient schedule
+                </Typography>
+              </Box>
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={() => navigate('/doctor-schedule')}
+                sx={{ minWidth: 180 }}
+              >
+                Manage My Schedule
+              </Button>
             </Paper>
           </Grid>
 

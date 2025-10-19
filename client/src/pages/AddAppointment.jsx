@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { createAppointment } from "../api/appointments";
 import { getDoctors } from "../services/userService";
+import { getSchedulesByDoctor } from "../api/schedule";
 import { 
   TextField, 
   Button, 
   Paper, 
-  Grid, 
+  Grid,
   MenuItem, 
   Typography, 
   Box,
@@ -43,6 +44,7 @@ const steps = ['Patient Information', 'Appointment Details', 'Review & Confirm']
 
 export default function AddAppointment() {
   const theme = useTheme();
+  const navigate = useNavigate();
   const [form, setForm] = useState({
     name: "", 
     address: "", 
@@ -60,84 +62,10 @@ export default function AddAppointment() {
   const [activeStep, setActiveStep] = useState(0);
   const [doctors, setDoctors] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [formErrors, setFormErrors] = useState({
-    name: "",
-    address: "",
-    contact: "",
-    age: "",
-    gender: "",
-    doctor: "",
-    date: "",
-    time: "",
-    reason: ""
-  });
-
-  // Validation
-  const validateField = (name, value) => {
-    switch (name) {
-      case 'name':
-        if (!value?.trim()) return 'Patient name is required';
-        if (!/^[a-zA-Z\s]{2,50}$/.test(value.trim())) {
-          return 'Name must be between 2-50 characters and contain only letters';
-        }
-        break;
-      case 'contact':
-        if (!value?.trim()) return 'Contact number is required';
-        if (!/^[0-9]{10}$/.test(value.trim())) {
-          return 'Contact number must be 10 digits';
-        }
-        break;
-      case 'age':
-        if (!value) return 'Age is required';
-        const age = parseInt(value);
-        if (isNaN(age) || age < 0 || age > 150) {
-          return 'Please enter a valid age between 0 and 150';
-        }
-        break;
-      case 'gender':
-        if (!value) return 'Gender is required';
-        if (!genders.includes(value)) {
-          return 'Please select a valid gender';
-        }
-        break;
-      case 'address':
-        if (!value?.trim()) return 'Address is required';
-        if (value.length < 5) {
-          return 'Address must be at least 5 characters long';
-        }
-        break;
-      case 'doctor':
-        if (!value) return 'Doctor selection is required';
-        break;
-      case 'date':
-        if (!value) return 'Appointment date is required';
-        const appointmentDate = new Date(value);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        if (appointmentDate < today) {
-          return 'Appointment date cannot be in the past';
-        }
-        break;
-      case 'time':
-        if (!value) return 'Appointment time is required';
-        const [hours, minutes] = value.split(':');
-        const appointmentTime = new Date();
-        appointmentTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
-        const workStart = new Date().setHours(8, 0, 0, 0);
-        const workEnd = new Date().setHours(17, 0, 0, 0);
-        if (appointmentTime < workStart || appointmentTime > workEnd) {
-          return 'Appointment time must be between 8:00 AM and 5:00 PM';
-        }
-        break;
-      case 'reason':
-        if (!value?.trim()) return 'Reason for appointment is required';
-        if (value.length < 10) {
-          return 'Please provide a more detailed reason (minimum 10 characters)';
-        }
-        break;
-    }
-    return '';
-  };
+  const [schedules, setSchedules] = useState([]);
+  const [availableDates, setAvailableDates] = useState([]);
+  const [availableTimes, setAvailableTimes] = useState([]);
+  const [loadingSchedules, setLoadingSchedules] = useState(false);
 
   useEffect(() => {
     const fetchDoctors = async () => {
@@ -148,7 +76,7 @@ export default function AddAppointment() {
         } else {
           setError("Failed to load doctors list");
         }
-      } catch (err) {
+      } catch {
         setError("Failed to load doctors list");
       } finally {
         setLoading(false);
@@ -157,7 +85,78 @@ export default function AddAppointment() {
     fetchDoctors();
   }, []);
 
-  const navigate = useNavigate();
+  // Helper function to format time
+  const formatTime = React.useCallback((time) => {
+    const [hours, minutes] = time.split(":");
+    const hour = parseInt(hours);
+    const ampm = hour >= 12 ? "PM" : "AM";
+    const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+    return `${displayHour}:${minutes} ${ampm}`;
+  }, []);
+
+  // Helper function to update available times based on selected date
+  const updateAvailableTimes = React.useCallback((scheduleList, selectedDate) => {
+    const schedulesForDate = scheduleList.filter(s => 
+      new Date(s.date).toISOString().split('T')[0] === selectedDate
+    );
+
+    const times = schedulesForDate.map(s => ({
+      start: s.startTime,
+      end: s.endTime,
+      display: `${formatTime(s.startTime)} - ${formatTime(s.endTime)}`
+    }));
+
+    setAvailableTimes(times);
+  }, [formatTime]);
+
+  // Fetch doctor schedules when doctor is selected
+  useEffect(() => {
+    const fetchDoctorSchedules = async () => {
+      if (!form.doctorId) {
+        setSchedules([]);
+        setAvailableDates([]);
+        setAvailableTimes([]);
+        return;
+      }
+
+      try {
+        setLoadingSchedules(true);
+        const response = await getSchedulesByDoctor(form.doctorId, {
+          startDate: new Date().toISOString().split('T')[0],
+          isAvailable: true
+        });
+
+        if (response.success && response.schedules) {
+          setSchedules(response.schedules);
+          
+          // Extract unique dates
+          const dates = [...new Set(response.schedules.map(s => 
+            new Date(s.date).toISOString().split('T')[0]
+          ))].sort();
+          setAvailableDates(dates);
+
+          // If a date is already selected, update times
+          if (form.date) {
+            updateAvailableTimes(response.schedules, form.date);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching schedules:", error);
+        setError("Failed to load doctor's schedule");
+      } finally {
+        setLoadingSchedules(false);
+      }
+    };
+
+    fetchDoctorSchedules();
+  }, [form.doctorId, form.date, updateAvailableTimes]);
+
+  // Update available times when date changes
+  useEffect(() => {
+    if (form.date && schedules.length > 0) {
+      updateAvailableTimes(schedules, form.date);
+    }
+  }, [form.date, schedules, updateAvailableTimes]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -167,51 +166,20 @@ export default function AddAppointment() {
         setForm(prev => ({
           ...prev,
           doctor: `Dr. ${selectedDoctor.name}`,
-          doctorId: selectedDoctor._id
+          doctorId: selectedDoctor._id,
+          date: "", // Reset date when doctor changes
+          time: ""  // Reset time when doctor changes
         }));
       }
+    } else if (name === 'date') {
+      // Reset time when date changes
+      setForm(prev => ({ ...prev, [name]: value, time: "" }));
     } else {
       setForm(prev => ({ ...prev, [name]: value }));
     }
-    const error = validateField(name, value);
-    setFormErrors(prev => ({ ...prev, [name]: error }));
-  };
-
-  const validateStep = (step) => {
-    let isValid = true;
-    const fieldsToValidate = step === 0
-      ? ['name', 'contact', 'age', 'gender', 'address']
-      : step === 1
-      ? ['doctor', 'date', 'time', 'reason']
-      : [];
-    
-    // Clear previous errors
-    const newErrors = {};
-    fieldsToValidate.forEach(field => {
-      // Check for empty required fields
-      if (!form[field] && field !== 'reason') {
-        newErrors[field] = `${field.charAt(0).toUpperCase() + field.slice(1)} is required`;
-        isValid = false;
-      } else {
-        // Validate field value if not empty
-        const error = validateField(field, form[field]);
-        if (error) {
-          newErrors[field] = error;
-          isValid = false;
-        }
-      }
-    });
-    
-    setFormErrors(prev => ({ ...prev, ...newErrors }));
-    return isValid;
   };
 
   const handleNext = () => {
-    const isValid = validateStep(activeStep);
-    if (!isValid) {
-      setError('Please fill in all required fields correctly');
-      return;
-    }
     setActiveStep((prev) => prev + 1);
     setError('');
   };
@@ -222,13 +190,6 @@ export default function AddAppointment() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    for (const [field, value] of Object.entries(form)) {
-      const fieldError = validateField(field, value);
-      if (fieldError) {
-        setError(`${fieldError}`);
-        return;
-      }
-    }
     try {
       setLoading(true);
       await createAppointment(form);
@@ -258,8 +219,6 @@ export default function AddAppointment() {
                 value={form.name}
                 onChange={handleChange}
                 required
-                error={!!formErrors.name}
-                helperText={formErrors.name}
                 sx={textFieldStyle}
                 InputProps={{
                   startAdornment: <Person sx={{ color: 'text.secondary', mr: 1 }} />
@@ -274,8 +233,6 @@ export default function AddAppointment() {
                 value={form.contact}
                 onChange={handleChange}
                 required
-                error={!!formErrors.contact}
-                helperText={formErrors.contact}
                 sx={textFieldStyle}
                 InputProps={{
                   startAdornment: <Phone sx={{ color: 'text.secondary', mr: 1 }} />
@@ -290,8 +247,6 @@ export default function AddAppointment() {
                 value={form.address}
                 onChange={handleChange}
                 required
-                error={!!formErrors.address}
-                helperText={formErrors.address}
                 sx={textFieldStyle}
                 InputProps={{
                   startAdornment: <Home sx={{ color: 'text.secondary', mr: 1 }} />
@@ -307,8 +262,6 @@ export default function AddAppointment() {
                 value={form.age}
                 onChange={handleChange}
                 required
-                error={!!formErrors.age}
-                helperText={formErrors.age}
                 sx={textFieldStyle}
                 InputProps={{
                   startAdornment: <Cake sx={{ color: 'text.secondary', mr: 1 }} />
@@ -324,8 +277,6 @@ export default function AddAppointment() {
                 value={form.gender}
                 onChange={handleChange}
                 required
-                error={!!formErrors.gender}
-                helperText={formErrors.gender}
                 sx={textFieldStyle}
                 InputProps={{
                   startAdornment: <Transgender sx={{ color: 'text.secondary', mr: 1 }} />
@@ -339,6 +290,13 @@ export default function AddAppointment() {
       case 1:
         return (
           <Grid container spacing={{ xs: 1.5, sm: 2 }}>
+            {form.doctorId && availableDates.length === 0 && !loadingSchedules && (
+              <Grid item xs={12}>
+                <Alert severity="warning" sx={{ borderRadius: 2 }}>
+                  This doctor has no available schedules. Please ask the doctor to add their availability in the Schedule Management page.
+                </Alert>
+              </Grid>
+            )}
             <Grid item xs={12} md={6}>
               <TextField
                 select
@@ -371,39 +329,76 @@ export default function AddAppointment() {
             </Grid>
             <Grid item xs={12} md={6}>
               <TextField
+                select
                 name="date"
                 label="Appointment Date"
-                type="date"
-                InputLabelProps={{ shrink: true }}
                 fullWidth
                 value={form.date}
                 onChange={handleChange}
                 required
-                error={!!formErrors.date}
-                helperText={formErrors.date}
+                disabled={!form.doctorId || loadingSchedules || availableDates.length === 0}
+                helperText={
+                  (!form.doctorId ? "Please select a doctor first" : 
+                   availableDates.length === 0 && form.doctorId ? "No available dates for this doctor" : "")
+                }
                 sx={textFieldStyle}
                 InputProps={{
-                  startAdornment: <CalendarToday sx={{ color: 'text.secondary', mr: 1 }} />
+                  startAdornment: loadingSchedules ? (
+                    <CircularProgress size={20} sx={{ mr: 1 }} />
+                  ) : (
+                    <CalendarToday sx={{ color: 'text.secondary', mr: 1 }} />
+                  )
                 }}
-              />
+              >
+                {availableDates.length > 0 ? (
+                  availableDates.map(date => (
+                    <MenuItem key={date} value={date}>
+                      {new Date(date).toLocaleDateString('en-US', { 
+                        weekday: 'short', 
+                        year: 'numeric', 
+                        month: 'short', 
+                        day: 'numeric' 
+                      })}
+                    </MenuItem>
+                  ))
+                ) : (
+                  <MenuItem disabled>
+                    {form.doctorId ? "No available dates" : "Select a doctor first"}
+                  </MenuItem>
+                )}
+              </TextField>
             </Grid>
             <Grid item xs={12} md={6}>
               <TextField
+                select
                 name="time"
                 label="Appointment Time"
-                type="time"
-                InputLabelProps={{ shrink: true }}
                 fullWidth
                 value={form.time}
                 onChange={handleChange}
                 required
-                error={!!formErrors.time}
-                helperText={formErrors.time}
+                disabled={!form.date || availableTimes.length === 0}
+                helperText={
+                  (!form.date ? "Please select a date first" : 
+                   availableTimes.length === 0 && form.date ? "No available times for this date" : "")
+                }
                 sx={textFieldStyle}
                 InputProps={{
                   startAdornment: <Schedule sx={{ color: 'text.secondary', mr: 1 }} />
                 }}
-              />
+              >
+                {availableTimes.length > 0 ? (
+                  availableTimes.map((timeSlot, index) => (
+                    <MenuItem key={index} value={timeSlot.start}>
+                      {timeSlot.display}
+                    </MenuItem>
+                  ))
+                ) : (
+                  <MenuItem disabled>
+                    {form.date ? "No available times" : "Select a date first"}
+                  </MenuItem>
+                )}
+              </TextField>
             </Grid>
             <Grid item xs={12}>
               <TextField
