@@ -507,6 +507,7 @@ exports.loginUser = async (req, res) => {
 };
 
 // Forgot password
+const { sendMail } = require('../Utils/mailer');
 exports.forgotPassword = async (req, res) => {
     try {
         const { email } = req.body;
@@ -528,15 +529,32 @@ exports.forgotPassword = async (req, res) => {
         user.resetPasswordToken = resetTokenHash;
         user.resetPasswordExpires = Date.now() + 60 * 60 * 1000; // 1 hour
         await user.save();
-        
-        // In a real app, you would send this via email
-        // For now, we'll return it in the response for testing
-        res.status(200).json({ 
-            message: 'Password reset token generated successfully',
-            resetToken, // Remove this in production
-            instructions: `Use this token to reset your password: ${resetToken}`
-        });
+
+        // Build reset URL (frontend should provide route to accept token)
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+        const resetUrl = `${frontendUrl}/reset-password?token=${resetToken}&email=${encodeURIComponent(email)}`;
+
+        const subject = 'Password reset request';
+        const html = `
+            <p>Hello ${user.fullName || user.name || ''},</p>
+            <p>You requested a password reset. Click the link below to reset your password. This link expires in 1 hour.</p>
+            <p><a href="${resetUrl}">Reset password</a></p>
+            <p>If you didn't request this, please ignore this email.</p>
+        `;
+
+        // Send email
+        const { previewUrl } = await sendMail({ to: email, subject, html, text: `Reset your password: ${resetUrl}` });
+
+        const responsePayload = { message: 'Password reset email sent' };
+        if (previewUrl) {
+            // Include Ethereal preview link for development/testing
+            responsePayload.previewUrl = previewUrl;
+            responsePayload.resetToken = resetToken; // helpful for testing; remove in production
+        }
+
+        res.status(200).json(responsePayload);
     } catch (err) {
+        console.error('forgotPassword error', err);
         res.status(500).json({ message: err.message });
     }
 };
