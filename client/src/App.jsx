@@ -127,8 +127,6 @@ function AppRoutes() {
         }
       />
       <Route
-<<<<<<< HEAD
-=======
         path="/pharmacist/products"
         element={
           <ProtectedRoute>
@@ -201,7 +199,6 @@ function AppRoutes() {
         }
       />
       <Route
->>>>>>> origin/udumbara
         path="/appointments"
         element={
           <ProtectedRoute>
@@ -224,20 +221,11 @@ function AppRoutes() {
       />
 
       {/* Appointment Management Routes */}
-<<<<<<< HEAD
-      <Route path="/appointments" element={<ProtectedRoute><AppointmentsList /></ProtectedRoute>} />
-      <Route path="/appointments/add" element={<ProtectedRoute><AddAppointment /></ProtectedRoute>} />
-      <Route path="/appointments/:id/edit" element={<ProtectedRoute><EditAppointment /></ProtectedRoute>} />
-      <Route path="/appointments/:id" element={<ProtectedRoute><AppointmentDetails /></ProtectedRoute>} />
-
-      
-=======
       <Route path="/appointments" element={<AppointmentsList />} />
       <Route path="/appointments/add" element={<AddAppointment />} />
       <Route path="/appointments/:id/edit" element={<EditAppointment />} />
       <Route path="/appointments/:id" element={<AppointmentDetails />} />
 
->>>>>>> origin/udumbara
       {/* Treatment Routes */}
       <Route
         path="/add-treatment/:appointmentId"
