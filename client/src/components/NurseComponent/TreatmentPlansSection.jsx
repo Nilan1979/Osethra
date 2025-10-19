@@ -38,11 +38,22 @@ const TreatmentPlansSection = () => {
   const filteredData = data.filter((item) => {
     const matchesSearch =
       item.patientName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.patientId?.toLowerCase().includes(searchTerm.toLowerCase());
+      item.patientId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.doctor?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.admitWard?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesFilter =
       filterStatus === 'All' || item.status === filterStatus;
     return matchesSearch && matchesFilter;
   });
+
+  // Function to format prescription for display
+  const formatPrescription = (prescription) => {
+    if (!prescription) return '-';
+    if (prescription.length > 100) {
+      return prescription.substring(0, 100) + '...';
+    }
+    return prescription;
+  };
 
   return (
     <div className="section-container">
@@ -71,6 +82,7 @@ const TreatmentPlansSection = () => {
             <option value="Active">Active</option>
             <option value="Completed">Completed</option>
             <option value="Pending">Pending</option>
+            <option value="Discharged">Discharged</option>
           </select>
 
           <button onClick={fetchData} className="refresh-btn">
@@ -86,48 +98,91 @@ const TreatmentPlansSection = () => {
         ) : filteredData.length === 0 ? (
           <p>No treatment plans found.</p>
         ) : (
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Patient Name</th>
-                <th>Patient ID</th>
-                <th>Treatment</th>
-                <th>Admit Ward</th>
-                <th>Admitted Date</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredData.map((item) => (
-                <tr key={item._id}>
-                  <td>{item.patientName}</td>
-                  <td>{item.patientId}</td>
-                  <td>{item.treatment || '-'}</td>
-                  <td>{item.admitWard || '-'}</td>
-                  <td>{item.admittedDate ? item.admittedDate.split('T')[0] : '-'}</td>
-                  <td>
-                    <span
-                      className={`status-badge status-${(item.status || 'pending').toLowerCase()}`}
-                    >
-                      {item.status || 'Pending'}
-                    </span>
-                  </td>
-                  <td>
-                    <button
-                      onClick={() => handleDelete(item._id)}
-                      className="action-btn delete-btn"
-                      title="Delete"
-                    >
-                      🗑️ Delete
-                    </button>
-                  </td>
+          <div style={{ overflowX: 'auto' }}>
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th style={{ minWidth: '80px' }}>Patient ID</th>
+                  <th style={{ minWidth: '10x0px' }}>Patient Name</th>
+                  <th style={{ minWidth: '150px' }}>Treatment</th>
+                  <th style={{ minWidth: '100px' }}>Admit Ward</th>
+                  <th style={{ minWidth: '100px' }}>Admit Date</th>
+                  <th style={{ minWidth: '100px' }}>Doctor</th>
+                  <th style={{ minWidth: '200px' }}>Prescriptions</th>
+                  <th style={{ minWidth: '100px' }}>Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {filteredData.map((item) => (
+                  <tr key={item._id}>
+                    <td>
+                      <strong>{item.patientId || '-'}</strong>
+                    </td>
+                    <td>
+                      <div>
+                        <strong>{item.patientName || '-'}</strong>
+                        {item.age && (
+                          <div>
+                            <small>Age: {item.age} | {item.gender || '-'}</small>
+                          </div>
+                        )}
+                      </div>
+                    </td>
+                    <td>
+                      <div style={{ maxWidth: '200px', wordWrap: 'break-word' }}>
+                        {item.treatment || '-'}
+                      </div>
+                    </td>
+                    <td>
+                      {item.admitWard ? (
+                        <span className="ward-badge">
+                          {item.admitWard}
+                        </span>
+                      ) : (
+                        '-'
+                      )}
+                    </td>
+                    <td>
+                      {item.admittedDate ? 
+                        new Date(item.admittedDate).toLocaleDateString() : '-'
+                      }
+                    </td>
+                    <td>
+                      {item.doctor || '-'}
+                    </td>
+                    <td>
+                      <div 
+                        style={{ 
+                          maxWidth: '250px', 
+                          wordWrap: 'break-word',
+                          maxHeight: '80px',
+                          overflow: 'hidden'
+                        }}
+                        title={item.prescription}
+                      >
+                        {formatPrescription(item.prescription)}
+                      </div>
+                    </td>
+                    <td>
+                      <div className="action-buttons">
+                        <button
+                          onClick={() => handleDelete(item._id)}
+                          className="action-btn delete-btn"
+                          title="Delete Treatment Plan"
+                        >
+                          🗑️ Delete
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
+
+     
     </div>
   );
 };

@@ -73,6 +73,39 @@ const theme = createTheme({
   shape: { borderRadius: 12 },
 });
 
+// Create a separate component for the main app (without NurseDashboard)
+function MainApp() {
+  const location = useLocation(); 
+
+  return (
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          minHeight: '100vh',
+          width: '100%',
+          bgcolor: 'background.default',
+        }}
+      >
+        <NavBar />
+        <Box
+          component="main"
+          sx={{
+            flex: 1,
+            width: '100%',
+            pt: { xs: 2, sm: 3, md: 4 },
+          }}
+        >
+          <AppRoutes />
+        </Box>
+        <Footer />
+      </Box>
+    </ThemeProvider>
+  );
+}
+
 function AppRoutes() {
   const { user } = useAuth();
   const location = useLocation();
@@ -107,14 +140,6 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <DoctorDashboard />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/nurse/dashboard"
-        element={
-          <ProtectedRoute>
-            <NurseDashboard />
           </ProtectedRoute>
         }
       />
@@ -276,48 +301,26 @@ function AppRoutes() {
   );
 }
 
-function AppContent() {
-  const location = useLocation(); 
-
-  return (
-    <Box
-      sx={{
-        display: 'flex',
-        flexDirection: 'column',
-        minHeight: '100vh',
-        width: '100%',
-        bgcolor: 'background.default',
-      }}
-    >
-      {/* Hide navbar only on nurse dashboard */}
-      {location.pathname !== '/nurse/dashboard' && <NavBar />}
-
-      <Box
-        component="main"
-        sx={{
-          flex: 1,
-          width: '100%',
-          pt: { xs: 2, sm: 3, md: 4 },
-        }}
-      >
-        <AppRoutes />
-      </Box>
-
-      {location.pathname !== '/nurse/dashboard' && <Footer />}
-    </Box>
-  );
-}
-
 function App() {
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <AuthProvider>
-        <Router>
-          <AppContent />
-        </Router>
-      </AuthProvider>
-    </ThemeProvider>
+    <AuthProvider>
+      <Router>
+        <Routes>
+          {/* Nurse Dashboard route - COMPLETELY ISOLATED from Material-UI */}
+          <Route
+            path="/nurse/dashboard"
+            element={
+              <ProtectedRoute>
+                <NurseDashboard />
+              </ProtectedRoute>
+            }
+          />
+          
+          {/* All other routes use Material-UI */}
+          <Route path="*" element={<MainApp />} />
+        </Routes>
+      </Router>
+    </AuthProvider>
   );
 }
 
