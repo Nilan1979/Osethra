@@ -6,6 +6,7 @@ const Schema = mongoose.Schema;
 const userSchema = new Schema({
     // Personal Information
     fullName: { type: String, required: true },
+    name: { type: String, required: false }, // For backward compatibility
     gender: { type: String, enum: ['male', 'female', 'other'] },
     dob: { type: Date, required: true },
     nic: { type: String, required: true },
@@ -32,6 +33,14 @@ const userSchema = new Schema({
     resetPasswordToken: { type: String },
     resetPasswordExpires: { type: Date }
 }, { timestamps: true });
+
+// Set name field to match fullName before save
+userSchema.pre('save', function(next) {
+    if (this.fullName) {
+        this.name = this.fullName;
+    }
+    next();
+});
 
 // Hash password before save
 userSchema.pre('save', async function(next) {

@@ -10,15 +10,22 @@ exports.getAllUsers = async (req, res) => {
         const { search } = req.query;
         let query = {};
         
-        // If search parameter is provided, search by name (case-insensitive)
+        // If search parameter is provided, search by fullName (case-insensitive)
         if (search) {
             query = {
-                name: { $regex: search, $options: 'i' }
+                fullName: { $regex: search, $options: 'i' }
             };
         }
         
         const users = await User.find(query).select('-password');
-        res.status(200).json(users);
+        
+        // Transform the response to include name field for backward compatibility
+        const transformedUsers = users.map(user => ({
+            ...user.toObject(),
+            name: user.fullName  // Add name field that matches fullName
+        }));
+        
+        res.status(200).json(transformedUsers);
     } catch (err) {
         res.status(500).json({ message: err.message });
     }
@@ -34,10 +41,16 @@ exports.searchUsers = async (req, res) => {
         }
         
         const users = await User.find({
-            name: { $regex: name, $options: 'i' }
+            fullName: { $regex: name, $options: 'i' }
         }).select('-password');
         
-        res.status(200).json(users);
+        // Transform the response to include name field for backward compatibility
+        const transformedUsers = users.map(user => ({
+            ...user.toObject(),
+            name: user.fullName  // Add name field that matches fullName
+        }));
+        
+        res.status(200).json(transformedUsers);
     } catch (err) {
         res.status(500).json({ message: err.message });
     }
@@ -124,7 +137,7 @@ exports.generateUsersPDF = async (req, res) => {
             const specialty = user.role === 'doctor' ? (user.specialty || 'N/A') : '-';
             
             doc.fontSize(9)
-               .text(user.name || 'N/A', nameX, currentY)
+               .text(user.fullName || 'N/A', nameX, currentY)
                .text(user.email || 'N/A', emailX, currentY)
                .text(user.role || 'N/A', roleX, currentY)
                .text(specialty, specialtyX, currentY)
