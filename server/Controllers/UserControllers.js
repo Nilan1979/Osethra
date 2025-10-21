@@ -7,6 +7,8 @@ const crypto = require('crypto');
 // Get all users with optional search
 exports.getAllUsers = async (req, res) => {
     try {
+        console.log('Getting all users. Query:', req.query);
+        
         const { search } = req.query;
         let query = {};
         
@@ -15,19 +17,25 @@ exports.getAllUsers = async (req, res) => {
             query = {
                 fullName: { $regex: search, $options: 'i' }
             };
+            console.log('Search query:', query);
         }
         
         const users = await User.find(query).select('-password');
+        console.log(`Found ${users.length} users`);
         
         // Transform the response to include name field for backward compatibility
         const transformedUsers = users.map(user => ({
             ...user.toObject(),
-            name: user.fullName  // Add name field that matches fullName
+            name: user.fullName || user.name  // Add name field that matches fullName
         }));
         
         res.status(200).json(transformedUsers);
     } catch (err) {
-        res.status(500).json({ message: err.message });
+        console.error('Error in getAllUsers:', err);
+        res.status(500).json({ 
+            message: err.message,
+            stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+        });
     }
 };
 
@@ -161,12 +169,48 @@ exports.generateUsersPDF = async (req, res) => {
     }
 };
 
+// Define role responsibilities
+const responsibilities = {
+    admin: [
+        'System administration and user management',
+        'Access control and security oversight',
+        'Generate reports and analytics',
+        'Manage system configurations'
+    ],
+    doctor: [
+        'Patient diagnosis and treatment',
+        'Medical record management',
+        'Prescription and medication orders',
+        'Patient consultation and care planning'
+    ],
+    nurse: [
+        'Patient care and monitoring',
+        'Medication administration',
+        'Vital signs recording',
+        'Assist doctors with procedures'
+    ],
+    receptionist: [
+        'Patient appointment scheduling',
+        'Front desk operations',
+        'Patient registration and check-in',
+        'Maintain patient records'
+    ],
+    pharmacist: [
+        'Medication dispensing and verification',
+        'Inventory management',
+        'Drug interaction checking',
+        'Patient medication counseling'
+    ]
+};
+
 // Generate PDF for individual user
 exports.generateUserPDF = async (req, res) => {
     try {
+        console.log('Generating PDF for user:', req.params.id);
         const user = await User.findById(req.params.id).select('-password');
         
         if (!user) {
+            console.log('User not found');
             return res.status(404).json({ message: 'User not found' });
         }
         
@@ -174,10 +218,20 @@ exports.generateUserPDF = async (req, res) => {
         const doc = new PDFDocument({ margin: 50 });
         
         // Set response headers for PDF download
+        const fileName = `${(user.fullName || user.name || 'user').replace(/\s+/g, '_')}_profile.pdf`;
         res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `attachment; filename=${user.name.replace(/\s+/g, '_')}_profile.pdf`);
+        res.setHeader('Content-Disposition', `attachment; filename=${fileName}`);
         
-        // Pipe the PDF document to the response
+        // Handle PDF generation errors
+        doc.on('error', (err) => {
+            console.error('PDF generation error:', err);
+            // Only send error if headers haven't been sent
+            if (!res.headersSent) {
+                res.status(500).json({ message: 'Error generating PDF' });
+            }
+        });
+        
+        // Pipe the PDF document to the response with error handling
         doc.pipe(res);
         
         // Add header with logo placeholder and title
@@ -207,7 +261,7 @@ exports.generateUserPDF = async (req, res) => {
         
         // Create a styled info box
         const infoStartY = doc.y;
-        doc.rect(50, infoStartY, 495, 180)
+        doc.rect(50, infoStartY, 495, 220)  // Increased height for more content
            .fillAndStroke('#f8f9fa', '#e9ecef');
         
         // Add user details in a structured format
@@ -216,31 +270,29 @@ exports.generateUserPDF = async (req, res) => {
         
         const leftColumn = 70;
         const rightColumn = 320;
+        const labelWidth = 120;  // Width for labels
         let currentY = infoStartY + 20;
         
-        // Left column
-        doc.text('Full Name:', leftColumn, currentY, { continued: true })
-           .font('Helvetica-Bold')
-           .text(` ${user.name}`, { continued: false });
+        // Helper function for consistent label-value pairs
+        const addField = (label, value, useColor = null) => {
+            doc.font('Helvetica').fillColor('#333')
+               .text(label, leftColumn, currentY);
+            
+            if (useColor) doc.fillColor(useColor);
+            doc.font('Helvetica-Bold')
+               .text(value || 'N/A', leftColumn + labelWidth, currentY);
+            
+            currentY += 25;
+            return doc.fillColor('#333');  // Reset color
+        };
         
-        currentY += 25;
-        doc.font('Helvetica')
-           .text('Email Address:', leftColumn, currentY, { continued: true })
-           .font('Helvetica-Bold')
-           .text(` ${user.email}`, { continued: false });
-        
-        currentY += 25;
-        doc.font('Helvetica')
-           .text('Contact Number:', leftColumn, currentY, { continued: true })
-           .font('Helvetica-Bold')
-           .text(` ${user.contactNo}`, { continued: false });
-        
-        currentY += 25;
-        doc.font('Helvetica')
-           .text('Role:', leftColumn, currentY, { continued: true })
-           .font('Helvetica-Bold')
-           .fillColor('#1976d2')
-           .text(` ${user.role.charAt(0).toUpperCase() + user.role.slice(1)}`, { continued: false });
+        // Add fields with consistent formatting
+        addField('Full Name:', user.fullName || user.name);
+        addField('Email Address:', user.email);
+        addField('Contact Number:', user.contactNo);
+        addField('Role:', 
+                user.role.charAt(0).toUpperCase() + user.role.slice(1), 
+                '#1976d2');
         
         // Add specialty for doctors
         if (user.role === 'doctor' && user.specialty) {
@@ -253,34 +305,52 @@ exports.generateUserPDF = async (req, res) => {
                .text(` ${user.specialty}`, { continued: false });
         }
         
-        // Right column
-        currentY = infoStartY + 20;
-        doc.fillColor('#333')
-           .font('Helvetica')
-           .text('User ID:', rightColumn, currentY, { continued: true })
-           .font('Helvetica-Bold')
-           .text(` ${user._id}`, { continued: false });
+        // Right column with formatted dates
+        let rightY = infoStartY + 20;
+        const rightLabelWidth = 130;
         
-        currentY += 25;
-        doc.font('Helvetica')
-           .text('Account Created:', rightColumn, currentY, { continued: true })
-           .font('Helvetica-Bold')
-           .text(` ${new Date(user.createdAt).toLocaleDateString()}`, { continued: false });
+        // Helper function for right column fields
+        const addRightField = (label, value) => {
+            doc.font('Helvetica').fillColor('#333')
+               .text(label, rightColumn, rightY);
+            
+            doc.font('Helvetica-Bold')
+               .text(value || 'N/A', rightColumn + rightLabelWidth, rightY);
+            
+            rightY += 25;
+        };
         
-        currentY += 25;
-        doc.font('Helvetica')
-           .text('Last Updated:', rightColumn, currentY, { continued: true })
-           .font('Helvetica-Bold')
-           .text(` ${new Date(user.updatedAt).toLocaleDateString()}`, { continued: false });
+        // Add right column fields
+        addRightField('User ID:', user._id);
+        addRightField('Account Created:', 
+            new Date(user.createdAt).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            })
+        );
+        addRightField('Last Updated:', 
+            new Date(user.updatedAt).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            })
+        );
         
-        // Add address in full width
-        currentY += 25;
-        doc.font('Helvetica')
+        // Add address with proper formatting
+        doc.font('Helvetica').fillColor('#333')
            .text('Address:', leftColumn, currentY);
-        currentY += 15;
+           
+        // Create a box for address with background
+        const addressY = currentY + 5;
+        const addressHeight = 50;
+        doc.rect(leftColumn + labelWidth - 10, addressY - 5, 400, addressHeight)
+           .fill('#ffffff');
+           
         doc.font('Helvetica-Bold')
-           .text(user.address, leftColumn, currentY, { 
-               width: 450, 
+           .fillColor('#333')
+           .text(user.address || 'N/A', leftColumn + labelWidth, addressY, {
+               width: 380,
                align: 'left',
                lineGap: 5
            });

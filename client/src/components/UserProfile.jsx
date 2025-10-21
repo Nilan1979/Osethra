@@ -18,7 +18,10 @@ import {
   ListItemIcon,
   ListItemText,
   IconButton,
-  Tooltip
+  Tooltip,
+  Alert,
+  CircularProgress,
+  Paper
 } from '@mui/material';
 import {
   Person as PersonIcon,
@@ -29,9 +32,13 @@ import {
   CalendarToday as CalendarIcon,
   Update as UpdateIcon,
   Close as CloseIcon,
-  PictureAsPdf as PdfIcon
+  PictureAsPdf as PdfIcon,
+  ContactEmergency as EmergencyIcon,
+  Badge as BadgeIcon,
+  Cake as CakeIcon,
+  Assignment as AssignmentIcon
 } from '@mui/icons-material';
-import axios from 'axios';
+import api from '../api/axiosConfig';
 import { saveAs } from 'file-saver';
 
 const UserProfile = ({ open, onClose, userId, userName }) => {
@@ -39,6 +46,8 @@ const UserProfile = ({ open, onClose, userId, userName }) => {
   const [loading, setLoading] = useState(false);
   const [pdfLoading, setPdfLoading] = useState(false);
   const [error, setError] = useState('');
+  const [pdfError, setPdfError] = useState('');
+  const [pdfSuccess, setPdfSuccess] = useState(false);
 
   useEffect(() => {
     if (open && userId) {
@@ -49,10 +58,12 @@ const UserProfile = ({ open, onClose, userId, userName }) => {
   const fetchUserDetails = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`/users/${userId}`);
+      setError('');
+      const response = await api.get(`/users/${userId}`);
       setUser(response.data);
     } catch (error) {
-      setError('Failed to fetch user details');
+      console.error('Error fetching user details:', error);
+      setError(error.response?.data?.message || 'Failed to fetch user details');
     } finally {
       setLoading(false);
     }
@@ -61,15 +72,44 @@ const UserProfile = ({ open, onClose, userId, userName }) => {
   const handleDownloadPDF = async () => {
     try {
       setPdfLoading(true);
-      const response = await axios.get(`/users/${userId}/pdf`, {
-        responseType: 'blob'
+      setPdfError('');
+      setPdfSuccess(false);
+      
+      const response = await api.get(`/users/${userId}/pdf`, {
+        responseType: 'blob',
+        timeout: 30000 // 30 second timeout for PDF generation
       });
       
+      // Check response headers
+      const contentType = response.headers['content-type'];
+      if (!contentType || !contentType.includes('application/pdf')) {
+        throw new Error('Invalid response type: ' + contentType);
+      }
+      
       const blob = new Blob([response.data], { type: 'application/pdf' });
-      const fileName = `${user.name.replace(/\s+/g, '_')}_profile_${new Date().toISOString().split('T')[0]}.pdf`;
+      
+      // Verify blob is not empty
+      if (blob.size === 0) {
+        throw new Error('Generated PDF is empty');
+      }
+      
+      const fileName = `${(user.fullName || user.name || 'user').replace(/\s+/g, '_')}_profile_${new Date().toISOString().split('T')[0]}.pdf`;
       saveAs(blob, fileName);
+      setPdfSuccess(true);
     } catch (error) {
-      setError('Failed to generate PDF');
+      console.error('PDF generation error:', error);
+      setPdfError(
+        error.response?.data?.message || 
+        error.message || 
+        'Failed to generate PDF. Please try again.'
+      );
+      
+      // Log detailed error information
+      if (error.response) {
+        console.error('Error response:', error.response);
+      } else if (error.request) {
+        console.error('No response received:', error.request);
+      }
     } finally {
       setPdfLoading(false);
     }
@@ -133,7 +173,7 @@ const UserProfile = ({ open, onClose, userId, userName }) => {
       <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
         <DialogContent>
           <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
-            <Typography>Loading user details...</Typography>
+            <CircularProgress />
           </Box>
         </DialogContent>
       </Dialog>
@@ -144,9 +184,7 @@ const UserProfile = ({ open, onClose, userId, userName }) => {
     return (
       <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
         <DialogContent>
-          <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
-            <Typography color="error">{error}</Typography>
-          </Box>
+          <Alert severity="error">{error}</Alert>
         </DialogContent>
         <DialogActions>
           <Button onClick={onClose}>Close</Button>
@@ -174,7 +212,7 @@ const UserProfile = ({ open, onClose, userId, userName }) => {
             </Avatar>
             <Box>
               <Typography variant="h5" gutterBottom>
-                {user.name}
+                {user.fullName || user.name}
               </Typography>
               <Chip
                 label={getRoleDisplayName(user.role)}
@@ -205,10 +243,17 @@ const UserProfile = ({ open, onClose, userId, userName }) => {
       </DialogTitle>
 
       <DialogContent>
+        {pdfError && (
+          <Alert severity="error" sx={{ mb: 2 }}>{pdfError}</Alert>
+        )}
+        {pdfSuccess && (
+          <Alert severity="success" sx={{ mb: 2 }}>PDF downloaded successfully!</Alert>
+        )}
+
         <Grid container spacing={3}>
           {/* Personal Information */}
           <Grid item xs={12} md={6}>
-            <Card sx={{ height: '100%' }}>
+            <Card elevation={2}>
               <CardContent>
                 <Typography variant="h6" gutterBottom color="primary">
                   Personal Information
@@ -216,36 +261,117 @@ const UserProfile = ({ open, onClose, userId, userName }) => {
                 <List dense>
                   <ListItem>
                     <ListItemIcon>
+                      <BadgeIcon color="primary" />
+                    </ListItemIcon>
+                    <ListItemText 
+                      primary="NIC"
+                      secondary={user.nic || 'N/A'}
+                    />
+                  </ListItem>
+                  <ListItem>
+                    <ListItemIcon>
                       <EmailIcon color="primary" />
                     </ListItemIcon>
-                    <ListItemText
-                      primary="Email Address"
-                      secondary={user.email}
+                    <ListItemText 
+                      primary="Email"
+                      secondary={user.email || 'N/A'}
                     />
                   </ListItem>
                   <ListItem>
                     <ListItemIcon>
                       <PhoneIcon color="primary" />
                     </ListItemIcon>
-                    <ListItemText
+                    <ListItemText 
                       primary="Contact Number"
-                      secondary={user.contactNo}
+                      secondary={user.contactNo || 'N/A'}
+                    />
+                  </ListItem>
+                  <ListItem>
+                    <ListItemIcon>
+                      <CakeIcon color="primary" />
+                    </ListItemIcon>
+                    <ListItemText 
+                      primary="Date of Birth"
+                      secondary={user.dob ? new Date(user.dob).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      }) : 'N/A'}
                     />
                   </ListItem>
                   <ListItem>
                     <ListItemIcon>
                       <LocationIcon color="primary" />
                     </ListItemIcon>
-                    <ListItemText
+                    <ListItemText 
                       primary="Address"
-                      secondary={user.address}
+                      secondary={user.address || 'N/A'}
                     />
                   </ListItem>
+                </List>
+              </CardContent>
+            </Card>
+          </Grid>
+
+          {/* Professional Information */}
+          <Grid item xs={12} md={6}>
+            <Card elevation={2}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom color="primary">
+                  Professional Information
+                </Typography>
+                <List dense>
                   <ListItem>
                     <ListItemIcon>
                       <WorkIcon color="primary" />
                     </ListItemIcon>
-                    <ListItemText
+                    <ListItemText 
+                      primary="Department"
+                      secondary={user.department || 'N/A'}
+                    />
+                  </ListItem>
+                  {user.role === 'doctor' && (
+                    <ListItem>
+                      <ListItemIcon>
+                        <AssignmentIcon color="primary" />
+                      </ListItemIcon>
+                      <ListItemText 
+                        primary="Specialty"
+                        secondary={user.specialty || 'N/A'}
+                      />
+                    </ListItem>
+                  )}
+                  <ListItem>
+                    <ListItemIcon>
+                      <CalendarIcon color="primary" />
+                    </ListItemIcon>
+                    <ListItemText 
+                      primary="Joined Date"
+                      secondary={new Date(user.createdAt).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      })}
+                    />
+                  </ListItem>
+                  <ListItem>
+                    <ListItemIcon>
+                      <UpdateIcon color="primary" />
+                    </ListItemIcon>
+                    <ListItemText 
+                      primary="Last Updated"
+                      secondary={new Date(user.updatedAt).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      })}
+                    />
+                  </ListItem>
+                  <ListItem>
+                    <ListItemIcon>
+                      <PersonIcon color="primary" />
+                    </ListItemIcon>
+                    <ListItemText 
                       primary="Role"
                       secondary={getRoleDisplayName(user.role)}
                     />
@@ -255,74 +381,59 @@ const UserProfile = ({ open, onClose, userId, userName }) => {
             </Card>
           </Grid>
 
-          {/* Account Information */}
-          <Grid item xs={12} md={6}>
-            <Card sx={{ height: '100%' }}>
+          {/* Emergency Contact */}
+          <Grid item xs={12}>
+            <Card elevation={2}>
               <CardContent>
-                <Typography variant="h6" gutterBottom color="primary">
-                  Account Information
+                <Typography variant="h6" gutterBottom color="error">
+                  Emergency Contact
                 </Typography>
-                <List dense>
-                  <ListItem>
-                    <ListItemIcon>
-                      <PersonIcon color="primary" />
-                    </ListItemIcon>
-                    <ListItemText
-                      primary="User ID"
-                      secondary={user._id}
-                    />
-                  </ListItem>
-                  <ListItem>
-                    <ListItemIcon>
-                      <CalendarIcon color="primary" />
-                    </ListItemIcon>
-                    <ListItemText
-                      primary="Account Created"
-                      secondary={new Date(user.createdAt).toLocaleDateString()}
-                    />
-                  </ListItem>
-                  <ListItem>
-                    <ListItemIcon>
-                      <UpdateIcon color="primary" />
-                    </ListItemIcon>
-                    <ListItemText
-                      primary="Last Updated"
-                      secondary={new Date(user.updatedAt).toLocaleDateString()}
-                    />
-                  </ListItem>
-                  <ListItem>
-                    <ListItemText
-                      primary="Account Status"
-                      secondary={
-                        <Chip
-                          label="Active"
-                          color="success"
-                          size="small"
-                          sx={{ mt: 0.5 }}
+                <Grid container spacing={2}>
+                  <Grid item xs={12} sm={6}>
+                    <List dense>
+                      <ListItem>
+                        <ListItemIcon>
+                          <EmergencyIcon color="error" />
+                        </ListItemIcon>
+                        <ListItemText 
+                          primary="Emergency Contact Name"
+                          secondary={user.emergencyContactName || 'N/A'}
                         />
-                      }
-                    />
-                  </ListItem>
-                </List>
+                      </ListItem>
+                    </List>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <List dense>
+                      <ListItem>
+                        <ListItemIcon>
+                          <PhoneIcon color="error" />
+                        </ListItemIcon>
+                        <ListItemText 
+                          primary="Emergency Contact Number"
+                          secondary={user.emergencyContactNo || 'N/A'}
+                        />
+                      </ListItem>
+                    </List>
+                  </Grid>
+                </Grid>
               </CardContent>
             </Card>
           </Grid>
-
-
         </Grid>
       </DialogContent>
 
       <DialogActions sx={{ p: 2 }}>
-        <Button
-          variant="contained"
-          startIcon={<PdfIcon />}
-          onClick={handleDownloadPDF}
+        <Button 
+          onClick={handleDownloadPDF} 
           disabled={pdfLoading}
+          startIcon={pdfLoading ? <CircularProgress size={20} /> : <PdfIcon />}
+          variant="contained"
+          color="primary"
           sx={{ mr: 1 }}
         >
           {pdfLoading ? 'Generating PDF...' : 'Download Profile PDF'}
         </Button>
-        <Button onClick={onClose} variant="outlined">
+        <Button onClick={onClose} variant="outlined" color="inherit">
           Close
         </Button>
       </DialogActions>

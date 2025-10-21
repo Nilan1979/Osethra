@@ -16,12 +16,14 @@ export const getDoctors = async () => {
 // Search users by name
 export const searchUsersByName = async (name) => {
   try {
-    const response = await axios.get(`/users/search?name=${encodeURIComponent(name)}`);
+    const response = await api.get(`/users/search?name=${encodeURIComponent(name)}`);
     return { success: true, data: response.data };
   } catch (error) {
+    console.error('Error searching users:', error.response || error);
     return {
       success: false,
-      message: error.response?.data?.message || 'Search failed'
+      error: error.response?.data?.message || 'Search failed',
+      details: error.response?.data || error.message
     };
   }
 };
@@ -30,12 +32,14 @@ export const searchUsersByName = async (name) => {
 export const getAllUsers = async (search = '') => {
   try {
     const url = search ? `/users?search=${encodeURIComponent(search)}` : '/users';
-    const response = await axios.get(url);
+    const response = await api.get(url);
     return { success: true, data: response.data };
   } catch (error) {
+    console.error('Error fetching users:', error.response || error);
     return {
       success: false,
-      message: error.response?.data?.message || 'Failed to fetch users'
+      error: error.response?.data?.message || 'Failed to fetch users',
+      details: error.response?.data || error.message
     };
   }
 };

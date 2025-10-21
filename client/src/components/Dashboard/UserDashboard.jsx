@@ -38,7 +38,8 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import UserProfile from '../UserProfile';
 import Layout from '../Layout/Layout';
-import axios from 'axios';
+import { getAllUsers, searchUsersByName } from '../../services/userService';
+import api from '../../api/axiosConfig';
 
 const UserDashboard = () => {
   const { logout, user } = useAuth();
@@ -69,17 +70,19 @@ const UserDashboard = () => {
   const fetchUserDetails = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`/users/${user.id}`);
+      setError('');
+      const response = await api.get(`/users/${user.id}`);
       setUserDetails(response.data);
       setFormData({
-        name: response.data.name,
+        name: response.data.fullName || response.data.name,
         email: response.data.email,
         contactNo: response.data.contactNo,
         address: response.data.address,
         password: ''
       });
     } catch (error) {
-      setError('Failed to fetch user details');
+      console.error('Error fetching user details:', error);
+      setError(error.response?.data?.message || 'Failed to fetch user details');
     } finally {
       setLoading(false);
     }
@@ -147,6 +150,7 @@ const UserDashboard = () => {
 
   const handleSearch = async (value) => {
     setSearchTerm(value);
+    setError('');
     
     if (!value.trim()) {
       setSearchResults([]);
@@ -155,10 +159,17 @@ const UserDashboard = () => {
 
     try {
       setSearchLoading(true);
-      const response = await axios.get(`/users/search?name=${encodeURIComponent(value)}`);
-      setSearchResults(response.data);
+      const result = await searchUsersByName(value);
+      if (result.success) {
+        setSearchResults(result.data);
+      } else {
+        setError(result.error || 'Search failed');
+        setSearchResults([]);
+      }
     } catch (error) {
       console.error('Search failed:', error);
+      setError('Failed to search users');
+      setSearchResults([]);
     } finally {
       setSearchLoading(false);
     }
