@@ -7,10 +7,6 @@ const ExcelJS = require('exceljs');
 
 // ==================== STOCK STATUS REPORT ====================
 
-/**
- * Generate Stock Status Report
- * Shows current stock levels, min/max stock, and alerts
- */
 exports.getStockStatusReport = async (req, res) => {
     try {
         const { category, status, stockStatus, format = 'json' } = req.query;
