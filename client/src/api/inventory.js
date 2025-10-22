@@ -316,6 +316,79 @@ export const dashboardAPI = {
   },
 };
 
+// Inventory Items API
+export const inventoryItemsAPI = {
+  // Add inventory item (add stock to a product)
+  addInventoryItem: async (itemData) => {
+    try {
+      const response = await api.post('/api/inventory/items', itemData);
+      return response.data;
+    } catch (error) {
+      console.error('Error adding inventory item:', error);
+      throw error;
+    }
+  },
+
+  // Get all inventory items with filters
+  getInventoryItems: async (params = {}) => {
+    try {
+      const response = await api.get('/api/inventory/items', { params });
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching inventory items:', error);
+      throw error;
+    }
+  },
+
+  // Get single inventory item
+  getInventoryItem: async (id) => {
+    try {
+      const response = await api.get(`/api/inventory/items/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching inventory item:', error);
+      throw error;
+    }
+  },
+
+  // Update inventory item
+  updateInventoryItem: async (id, itemData) => {
+    try {
+      const response = await api.put(`/api/inventory/items/${id}`, itemData);
+      return response.data;
+    } catch (error) {
+      console.error('Error updating inventory item:', error);
+      throw error;
+    }
+  },
+
+  // Adjust inventory stock
+  adjustStock: async (id, adjustment, reason, notes) => {
+    try {
+      const response = await api.patch(`/api/inventory/items/${id}/adjust`, {
+        adjustment,
+        reason,
+        notes
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error adjusting stock:', error);
+      throw error;
+    }
+  },
+
+  // Get product inventory summary (all batches)
+  getProductInventory: async (productId) => {
+    try {
+      const response = await api.get(`/api/inventory/products/${productId}/inventory`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching product inventory:', error);
+      throw error;
+    }
+  },
+};
+
 // Export all APIs as default
 export default {
   products: productsAPI,
@@ -324,5 +397,5 @@ export default {
   alerts: alertsAPI,
   prescriptions: prescriptionsAPI,
   dashboard: dashboardAPI,
+  inventoryItems: inventoryItemsAPI,
 };
-

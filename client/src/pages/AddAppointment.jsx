@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { createAppointment } from "../api/appointments";
+import { createAppointment, getAppointments } from "../api/appointments";
 import { getDoctors } from "../services/userService";
 import { getSchedulesByDoctor } from "../api/schedule";
 import { 
@@ -53,6 +53,7 @@ export default function AddAppointment() {
     gender: "", 
     doctor: "", 
     doctorId: "", 
+    doctorSpecialty: "",
     date: "", 
     time: "", 
     reason: ""
@@ -66,12 +67,15 @@ export default function AddAppointment() {
   const [availableDates, setAvailableDates] = useState([]);
   const [availableTimes, setAvailableTimes] = useState([]);
   const [loadingSchedules, setLoadingSchedules] = useState(false);
+  const [existingAppointments, setExistingAppointments] = useState([]);
 
   useEffect(() => {
     const fetchDoctors = async () => {
       try {
         const result = await getDoctors();
         if (result.success) {
+          console.log('👨‍⚕️ Doctors fetched:', result.data);
+          console.log('First doctor specialty:', result.data[0]?.specialty);
           setDoctors(result.data);
         } else {
           setError("Failed to load doctors list");
@@ -94,20 +98,118 @@ export default function AddAppointment() {
     return `${displayHour}:${minutes} ${ampm}`;
   }, []);
 
+  // Helper function to generate 30-minute time slots
+  const generateTimeSlots = React.useCallback((startTime, endTime, bookedSlots = []) => {
+    const slots = [];
+    const [startHour, startMin] = startTime.split(':').map(Number);
+    const [endHour, endMin] = endTime.split(':').map(Number);
+    
+    let currentHour = startHour;
+    let currentMin = startMin;
+    
+    const startMinutes = startHour * 60 + startMin;
+    const endMinutes = endHour * 60 + endMin;
+    
+    let totalGenerated = 0;
+    let totalBooked = 0;
+    
+    while (currentHour * 60 + currentMin < endMinutes) {
+      const timeString = `${String(currentHour).padStart(2, '0')}:${String(currentMin).padStart(2, '0')}`;
+      totalGenerated++;
+      
+      // Check if this slot is not booked
+      const isBooked = bookedSlots.some(bookedTime => {
+        // Compare time strings (both should be in HH:MM format)
+        return bookedTime === timeString;
+      });
+      
+      if (isBooked) {
+        totalBooked++;
+        console.log(`🚫 HIDING SLOT: ${timeString} (already booked - will NOT appear in dropdown)`);
+      } else {
+        // Calculate end time for this slot (30 minutes later)
+        let slotEndHour = currentHour;
+        let slotEndMin = currentMin + 30;
+        
+        if (slotEndMin >= 60) {
+          slotEndHour += 1;
+          slotEndMin -= 60;
+        }
+        
+        const slotEndTime = `${String(slotEndHour).padStart(2, '0')}:${String(slotEndMin).padStart(2, '0')}`;
+        
+        slots.push({
+          start: timeString,
+          end: slotEndTime,
+          display: `${formatTime(timeString)} - ${formatTime(slotEndTime)}`
+        });
+      }
+      
+      // Move to next 30-minute slot
+      currentMin += 30;
+      if (currentMin >= 60) {
+        currentHour += 1;
+        currentMin -= 60;
+      }
+    }
+    
+    console.log(`📊 SUMMARY: Generated ${totalGenerated} total slots, ${totalBooked} HIDDEN (booked), ${slots.length} VISIBLE (available)`);
+    console.log(`✅ VISIBLE SLOTS (will appear in dropdown):`, slots.map(s => s.display).join(', '));
+    return slots;
+  }, [formatTime]);
+
   // Helper function to update available times based on selected date
-  const updateAvailableTimes = React.useCallback((scheduleList, selectedDate) => {
+  const updateAvailableTimes = React.useCallback((scheduleList, selectedDate, appointments = []) => {
     const schedulesForDate = scheduleList.filter(s => 
       new Date(s.date).toISOString().split('T')[0] === selectedDate
     );
 
-    const times = schedulesForDate.map(s => ({
-      start: s.startTime,
-      end: s.endTime,
-      display: `${formatTime(s.startTime)} - ${formatTime(s.endTime)}`
-    }));
+    // Get all booked time slots for this date (normalize to HH:MM format)
+    const appointmentsForDate = appointments.filter(apt => {
+      const aptDate = new Date(apt.date).toISOString().split('T')[0];
+      const isMatchingDate = aptDate === selectedDate;
+      const isNotCancelled = apt.status !== 'Cancelled';
+      return isMatchingDate && isNotCancelled;
+    });
+    
+    console.log('📅 Selected date:', selectedDate);
+    console.log('📋 Total appointments for this doctor:', appointments.length);
+    console.log('📋 Appointments on selected date:', appointmentsForDate.length);
+    
+    const bookedSlots = appointmentsForDate
+      .map(apt => {
+        // Normalize time format to HH:MM (24-hour format)
+        const time = apt.time || '';
+        // If time is already in HH:MM format, use it
+        if (time.match(/^\d{2}:\d{2}$/)) {
+          return time;
+        }
+        // If time has seconds (HH:MM:SS), remove them
+        if (time.match(/^\d{2}:\d{2}:\d{2}$/)) {
+          return time.substring(0, 5);
+        }
+        return time;
+      })
+      .filter(time => time); // Remove empty strings
 
-    setAvailableTimes(times);
-  }, [formatTime]);
+    console.log('🚫 Booked time slots that will be HIDDEN:', bookedSlots);
+
+    let allSlots = [];
+    
+    // Generate 30-minute slots for each schedule period
+    schedulesForDate.forEach(schedule => {
+      const slots = generateTimeSlots(schedule.startTime, schedule.endTime, bookedSlots);
+      allSlots = [...allSlots, ...slots];
+    });
+
+    // Remove duplicate slots and sort by time
+    const uniqueSlots = Array.from(
+      new Map(allSlots.map(slot => [slot.start, slot])).values()
+    ).sort((a, b) => a.start.localeCompare(b.start));
+
+    console.log('Available time slots:', uniqueSlots.length, 'slots');
+    setAvailableTimes(uniqueSlots);
+  }, [generateTimeSlots]);
 
   // Fetch doctor schedules when doctor is selected
   useEffect(() => {
@@ -116,47 +218,114 @@ export default function AddAppointment() {
         setSchedules([]);
         setAvailableDates([]);
         setAvailableTimes([]);
+        setExistingAppointments([]);
+        setError("");
         return;
       }
 
       try {
         setLoadingSchedules(true);
+        setError("");
+        
+        // Fetch doctor's schedules
         const response = await getSchedulesByDoctor(form.doctorId, {
           startDate: new Date().toISOString().split('T')[0],
           isAvailable: true
         });
 
-        if (response.success && response.schedules) {
-          setSchedules(response.schedules);
-          
-          // Extract unique dates
-          const dates = [...new Set(response.schedules.map(s => 
-            new Date(s.date).toISOString().split('T')[0]
-          ))].sort();
-          setAvailableDates(dates);
+        console.log("Schedule API Response:", response);
 
-          // If a date is already selected, update times
-          if (form.date) {
-            updateAvailableTimes(response.schedules, form.date);
+        if (response && response.success && response.schedules) {
+          if (response.schedules.length === 0) {
+            // Doctor has no schedules
+            setSchedules([]);
+            setAvailableDates([]);
+            setAvailableTimes([]);
+            console.log("No schedules found for this doctor");
+          } else {
+            setSchedules(response.schedules);
+            
+            // Extract unique dates
+            const dates = [...new Set(response.schedules.map(s => 
+              new Date(s.date).toISOString().split('T')[0]
+            ))].sort();
+            setAvailableDates(dates);
+            
+            console.log("Available dates:", dates);
+
+            // Fetch all appointments for this doctor
+            try {
+              const appointmentsResponse = await getAppointments();
+              console.log("📡 Appointments API Response:", appointmentsResponse);
+              console.log("📡 Response data structure:", appointmentsResponse.data);
+              
+              // The API returns { appointments: [...] }
+              const allAppointments = appointmentsResponse.data?.appointments || appointmentsResponse.data || [];
+              console.log("📋 All appointments from API:", allAppointments.length);
+              
+              if (allAppointments && allAppointments.length > 0) {
+                // Filter appointments for this doctor (match by doctorId)
+                const doctorAppointments = allAppointments.filter(apt => {
+                  // Match by doctorId (primary) or by doctor name (fallback)
+                  const matchesId = apt.doctorId && apt.doctorId.toString() === form.doctorId.toString();
+                  const matchesName = apt.doctor && form.doctor && 
+                    apt.doctor.toLowerCase().includes(form.doctor.toLowerCase().replace('dr. ', ''));
+                  
+                  console.log(`Checking appointment: ${apt._id}, doctorId: ${apt.doctorId}, matches: ${matchesId || matchesName}`);
+                  return matchesId || matchesName;
+                });
+                
+                setExistingAppointments(doctorAppointments);
+                console.log("✅ Doctor's existing appointments:", doctorAppointments.length, "appointments found");
+                console.log("📅 Appointment dates and times:", doctorAppointments.map(a => ({ 
+                  date: a.date, 
+                  time: a.time, 
+                  status: a.status 
+                })));
+                
+                // If a date is already selected, update times with booked slots filtered
+                if (form.date) {
+                  updateAvailableTimes(response.schedules, form.date, doctorAppointments);
+                }
+              } else {
+                setExistingAppointments([]);
+                console.log("ℹ️ No appointments found in the system");
+              }
+            } catch (aptError) {
+              console.error("❌ Error fetching appointments:", aptError);
+              console.error("Error details:", aptError.response?.data || aptError.message);
+              // Continue without filtering appointments - show all slots
+              setExistingAppointments([]);
+            }
           }
+        } else {
+          // Invalid response format
+          console.error("Invalid response format:", response);
+          setSchedules([]);
+          setAvailableDates([]);
+          setAvailableTimes([]);
         }
       } catch (error) {
         console.error("Error fetching schedules:", error);
-        setError("Failed to load doctor's schedule");
+        console.error("Error details:", error.response?.data || error.message);
+        setError("Failed to load doctor's schedule. Please make sure you are logged in.");
+        setSchedules([]);
+        setAvailableDates([]);
+        setAvailableTimes([]);
       } finally {
         setLoadingSchedules(false);
       }
     };
 
     fetchDoctorSchedules();
-  }, [form.doctorId, form.date, updateAvailableTimes]);
+  }, [form.doctorId, form.doctor]);
 
   // Update available times when date changes
   useEffect(() => {
     if (form.date && schedules.length > 0) {
-      updateAvailableTimes(schedules, form.date);
+      updateAvailableTimes(schedules, form.date, existingAppointments);
     }
-  }, [form.date, schedules, updateAvailableTimes]);
+  }, [form.date, schedules, existingAppointments, updateAvailableTimes]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -165,8 +334,9 @@ export default function AddAppointment() {
       if (selectedDoctor) {
         setForm(prev => ({
           ...prev,
-          doctor: `Dr. ${selectedDoctor.name}`,
+          doctor: `Dr. ${selectedDoctor.name || selectedDoctor.fullName}`,
           doctorId: selectedDoctor._id,
+          doctorSpecialty: selectedDoctor.specialty || "General Practice",
           date: "", // Reset date when doctor changes
           time: ""  // Reset time when doctor changes
         }));
@@ -297,6 +467,13 @@ export default function AddAppointment() {
                 </Alert>
               </Grid>
             )}
+            {form.date && existingAppointments.length > 0 && (
+              <Grid item xs={12}>
+                <Alert severity="info" sx={{ borderRadius: 2 }}>
+                  ℹ️ Already booked time slots are automatically hidden from the list. Only available slots are shown below.
+                </Alert>
+              </Grid>
+            )}
             <Grid item xs={12} md={6}>
               <TextField
                 select
@@ -307,7 +484,13 @@ export default function AddAppointment() {
                 onChange={handleChange}
                 required
                 disabled={loading}
-                sx={textFieldStyle}
+                sx={{
+                  ...textFieldStyle,
+                  '& .MuiSelect-select': {
+                    display: 'flex',
+                    alignItems: 'center',
+                  }
+                }}
                 InputProps={{
                   startAdornment: loading ? (
                     <CircularProgress size={20} sx={{ mr: 1 }} />
@@ -315,11 +498,63 @@ export default function AddAppointment() {
                     <MedicalServices sx={{ color: 'text.secondary', mr: 1 }} />
                   )
                 }}
+                SelectProps={{
+                  renderValue: (selected) => {
+                    const selectedDoctor = doctors.find(doc => doc._id === selected);
+                    if (selectedDoctor) {
+                      return (
+                        <Box sx={{ display: 'flex', flexDirection: 'column', py: 0.5 }}>
+                          <Typography variant="body2" sx={{ fontWeight: 600, color: 'primary.main' }}>
+                            Dr. {selectedDoctor.name || selectedDoctor.fullName}
+                          </Typography>
+                          {selectedDoctor.specialty && (
+                            <Typography variant="caption" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+                              🩺 {selectedDoctor.specialty}
+                            </Typography>
+                          )}
+                        </Box>
+                      );
+                    }
+                    return '';
+                  }
+                }}
               >
                 {doctors && doctors.length > 0 ? (
                   doctors.map(doctor => (
-                    <MenuItem key={doctor._id} value={doctor._id}>
-                      Dr. {doctor.name} {doctor.contactNo && `(${doctor.contactNo})`}
+                    <MenuItem 
+                      key={doctor._id} 
+                      value={doctor._id}
+                      sx={{
+                        py: 1.5,
+                        '&:hover': {
+                          backgroundColor: 'rgba(76, 175, 80, 0.1)',
+                        }
+                      }}
+                    >
+                      <Box sx={{ display: 'flex', flexDirection: 'column', width: '100%', gap: 0.5 }}>
+                        <Typography variant="body1" sx={{ fontWeight: 600, color: 'primary.main' }}>
+                          Dr. {doctor.name || doctor.fullName}
+                        </Typography>
+                        {doctor.specialty && (
+                          <Typography 
+                            variant="body2" 
+                            sx={{ 
+                              color: 'text.secondary',
+                              fontStyle: 'italic',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 0.5
+                            }}
+                          >
+                            🩺 {doctor.specialty}
+                          </Typography>
+                        )}
+                        {doctor.contactNo && (
+                          <Typography variant="caption" color="text.secondary">
+                            📞 {doctor.contactNo}
+                          </Typography>
+                        )}
+                      </Box>
                     </MenuItem>
                   ))
                 ) : (
@@ -372,7 +607,7 @@ export default function AddAppointment() {
               <TextField
                 select
                 name="time"
-                label="Appointment Time"
+                label="Appointment Time (30-min slots)"
                 fullWidth
                 value={form.time}
                 onChange={handleChange}
@@ -380,7 +615,8 @@ export default function AddAppointment() {
                 disabled={!form.date || availableTimes.length === 0}
                 helperText={
                   (!form.date ? "Please select a date first" : 
-                   availableTimes.length === 0 && form.date ? "No available times for this date" : "")
+                   availableTimes.length === 0 && form.date ? "⚠️ All time slots are booked for this date" : 
+                   `✅ ${availableTimes.length} available slots (booked slots are automatically hidden)`)
                 }
                 sx={textFieldStyle}
                 InputProps={{
@@ -390,12 +626,12 @@ export default function AddAppointment() {
                 {availableTimes.length > 0 ? (
                   availableTimes.map((timeSlot, index) => (
                     <MenuItem key={index} value={timeSlot.start}>
-                      {timeSlot.display}
+                      ✓ {timeSlot.display}
                     </MenuItem>
                   ))
                 ) : (
                   <MenuItem disabled>
-                    {form.date ? "No available times" : "Select a date first"}
+                    {form.date ? "All time slots are booked" : "Select a date first"}
                   </MenuItem>
                 )}
               </TextField>
@@ -418,6 +654,10 @@ export default function AddAppointment() {
           </Grid>
         );
       case 2:
+        // Find the selected time slot to display full time range
+        const selectedTimeSlot = availableTimes.find(slot => slot.start === form.time);
+        const timeDisplay = selectedTimeSlot ? selectedTimeSlot.display : form.time;
+        
         return (
           <Box sx={reviewBoxStyle}>
             <Typography variant="h6" gutterBottom sx={{ color: theme.palette.primary.main, mb: 3 }}>
@@ -432,8 +672,11 @@ export default function AddAppointment() {
               </Grid>
               <Grid item xs={12} md={6}>
                 <InfoRow label="Doctor" value={form.doctor} />
+                {form.doctorSpecialty && (
+                  <InfoRow label="Specialization" value={form.doctorSpecialty} />
+                )}
                 <InfoRow label="Date" value={form.date} />
-                <InfoRow label="Time" value={form.time} />
+                <InfoRow label="Time Slot (30 minutes)" value={timeDisplay} />
                 <InfoRow label="Address" value={form.address} />
               </Grid>
               <Grid item xs={12}>
@@ -525,7 +768,12 @@ export default function AddAppointment() {
               ))}
             </Stepper>
 
-            {error && (
+            {error && !error.includes("Failed to load doctor's schedule") && (
+              <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>
+                {error}
+              </Alert>
+            )}
+            {error && error.includes("Failed to load doctor's schedule") && activeStep === 1 && (
               <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>
                 {error}
               </Alert>

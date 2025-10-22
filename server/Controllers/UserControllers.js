@@ -651,7 +651,7 @@ exports.getDoctors = async (req, res) => {
         const query = { role: "doctor" };
         console.log('Searching for doctors with query:', query);
         
-        const doctors = await User.find(query).select('_id name contactNo');
+        const doctors = await User.find(query).select('_id name fullName contactNo specialty department');
         console.log('Database query completed');
         console.log('Number of doctors found:', doctors?.length || 0);
         

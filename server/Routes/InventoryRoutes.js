@@ -5,6 +5,7 @@ const IssueController = require('../Controllers/IssueController');
 const { authenticate, authorize, requirePharmacistOrAdmin, inventoryAccess } = require('../Middleware/authMiddleware');
 const { 
     validateProduct, 
+    validateProductMasterData,
     validateIssue, 
     validateCategory,
     validateIssueStatus 
@@ -48,7 +49,7 @@ router.post(
     '/products', 
     authenticate, 
     requirePharmacistOrAdmin,
-    validateProduct,
+    validateProductMasterData,
     InventoryController.createProduct
 );
 
@@ -61,7 +62,7 @@ router.put(
     '/products/:id', 
     authenticate, 
     requirePharmacistOrAdmin,
-    validateProduct,
+    validateProductMasterData,
     InventoryController.updateProduct
 );
 
@@ -109,6 +110,82 @@ router.delete(
     authenticate, 
     requirePharmacistOrAdmin,
     InventoryController.deleteCategory
+);
+
+// ==================== INVENTORY ITEM ROUTES ====================
+
+/**
+ * POST /api/inventory/items
+ * Add inventory item (add stock to a product with batch details)
+ * Access: Pharmacist and Admin only
+ */
+router.post(
+    '/items',
+    authenticate,
+    requirePharmacistOrAdmin,
+    InventoryController.addInventoryItem
+);
+
+/**
+ * GET /api/inventory/items
+ * Get all inventory items with pagination and filtering
+ * Query params: page, limit, product, status, expiryStatus, search, sortBy, sortOrder
+ * Access: Authenticated users (pharmacist, admin, nurse)
+ */
+router.get(
+    '/items',
+    authenticate,
+    authorize('pharmacist', 'admin', 'nurse'),
+    InventoryController.getInventoryItems
+);
+
+/**
+ * GET /api/inventory/items/:id
+ * Get single inventory item by ID
+ * Access: Authenticated users (pharmacist, admin, nurse)
+ */
+router.get(
+    '/items/:id',
+    authenticate,
+    authorize('pharmacist', 'admin', 'nurse'),
+    InventoryController.getInventoryItem
+);
+
+/**
+ * PUT /api/inventory/items/:id
+ * Update inventory item details (not quantity)
+ * Access: Pharmacist and Admin only
+ */
+router.put(
+    '/items/:id',
+    authenticate,
+    requirePharmacistOrAdmin,
+    InventoryController.updateInventoryItem
+);
+
+/**
+ * PATCH /api/inventory/items/:id/adjust
+ * Adjust inventory stock (manual adjustment)
+ * Body: { adjustment: number, reason: string, notes: string }
+ * Access: Pharmacist and Admin only
+ */
+router.patch(
+    '/items/:id/adjust',
+    authenticate,
+    requirePharmacistOrAdmin,
+    InventoryController.adjustInventoryStock
+);
+
+/**
+ * GET /api/inventory/products/:productId/inventory
+ * Get inventory summary for a specific product (all batches)
+ * Access: Authenticated users (pharmacist, admin, nurse)
+ */
+router.get(
+    '/products/:productId/inventory',
+    authenticate,
+    authorize('pharmacist', 'admin', 'nurse'),
+    InventoryController.getProductInventorySummary
 );
 
 // ==================== STOCK ALERTS ROUTES ====================

@@ -36,8 +36,8 @@ const medicationSchema = new Schema({
 const prescriptionSchema = new Schema({
     prescriptionNumber: {
         type: String,
-        required: true,
-        unique: true
+        unique: true,
+        sparse: true // Allow undefined during creation
     },
     
     // Patient Information

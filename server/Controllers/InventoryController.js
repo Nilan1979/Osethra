@@ -1,4 +1,5 @@
 const Product = require('../Model/ProductModel');
+const InventoryItem = require('../Model/InventoryItemModel');
 const Category = require('../Model/CategoryModel');
 const Activity = require('../Model/ActivityModel');
 
@@ -109,27 +110,18 @@ exports.getProduct = async (req, res) => {
     }
 };
 
-// Create new product
+// Create new product (master data only - no stock)
 exports.createProduct = async (req, res) => {
     try {
+        console.log('Received product data:', req.body);
+
         const {
             name,
             sku,
             category,
             description,
             manufacturer,
-            supplier,
-            buyingPrice,
-            sellingPrice,
-            initialStock,
-            minStock,
-            maxStock,
-            reorderPoint,
             unit,
-            batchNumber,
-            manufactureDate,
-            expiryDate,
-            storageLocation,
             barcode,
             prescription,
             status,
@@ -137,11 +129,10 @@ exports.createProduct = async (req, res) => {
         } = req.body;
 
         // Validate required fields
-        if (!name || !sku || !category || !buyingPrice || !sellingPrice || 
-            initialStock === undefined || !minStock || !unit) {
+        if (!name || !sku || !category || !unit) {
             return res.status(400).json({
                 success: false,
-                message: 'Please provide all required fields'
+                message: 'Please provide all required fields: name, SKU, category, unit'
             });
         }
 
@@ -165,48 +156,19 @@ exports.createProduct = async (req, res) => {
             }
         }
 
-        // Validate selling price >= buying price
-        if (parseFloat(sellingPrice) < parseFloat(buyingPrice)) {
-            return res.status(400).json({
-                success: false,
-                message: 'Selling price must be greater than or equal to buying price'
-            });
-        }
-
-        // Validate expiry date > manufacture date (if both provided)
-        if (manufactureDate && expiryDate) {
-            if (new Date(expiryDate) <= new Date(manufactureDate)) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Expiry date must be after manufacture date'
-                });
-            }
-        }
-
-        // Create product
+        // Create product (master data only - basic info + manufacturer details)
         const product = new Product({
             name,
             sku: sku.toUpperCase(),
             category,
             description,
             manufacturer,
-            supplier,
-            buyingPrice: parseFloat(buyingPrice),
-            sellingPrice: parseFloat(sellingPrice),
-            currentStock: parseInt(initialStock),
-            minStock: parseInt(minStock),
-            maxStock: maxStock ? parseInt(maxStock) : undefined,
-            reorderPoint: reorderPoint ? parseInt(reorderPoint) : undefined,
             unit,
-            batchNumber,
-            manufactureDate,
-            expiryDate,
-            storageLocation,
             barcode,
-            prescription: prescription || false,
+            prescription: prescription === 'yes' || prescription === true,
             status: status || 'active',
             notes,
-            createdBy: req.user?.id // Assumes auth middleware sets req.user
+            createdBy: req.user?._id
         });
 
         await product.save();
@@ -215,28 +177,35 @@ exports.createProduct = async (req, res) => {
         if (req.user) {
             await Activity.create({
                 type: 'product_added',
-                description: `Added new product: ${product.name}`,
+                description: `Added new product: ${product.name} (${product.sku})`,
                 user: {
-                    id: req.user.id,
+                    id: req.user._id,
                     name: req.user.name,
                     role: req.user.role
                 },
                 entityType: 'Product',
                 entityId: product._id,
                 entityName: product.name,
-                severity: 'success'
+                metadata: {
+                    sku: product.sku,
+                    category: product.category
+                },
+                severity: 'info'
             });
         }
 
         res.status(201).json({
             success: true,
-            message: 'Product created successfully',
+            message: 'Product created successfully. You can now add inventory for this product.',
             data: product
         });
     } catch (err) {
+        console.error('Error creating product:', err);
+
         // Handle validation errors
         if (err.name === 'ValidationError') {
             const errors = Object.values(err.errors).map(e => e.message);
+            console.error('Validation errors:', errors);
             return res.status(400).json({
                 success: false,
                 message: 'Validation error',
@@ -244,6 +213,7 @@ exports.createProduct = async (req, res) => {
             });
         }
 
+        console.error('General error:', err.message);
         res.status(500).json({
             success: false,
             message: 'Error creating product',
@@ -270,18 +240,7 @@ exports.updateProduct = async (req, res) => {
             category,
             description,
             manufacturer,
-            supplier,
-            buyingPrice,
-            sellingPrice,
-            currentStock,
-            minStock,
-            maxStock,
-            reorderPoint,
             unit,
-            batchNumber,
-            manufactureDate,
-            expiryDate,
-            storageLocation,
             barcode,
             prescription,
             status,
@@ -310,82 +269,36 @@ exports.updateProduct = async (req, res) => {
             }
         }
 
-        // Validate selling price >= buying price
-        const newBuyingPrice = buyingPrice !== undefined ? parseFloat(buyingPrice) : product.buyingPrice;
-        const newSellingPrice = sellingPrice !== undefined ? parseFloat(sellingPrice) : product.sellingPrice;
-        
-        if (newSellingPrice < newBuyingPrice) {
-            return res.status(400).json({
-                success: false,
-                message: 'Selling price must be greater than or equal to buying price'
-            });
-        }
-
-        // Validate expiry date > manufacture date
-        const newMfgDate = manufactureDate || product.manufactureDate;
-        const newExpDate = expiryDate || product.expiryDate;
-        
-        if (newMfgDate && newExpDate && new Date(newExpDate) <= new Date(newMfgDate)) {
-            return res.status(400).json({
-                success: false,
-                message: 'Expiry date must be after manufacture date'
-            });
-        }
-
-        // Track stock changes for activity log
-        const stockChanged = currentStock !== undefined && currentStock !== product.currentStock;
-        const oldStock = product.currentStock;
-
-        // Update fields
+        // Update fields (only product master data)
         if (name !== undefined) product.name = name;
         if (sku !== undefined) product.sku = sku.toUpperCase();
         if (category !== undefined) product.category = category;
         if (description !== undefined) product.description = description;
         if (manufacturer !== undefined) product.manufacturer = manufacturer;
-        if (supplier !== undefined) product.supplier = supplier;
-        if (buyingPrice !== undefined) product.buyingPrice = parseFloat(buyingPrice);
-        if (sellingPrice !== undefined) product.sellingPrice = parseFloat(sellingPrice);
-        if (currentStock !== undefined) product.currentStock = parseInt(currentStock);
-        if (minStock !== undefined) product.minStock = parseInt(minStock);
-        if (maxStock !== undefined) product.maxStock = parseInt(maxStock);
-        if (reorderPoint !== undefined) product.reorderPoint = parseInt(reorderPoint);
         if (unit !== undefined) product.unit = unit;
-        if (batchNumber !== undefined) product.batchNumber = batchNumber;
-        if (manufactureDate !== undefined) product.manufactureDate = manufactureDate;
-        if (expiryDate !== undefined) product.expiryDate = expiryDate;
-        if (storageLocation !== undefined) product.storageLocation = storageLocation;
         if (barcode !== undefined) product.barcode = barcode;
-        if (prescription !== undefined) product.prescription = prescription;
+        if (prescription !== undefined) product.prescription = prescription === 'yes' || prescription === true;
         if (status !== undefined) product.status = status;
         if (notes !== undefined) product.notes = notes;
-        
-        product.updatedBy = req.user?.id;
+
+        product.updatedBy = req.user?._id;
 
         await product.save();
 
         // Log activity
         if (req.user) {
-            let activityDescription = `Updated product: ${product.name}`;
-            if (stockChanged) {
-                activityDescription += ` (Stock: ${oldStock} → ${currentStock})`;
-            }
-
             await Activity.create({
                 type: 'product_updated',
-                description: activityDescription,
+                description: `Updated product: ${product.name} (${product.sku})`,
                 user: {
-                    id: req.user.id,
+                    id: req.user._id,
                     name: req.user.name,
                     role: req.user.role
                 },
                 entityType: 'Product',
                 entityId: product._id,
                 entityName: product.name,
-                metadata: {
-                    stockChanged,
-                    oldStock,
-                    newStock: currentStock
-                },
+                metadata: {},
                 severity: 'info'
             });
         }
@@ -505,8 +418,8 @@ exports.createCategory = async (req, res) => {
         }
 
         // Check if category already exists (case-insensitive)
-        const existingCategory = await Category.findOne({ 
-            name: { $regex: new RegExp(`^${name}$`, 'i') } 
+        const existingCategory = await Category.findOne({
+            name: { $regex: new RegExp(`^${name}$`, 'i') }
         });
 
         if (existingCategory) {
@@ -644,130 +557,140 @@ exports.getStockAlerts = async (req, res) => {
 
         let alerts = {};
 
-        // Low Stock: currentStock < minStock (but not zero)
+        // Low Stock: availability = 'low-stock'
         if (!type || type === 'low-stock') {
-            alerts.lowStock = await Product.aggregate([
-                {
-                    $match: {
-                        status: 'active',
-                        currentStock: { $gt: 0 },
-                        $expr: { $lt: ['$currentStock', '$minStock'] }
-                    }
-                },
-                {
-                    $project: {
-                        name: 1,
-                        sku: 1,
-                        category: 1,
-                        currentStock: 1,
-                        minStock: 1,
-                        unit: 1,
-                        sellingPrice: 1,
-                        stockPercentage: {
-                            $multiply: [
-                                { $divide: ['$currentStock', '$minStock'] },
-                                100
-                            ]
-                        }
-                    }
-                },
-                {
-                    $sort: { stockPercentage: 1 }
-                }
-            ]);
+            alerts.lowStock = await InventoryItem.find({
+                availability: 'low-stock',
+                status: 'available'
+            })
+                .populate('product', 'name sku category unit')
+                .select('product batchNumber quantity minStock reorderPoint storageLocation expiryDate')
+                .sort({ quantity: 1 })
+                .lean();
+
+            // Add calculated fields
+            alerts.lowStock = alerts.lowStock.map(item => ({
+                ...item,
+                productName: item.product?.name,
+                productSKU: item.product?.sku,
+                category: item.product?.category,
+                unit: item.product?.unit,
+                stockPercentage: ((item.quantity / item.minStock) * 100).toFixed(2),
+                recommendedReorderQty: Math.max(item.reorderPoint * 2 - item.quantity, item.minStock)
+            }));
         }
 
-        // Out of Stock: currentStock = 0
+        // Out of Stock: availability = 'out-of-stock'
         if (!type || type === 'out-of-stock') {
-            alerts.outOfStock = await Product.find({
-                status: 'active',
-                currentStock: 0
+            alerts.outOfStock = await InventoryItem.find({
+                availability: 'out-of-stock',
+                status: 'available'
             })
-            .select('name sku category minStock unit sellingPrice')
-            .sort({ name: 1 });
+                .populate('product', 'name sku category unit')
+                .select('product batchNumber minStock reorderPoint storageLocation expiryDate')
+                .sort({ 'product.name': 1 })
+                .lean();
+
+            // Add calculated fields
+            alerts.outOfStock = alerts.outOfStock.map(item => ({
+                ...item,
+                productName: item.product?.name,
+                productSKU: item.product?.sku,
+                category: item.product?.category,
+                unit: item.product?.unit,
+                recommendedReorderQty: item.reorderPoint * 2
+            }));
+        }
+
+        // Needs Reorder: quantity <= reorderPoint but not zero
+        if (!type || type === 'needs-reorder') {
+            alerts.needsReorder = await InventoryItem.find({
+                $expr: { $lte: ['$quantity', '$reorderPoint'] },
+                quantity: { $gt: 0 },
+                status: 'available'
+            })
+                .populate('product', 'name sku category unit')
+                .select('product batchNumber quantity minStock reorderPoint storageLocation expiryDate')
+                .sort({ quantity: 1 })
+                .lean();
+
+            // Add calculated fields
+            alerts.needsReorder = alerts.needsReorder.map(item => ({
+                ...item,
+                productName: item.product?.name,
+                productSKU: item.product?.sku,
+                category: item.product?.category,
+                unit: item.product?.unit,
+                recommendedReorderQty: Math.max(item.reorderPoint * 2 - item.quantity, item.minStock)
+            }));
         }
 
         // Expiring Soon: expiryDate within next 30 days
         if (!type || type === 'expiring') {
-            alerts.expiringItems = await Product.aggregate([
-                {
-                    $match: {
-                        status: 'active',
-                        expiryDate: {
-                            $gte: today,
-                            $lte: thirtyDaysFromNow
-                        }
-                    }
+            alerts.expiringItems = await InventoryItem.find({
+                status: 'available',
+                expiryDate: {
+                    $gte: today,
+                    $lte: thirtyDaysFromNow
                 },
-                {
-                    $project: {
-                        name: 1,
-                        sku: 1,
-                        category: 1,
-                        currentStock: 1,
-                        unit: 1,
-                        expiryDate: 1,
-                        batchNumber: 1,
-                        daysLeft: {
-                            $ceil: {
-                                $divide: [
-                                    { $subtract: ['$expiryDate', today] },
-                                    1000 * 60 * 60 * 24
-                                ]
-                            }
-                        }
-                    }
-                },
-                {
-                    $sort: { daysLeft: 1 }
-                }
-            ]);
+                quantity: { $gt: 0 }
+            })
+                .populate('product', 'name sku category unit')
+                .select('product batchNumber quantity expiryDate storageLocation')
+                .sort({ expiryDate: 1 })
+                .lean();
+
+            // Add calculated fields
+            alerts.expiringItems = alerts.expiringItems.map(item => {
+                const daysLeft = Math.ceil((new Date(item.expiryDate) - today) / (1000 * 60 * 60 * 24));
+                return {
+                    ...item,
+                    productName: item.product?.name,
+                    productSKU: item.product?.sku,
+                    category: item.product?.category,
+                    unit: item.product?.unit,
+                    daysLeft
+                };
+            });
         }
 
         // Expired: expiryDate < today
         if (!type || type === 'expired') {
-            alerts.expiredItems = await Product.aggregate([
-                {
-                    $match: {
-                        status: 'active',
-                        expiryDate: { $lt: today }
-                    }
-                },
-                {
-                    $project: {
-                        name: 1,
-                        sku: 1,
-                        category: 1,
-                        currentStock: 1,
-                        unit: 1,
-                        expiryDate: 1,
-                        batchNumber: 1,
-                        daysExpired: {
-                            $ceil: {
-                                $divide: [
-                                    { $subtract: [today, '$expiryDate'] },
-                                    1000 * 60 * 60 * 24
-                                ]
-                            }
-                        }
-                    }
-                },
-                {
-                    $sort: { daysExpired: -1 }
-                }
-            ]);
+            alerts.expiredItems = await InventoryItem.find({
+                status: 'expired',
+                expiryDate: { $lt: today }
+            })
+                .populate('product', 'name sku category unit')
+                .select('product batchNumber quantity expiryDate storageLocation')
+                .sort({ expiryDate: 1 })
+                .lean();
+
+            // Add calculated fields
+            alerts.expiredItems = alerts.expiredItems.map(item => {
+                const daysExpired = Math.ceil((today - new Date(item.expiryDate)) / (1000 * 60 * 60 * 24));
+                return {
+                    ...item,
+                    productName: item.product?.name,
+                    productSKU: item.product?.sku,
+                    category: item.product?.category,
+                    unit: item.product?.unit,
+                    daysExpired
+                };
+            });
         }
 
         // Calculate totals
         const summary = {
             lowStockCount: alerts.lowStock?.length || 0,
             outOfStockCount: alerts.outOfStock?.length || 0,
+            needsReorderCount: alerts.needsReorder?.length || 0,
             expiringCount: alerts.expiringItems?.length || 0,
             expiredCount: alerts.expiredItems?.length || 0,
-            totalAlerts: (alerts.lowStock?.length || 0) + 
-                        (alerts.outOfStock?.length || 0) + 
-                        (alerts.expiringItems?.length || 0) + 
-                        (alerts.expiredItems?.length || 0)
+            totalAlerts: (alerts.lowStock?.length || 0) +
+                (alerts.outOfStock?.length || 0) +
+                (alerts.needsReorder?.length || 0) +
+                (alerts.expiringItems?.length || 0) +
+                (alerts.expiredItems?.length || 0)
         };
 
         res.status(200).json({
@@ -776,13 +699,14 @@ exports.getStockAlerts = async (req, res) => {
             summary
         });
     } catch (err) {
+        console.error('Error fetching stock alerts:', err);
         res.status(500).json({
             success: false,
             message: 'Error fetching stock alerts',
             error: err.message
         });
     }
-};
+};;
 
 // ==================== DASHBOARD STATISTICS ====================
 
@@ -946,7 +870,7 @@ exports.getDashboardStats = async (req, res) => {
 
         const yesterdayData = yesterdayIssuesData.length > 0 ? yesterdayIssuesData[0] : { count: 0, revenue: 0 };
 
-        const revenueTrend = yesterdayData.revenue > 0 
+        const revenueTrend = yesterdayData.revenue > 0
             ? ((todayData.revenue - yesterdayData.revenue) / yesterdayData.revenue * 100).toFixed(2)
             : 0;
 
@@ -1057,12 +981,12 @@ exports.logActivity = async (activityData) => {
 exports.getProductOrderHistory = async (req, res) => {
     try {
         const { id } = req.params;
-        const { 
-            page = 1, 
-            limit = 50, 
-            type = '', 
-            startDate = '', 
-            endDate = '' 
+        const {
+            page = 1,
+            limit = 50,
+            type = '',
+            startDate = '',
+            endDate = ''
         } = req.query;
 
         // Find product
@@ -1140,6 +1064,449 @@ exports.getProductOrderHistory = async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Error fetching product order history',
+            error: err.message
+        });
+    }
+};
+
+// ==================== INVENTORY ITEM MANAGEMENT ====================
+
+// Add inventory item (add stock to a product)
+exports.addInventoryItem = async (req, res) => {
+    try {
+        const {
+            product,
+            batchNumber,
+            manufactureDate,
+            expiryDate,
+            quantity,
+            buyingPrice,
+            sellingPrice,
+            minStock,
+            reorderPoint,
+            storageLocation,
+            supplierName,
+            purchaseDate,
+            receiptNumber,
+            notes
+        } = req.body;
+
+        // Validate product exists
+        const productExists = await Product.findById(product);
+        if (!productExists) {
+            return res.status(404).json({
+                success: false,
+                message: 'Product not found'
+            });
+        }
+
+        // Check if product is active
+        if (productExists.status !== 'active') {
+            return res.status(400).json({
+                success: false,
+                message: 'Cannot add inventory for inactive product'
+            });
+        }
+
+        // Get user ID (fallback to null if not authenticated - for testing)
+        const userId = req.user ? req.user._id : null;
+
+        // Add stock using the model's static method
+        const inventoryItem = await InventoryItem.addStock({
+            product,
+            batchNumber,
+            manufactureDate,
+            expiryDate,
+            quantity,
+            buyingPrice,
+            sellingPrice,
+            minStock: minStock || 10,
+            reorderPoint: reorderPoint || 20,
+            storageLocation,
+            supplierName,
+            purchaseDate,
+            receiptNumber,
+            notes
+        }, userId);
+
+        // Check if this item needs reorder alert
+        const needsAlert = inventoryItem.availability === 'low-stock' || inventoryItem.availability === 'out-of-stock';
+
+        // Log activity only if user is authenticated
+        if (userId) {
+            await Activity.create({
+                type: 'inventory_receipt',
+                description: `Added ${quantity} ${productExists.unit} of ${productExists.name} (Batch: ${batchNumber})`,
+                user: {
+                    id: req.user._id,
+                    name: req.user.name,
+                    role: req.user.role
+                },
+                entityType: 'Product',
+                entityId: product,
+                entityName: productExists.name,
+                severity: needsAlert ? 'warning' : 'info',
+                metadata: {
+                    productId: product,
+                    inventoryItemId: inventoryItem._id,
+                    quantity,
+                    batchNumber,
+                    availability: inventoryItem.availability,
+                    needsReorder: inventoryItem.needsReorder
+                }
+            });
+        }
+
+        res.status(201).json({
+            success: true,
+            message: 'Inventory item added successfully',
+            data: inventoryItem,
+            alert: needsAlert ? {
+                type: inventoryItem.availability,
+                message: inventoryItem.availability === 'out-of-stock' 
+                    ? `${productExists.name} is out of stock`
+                    : `${productExists.name} is running low (${inventoryItem.quantity} remaining)`
+            } : null
+        });
+    } catch (err) {
+        console.error('Error in addInventoryItem:', err);
+        
+        // Handle duplicate key error
+        if (err.code === 11000) {
+            return res.status(400).json({
+                success: false,
+                message: 'Inventory item with this batch number, expiry date, and manufacture date already exists for this product'
+            });
+        }
+
+        res.status(500).json({
+            success: false,
+            message: 'Error adding inventory item',
+            error: err.message
+        });
+    }
+};
+
+// Get all inventory items with filters
+exports.getInventoryItems = async (req, res) => {
+    try {
+        const {
+            page = 1,
+            limit = 50,
+            product,
+            status,
+            expiryStatus,
+            search,
+            sortBy = 'createdAt',
+            sortOrder = 'desc'
+        } = req.query;
+
+        // Build query
+        let query = {};
+
+        if (product) {
+            query.product = product;
+        }
+
+        if (status) {
+            query.status = status;
+        }
+
+        // Filter by expiry status
+        if (expiryStatus) {
+            const today = new Date();
+            if (expiryStatus === 'expired') {
+                query.expiryDate = { $lt: today };
+            } else if (expiryStatus === 'expiring-soon') {
+                const thirtyDaysFromNow = new Date();
+                thirtyDaysFromNow.setDate(today.getDate() + 30);
+                query.expiryDate = { $gte: today, $lte: thirtyDaysFromNow };
+            }
+        }
+
+        // Search by batch number
+        if (search) {
+            query.batchNumber = { $regex: search, $options: 'i' };
+        }
+
+        // Calculate pagination
+        const skip = (parseInt(page) - 1) * parseInt(limit);
+        const sortOptions = {};
+        sortOptions[sortBy] = sortOrder === 'asc' ? 1 : -1;
+
+        // Execute query with population
+        const items = await InventoryItem.find(query)
+            .populate('product', 'name sku category unit')
+            .populate('createdBy', 'name email')
+            .populate('updatedBy', 'name email')
+            .sort(sortOptions)
+            .limit(parseInt(limit))
+            .skip(skip)
+            .select('-__v');
+
+        // Get total count
+        const total = await InventoryItem.countDocuments(query);
+        const totalPages = Math.ceil(total / parseInt(limit));
+
+        // Calculate total stock value
+        const totalValue = items.reduce((sum, item) => {
+            return sum + (item.quantity * item.sellingPrice);
+        }, 0);
+
+        res.status(200).json({
+            success: true,
+            data: {
+                items,
+                pagination: {
+                    total,
+                    page: parseInt(page),
+                    limit: parseInt(limit),
+                    totalPages
+                },
+                summary: {
+                    totalValue,
+                    totalItems: items.length
+                }
+            }
+        });
+    } catch (err) {
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching inventory items',
+            error: err.message
+        });
+    }
+};
+
+// Get single inventory item
+exports.getInventoryItem = async (req, res) => {
+    try {
+        const item = await InventoryItem.findById(req.params.id)
+            .populate('product', 'name sku category unit description')
+            .populate('createdBy', 'name email')
+            .populate('updatedBy', 'name email')
+            .select('-__v');
+
+        if (!item) {
+            return res.status(404).json({
+                success: false,
+                message: 'Inventory item not found'
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            data: item
+        });
+    } catch (err) {
+        if (err.kind === 'ObjectId') {
+            return res.status(404).json({
+                success: false,
+                message: 'Inventory item not found'
+            });
+        }
+
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching inventory item',
+            error: err.message
+        });
+    }
+};
+
+// Update inventory item
+exports.updateInventoryItem = async (req, res) => {
+    try {
+        const updates = req.body;
+        
+        // Don't allow updating certain critical fields
+        delete updates.product;
+        delete updates.batchNumber;
+        delete updates.manufactureDate;
+        delete updates.expiryDate;
+        delete updates.quantity; // Use adjustStock instead
+        delete updates.transactions;
+
+        const item = await InventoryItem.findById(req.params.id);
+
+        if (!item) {
+            return res.status(404).json({
+                success: false,
+                message: 'Inventory item not found'
+            });
+        }
+
+        // Update allowed fields
+        Object.keys(updates).forEach(key => {
+            item[key] = updates[key];
+        });
+
+        item.updatedBy = req.user._id;
+        await item.save();
+
+        res.status(200).json({
+            success: true,
+            message: 'Inventory item updated successfully',
+            data: item
+        });
+    } catch (err) {
+        res.status(500).json({
+            success: false,
+            message: 'Error updating inventory item',
+            error: err.message
+        });
+    }
+};
+
+// Adjust inventory stock (manual adjustment)
+exports.adjustInventoryStock = async (req, res) => {
+    try {
+        const { adjustment, reason, notes } = req.body;
+
+        if (!adjustment || adjustment === 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Adjustment amount is required and must not be zero'
+            });
+        }
+
+        const item = await InventoryItem.findById(req.params.id).populate('product', 'name sku unit');
+
+        if (!item) {
+            return res.status(404).json({
+                success: false,
+                message: 'Inventory item not found'
+            });
+        }
+
+        const newQuantity = item.quantity + adjustment;
+
+        if (newQuantity < 0) {
+            return res.status(400).json({
+                success: false,
+                message: `Cannot adjust stock. Resulting quantity would be negative. Current: ${item.quantity}, Adjustment: ${adjustment}`
+            });
+        }
+
+        item.quantity = newQuantity;
+        item.updatedBy = req.user._id;
+        item.transactions.push({
+            type: 'adjustment',
+            quantity: adjustment,
+            balanceAfter: newQuantity,
+            performedBy: {
+                id: req.user._id,
+                name: req.user.name,
+                role: req.user.role
+            },
+            notes: `${reason || 'Manual adjustment'}: ${notes || ''}`
+        });
+
+        await item.save();
+
+        // Log activity
+        await Activity.create({
+            type: 'inventory_adjustment',
+            description: `Adjusted stock for ${item.product.name} (Batch: ${item.batchNumber}): ${adjustment > 0 ? '+' : ''}${adjustment} ${item.product.unit}`,
+            user: {
+                id: req.user._id,
+                name: req.user.name,
+                role: req.user.role
+            },
+            entityType: 'Product',
+            entityId: item.product._id,
+            entityName: item.product.name,
+            severity: 'warning',
+            metadata: {
+                productId: item.product._id,
+                inventoryItemId: item._id,
+                adjustment,
+                newQuantity,
+                reason
+            }
+        });
+
+        res.status(200).json({
+            success: true,
+            message: 'Stock adjusted successfully',
+            data: item
+        });
+    } catch (err) {
+        res.status(500).json({
+            success: false,
+            message: 'Error adjusting stock',
+            error: err.message
+        });
+    }
+};
+
+// Get inventory summary for a product (all batches)
+exports.getProductInventorySummary = async (req, res) => {
+    try {
+        const productId = req.params.productId;
+
+        // Validate product exists
+        const product = await Product.findById(productId);
+        if (!product) {
+            return res.status(404).json({
+                success: false,
+                message: 'Product not found'
+            });
+        }
+
+        // Get all inventory items for this product
+        const items = await InventoryItem.find({ 
+            product: productId,
+            status: { $in: ['available', 'reserved'] }
+        }).sort({ expiryDate: 1 });
+
+        // Calculate totals
+        const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
+        const totalValue = items.reduce((sum, item) => sum + (item.quantity * item.sellingPrice), 0);
+        const avgBuyingPrice = items.length > 0 
+            ? items.reduce((sum, item) => sum + item.buyingPrice, 0) / items.length 
+            : 0;
+        const avgSellingPrice = items.length > 0
+            ? items.reduce((sum, item) => sum + item.sellingPrice, 0) / items.length
+            : 0;
+
+        // Group by expiry status
+        const today = new Date();
+        const expiredItems = items.filter(item => new Date(item.expiryDate) < today);
+        const expiringSoonItems = items.filter(item => {
+            const daysLeft = item.daysUntilExpiry;
+            return daysLeft >= 0 && daysLeft <= 30;
+        });
+
+        res.status(200).json({
+            success: true,
+            data: {
+                product: {
+                    _id: product._id,
+                    name: product.name,
+                    sku: product.sku,
+                    category: product.category,
+                    unit: product.unit,
+                    minStock: product.minStock
+                },
+                summary: {
+                    totalQuantity,
+                    totalValue,
+                    avgBuyingPrice: Math.round(avgBuyingPrice * 100) / 100,
+                    avgSellingPrice: Math.round(avgSellingPrice * 100) / 100,
+                    totalBatches: items.length,
+                    expiredBatches: expiredItems.length,
+                    expiringSoonBatches: expiringSoonItems.length,
+                    stockStatus: totalQuantity === 0 ? 'out-of-stock' : 
+                                totalQuantity <= product.minStock ? 'low-stock' : 'in-stock'
+                },
+                batches: items
+            }
+        });
+    } catch (err) {
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching product inventory summary',
             error: err.message
         });
     }

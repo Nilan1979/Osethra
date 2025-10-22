@@ -17,14 +17,18 @@ import {
   Chip,
   IconButton,
   Tooltip,
-  Button
+  Button,
+  TextField,
+  InputAdornment
 } from '@mui/material';
 import { Grid } from '@mui/material';
 import {
   PictureAsPdf,
   Visibility,
   Add,
-  Download
+  Download,
+  Search,
+  Clear
 } from '@mui/icons-material';
 import axios from 'axios';
 import { format } from 'date-fns';
@@ -147,6 +151,7 @@ const DoctorDashboard = () => {
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
   const [stats, setStats] = useState({
     total: 0,
     scheduled: 0,
@@ -520,8 +525,21 @@ const DoctorDashboard = () => {
     fetchAppointments();
   }, [user]);
 
-  // Get today's appointments
-  const todayAppointments = appointments.filter(app => {
+  // Filter appointments based on search query
+  const filteredAppointments = appointments.filter(appointment => {
+    if (!searchQuery) return true;
+    
+    const query = searchQuery.toLowerCase();
+    return (
+      appointment.name?.toLowerCase().includes(query) ||
+      appointment.contact?.toLowerCase().includes(query) ||
+      appointment.reason?.toLowerCase().includes(query) ||
+      appointment.address?.toLowerCase().includes(query)
+    );
+  });
+
+  // Get today's appointments (filtered)
+  const todayAppointments = filteredAppointments.filter(app => {
     const appDate = new Date(app.date);
     const today = new Date();
     return appDate.toDateString() === today.toDateString();
@@ -558,6 +576,46 @@ const DoctorDashboard = () => {
               >
                 Manage My Schedule
               </Button>
+            </Paper>
+          </Grid>
+
+          {/* Search Section */}
+          <Grid size={{ xs: 12 }}>
+            <Paper sx={{ p: 2 }}>
+              <TextField
+                fullWidth
+                placeholder="Search by patient name, contact, reason, or address..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <Search color="action" />
+                    </InputAdornment>
+                  ),
+                  endAdornment: searchQuery && (
+                    <InputAdornment position="end">
+                      <IconButton
+                        size="small"
+                        onClick={() => setSearchQuery('')}
+                        edge="end"
+                      >
+                        <Clear />
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    backgroundColor: 'white',
+                  }
+                }}
+              />
+              {searchQuery && (
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                  Showing {filteredAppointments.length} of {appointments.length} appointments
+                </Typography>
+              )}
             </Paper>
           </Grid>
 
@@ -627,15 +685,15 @@ const DoctorDashboard = () => {
                     Click on scheduled appointments to add treatment details, or click on completed appointments to view/edit treatments
                   </Typography>
                 </Box>
-                {appointments.length > 0 && (
+                {filteredAppointments.length > 0 && (
                   <Button
                     startIcon={<Download />}
                     variant="outlined"
                     color="primary"
-                    onClick={() => handleBulkDownloadPDF(appointments, "All Appointments Report")}
+                    onClick={() => handleBulkDownloadPDF(filteredAppointments, searchQuery ? "Filtered Appointments Report" : "All Appointments Report")}
                     disabled={loading}
                   >
-                    Download All Reports
+                    Download {searchQuery ? 'Filtered' : 'All'} Reports
                   </Button>
                 )}
               </Box>
@@ -645,9 +703,15 @@ const DoctorDashboard = () => {
                 </Box>
               ) : error ? (
                 <Alert severity="error">{error}</Alert>
+              ) : filteredAppointments.length === 0 ? (
+                <Alert severity="info" sx={{ mt: 2 }}>
+                  {searchQuery 
+                    ? `No appointments found matching "${searchQuery}"`
+                    : 'No appointments found'}
+                </Alert>
               ) : (
                 <AppointmentsTable 
-                  data={appointments} 
+                  data={filteredAppointments} 
                   showDate={true} 
                   onRowClick={handleAppointmentClick}
                   onDownloadPDF={handleDownloadPDF}

@@ -50,30 +50,18 @@ const AddProduct = () => {
   const [categories, setCategories] = useState([]);
 
   const [formData, setFormData] = useState({
+    // Basic Information
     name: '',
     sku: '',
     category: '',
     description: '',
-    manufacturer: '',
-    supplier: '',
-    // Pricing
-    buyingPrice: '',
-    sellingPrice: '',
-    profitMargin: '',
-    // Stock
-    initialStock: '',
-    minStock: '',
-    maxStock: '',
-    reorderPoint: '',
     unit: 'pieces',
-    // Product Details
-    batchNumber: '',
-    manufactureDate: '',
-    expiryDate: '',
-    storageLocation: '',
     barcode: '',
-    // Additional Info
+    // Manufacturing Details
+    manufacturer: '',
+    // Prescription Requirement
     prescription: 'no',
+    // Status
     status: 'active',
     notes: '',
   });
@@ -126,21 +114,6 @@ const AddProduct = () => {
       [name]: value
     }));
 
-    // Auto-calculate profit margin when prices changeD
-    if (name === 'buyingPrice' || name === 'sellingPrice') {
-      const buying = name === 'buyingPrice' ? parseFloat(value) : parseFloat(formData.buyingPrice);
-      const selling = name === 'sellingPrice' ? parseFloat(value) : parseFloat(formData.sellingPrice);
-
-      if (buying && selling && buying > 0) {
-        const margin = ((selling - buying) / buying * 100).toFixed(2);
-        setFormData(prev => ({
-          ...prev,
-          [name]: value,
-          profitMargin: margin
-        }));
-      }
-    }
-
     // Clear error for this field
     if (errors[name]) {
       setErrors(prev => ({
@@ -157,38 +130,7 @@ const AddProduct = () => {
     if (!formData.name.trim()) newErrors.name = 'Product name is required';
     if (!formData.sku.trim()) newErrors.sku = 'SKU is required';
     if (!formData.category) newErrors.category = 'Category is required';
-    if (!formData.buyingPrice) newErrors.buyingPrice = 'Buying price is required';
-    if (!formData.sellingPrice) newErrors.sellingPrice = 'Selling price is required';
-    if (!formData.initialStock) newErrors.initialStock = 'Initial stock is required';
-    if (!formData.minStock) newErrors.minStock = 'Minimum stock is required';
-
-    // Price validation
-    if (formData.buyingPrice && parseFloat(formData.buyingPrice) <= 0) {
-      newErrors.buyingPrice = 'Buying price must be greater than 0';
-    }
-    if (formData.sellingPrice && parseFloat(formData.sellingPrice) <= 0) {
-      newErrors.sellingPrice = 'Selling price must be greater than 0';
-    }
-    if (formData.buyingPrice && formData.sellingPrice) {
-      if (parseFloat(formData.sellingPrice) < parseFloat(formData.buyingPrice)) {
-        newErrors.sellingPrice = 'Selling price should be greater than buying price';
-      }
-    }
-
-    // Stock validation
-    if (formData.initialStock && parseFloat(formData.initialStock) < 0) {
-      newErrors.initialStock = 'Stock cannot be negative';
-    }
-    if (formData.minStock && parseFloat(formData.minStock) < 0) {
-      newErrors.minStock = 'Minimum stock cannot be negative';
-    }
-
-    // Date validation
-    if (formData.manufactureDate && formData.expiryDate) {
-      if (new Date(formData.expiryDate) <= new Date(formData.manufactureDate)) {
-        newErrors.expiryDate = 'Expiry date must be after manufacture date';
-      }
-    }
+    if (!formData.unit) newErrors.unit = 'Unit is required';
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -205,48 +147,47 @@ const AddProduct = () => {
     }
 
     try {
-      // Transform formData to match database schema
+      // Prepare product data (basic information and manufacturing details only)
       const productData = {
-        name: formData.name,
-        sku: formData.sku,
-        category: formData.category,
-        description: formData.description,
-        manufacturer: formData.manufacturer,
-        supplier: formData.supplier,
-        buyingPrice: parseFloat(formData.buyingPrice),
-        sellingPrice: parseFloat(formData.sellingPrice),
-        profitMargin: formData.profitMargin ? parseFloat(formData.profitMargin) : 0,
-        // Database uses currentStock, not initialStock
-        currentStock: parseFloat(formData.initialStock),
-        minStock: parseFloat(formData.minStock),
-        maxStock: formData.maxStock ? parseFloat(formData.maxStock) : undefined,
-        reorderPoint: formData.reorderPoint ? parseFloat(formData.reorderPoint) : undefined,
+        name: formData.name.trim(),
+        sku: formData.sku.trim().toUpperCase(),
+        category: formData.category.trim(),
+        description: formData.description.trim() || undefined,
+        manufacturer: formData.manufacturer.trim() || undefined,
         unit: formData.unit,
-        batchNumber: formData.batchNumber,
-        manufactureDate: formData.manufactureDate,
-        expiryDate: formData.expiryDate,
-        storageLocation: formData.storageLocation,
-        barcode: formData.barcode,
-        prescription: formData.prescription, // Ensure prescription is included
+        barcode: formData.barcode.trim() || undefined,
+        prescription: formData.prescription === 'yes',
         status: formData.status,
-        notes: formData.notes,
+        notes: formData.notes.trim() || undefined,
       };
+
+      console.log('Submitting product data:', productData);
 
       const response = await productsAPI.createProduct(productData);
 
       if (response.success) {
-        setSnackbarMessage('Product added successfully!');
+        setSnackbarMessage('Product created successfully! You can now add inventory for this product.');
         setSnackbarSeverity('success');
         setOpenSnackbar(true);
 
-        // Navigate back to products page after 1.5 seconds
+        // Navigate back to products page after 2 seconds
         setTimeout(() => {
           navigate('/pharmacist/products');
-        }, 1500);
+        }, 2000);
       }
     } catch (error) {
       console.error('Error adding product:', error);
-      setSnackbarMessage(error.response?.data?.message || 'Error adding product. Please try again.');
+      console.error('Error response:', error.response?.data);
+      console.error('Validation errors:', error.response?.data?.errors);
+      
+      let errorMessage = error.response?.data?.message || error.message || 'Error adding product. Please try again.';
+      
+      // If there are validation errors, show them
+      if (error.response?.data?.errors && Array.isArray(error.response.data.errors)) {
+        errorMessage = 'Validation errors: ' + error.response.data.errors.join(', ');
+      }
+      
+      setSnackbarMessage(errorMessage);
       setSnackbarSeverity('error');
       setOpenSnackbar(true);
     }
@@ -260,18 +201,13 @@ const AddProduct = () => {
       description: '',
       manufacturer: '',
       supplier: '',
-      buyingPrice: '',
-      sellingPrice: '',
-      profitMargin: '',
-      initialStock: '',
-      minStock: '',
+      defaultBuyingPrice: '',
+      defaultSellingPrice: '',
+      minStock: '10',
       maxStock: '',
       reorderPoint: '',
       unit: 'pieces',
-      batchNumber: '',
-      manufactureDate: '',
-      expiryDate: '',
-      storageLocation: '',
+      defaultStorageLocation: '',
       barcode: '',
       prescription: 'no',
       status: 'active',
@@ -376,7 +312,7 @@ const AddProduct = () => {
             Add New Product
           </Typography>
           <Typography variant="body1" sx={{ opacity: 0.9 }}>
-            Fill in the details to add a new product to your inventory
+            Create product master data. After creation, you can add inventory (stock with batch details) separately.
           </Typography>
         </Paper>
 
@@ -496,177 +432,12 @@ const AddProduct = () => {
               </Card>
             </Grid>
 
-            {/* Pricing Information */}
+            {/* Manufacturing Details & Settings */}
             <Grid item xs={12}>
               <Card elevation={0} sx={{ borderRadius: 2, border: '1px solid #e0e0e0' }}>
                 <CardContent>
                   <Typography variant="h6" fontWeight="600" gutterBottom>
-                    Pricing Information
-                  </Typography>
-                  <Divider sx={{ mb: 3 }} />
-                  <Grid container spacing={2}>
-                    <Grid item xs={12} md={4}>
-                      <TextField
-                        fullWidth
-                        required
-                        type="number"
-                        label="Buying Price (LKR)"
-                        name="buyingPrice"
-                        value={formData.buyingPrice}
-                        onChange={handleInputChange}
-                        error={!!errors.buyingPrice}
-                        helperText={errors.buyingPrice || 'Cost price per unit'}
-                        InputProps={{
-                          inputProps: { min: 0, step: 0.01 }
-                        }}
-                      />
-                    </Grid>
-                    <Grid item xs={12} md={4}>
-                      <TextField
-                        fullWidth
-                        required
-                        type="number"
-                        label="Selling Price (LKR)"
-                        name="sellingPrice"
-                        value={formData.sellingPrice}
-                        onChange={handleInputChange}
-                        error={!!errors.sellingPrice}
-                        helperText={errors.sellingPrice || 'Retail price per unit'}
-                        InputProps={{
-                          inputProps: { min: 0, step: 0.01 }
-                        }}
-                      />
-                    </Grid>
-                    <Grid item xs={12} md={4}>
-                      <TextField
-                        fullWidth
-                        disabled
-                        label="Profit Margin (%)"
-                        name="profitMargin"
-                        value={formData.profitMargin}
-                        helperText="Auto-calculated"
-                        InputProps={{
-                          endAdornment: formData.profitMargin && (
-                            <Chip
-                              label={`${formData.profitMargin}%`}
-                              size="small"
-                              color={parseFloat(formData.profitMargin) > 0 ? 'success' : 'error'}
-                            />
-                          )
-                        }}
-                      />
-                    </Grid>
-                  </Grid>
-                </CardContent>
-              </Card>
-            </Grid>
-
-            {/* Stock Information */}
-            <Grid item xs={12}>
-              <Card elevation={0} sx={{ borderRadius: 2, border: '1px solid #e0e0e0' }}>
-                <CardContent>
-                  <Typography variant="h6" fontWeight="600" gutterBottom>
-                    Stock Information
-                  </Typography>
-                  <Divider sx={{ mb: 3 }} />
-                  <Grid container spacing={2}>
-                    <Grid item xs={12} md={3}>
-                      <TextField
-                        fullWidth
-                        required
-                        type="number"
-                        label="Initial Stock"
-                        name="initialStock"
-                        value={formData.initialStock}
-                        onChange={handleInputChange}
-                        error={!!errors.initialStock}
-                        helperText={errors.initialStock}
-                        InputProps={{
-                          inputProps: { min: 0 }
-                        }}
-                      />
-                    </Grid>
-                    <Grid item xs={12} md={3}>
-                      <TextField
-                        fullWidth
-                        required
-                        type="number"
-                        label="Minimum Stock"
-                        name="minStock"
-                        value={formData.minStock}
-                        onChange={handleInputChange}
-                        error={!!errors.minStock}
-                        helperText={errors.minStock || 'Alert threshold'}
-                        InputProps={{
-                          inputProps: { min: 0 }
-                        }}
-                      />
-                    </Grid>
-                    <Grid item xs={12} md={3}>
-                      <TextField
-                        fullWidth
-                        type="number"
-                        label="Maximum Stock"
-                        name="maxStock"
-                        value={formData.maxStock}
-                        onChange={handleInputChange}
-                        helperText="Optional"
-                        InputProps={{
-                          inputProps: { min: 0 }
-                        }}
-                      />
-                    </Grid>
-                    <Grid item xs={12} md={3}>
-                      <TextField
-                        fullWidth
-                        select
-                        label="Unit"
-                        name="unit"
-                        value={formData.unit}
-                        onChange={handleInputChange}
-                      >
-                        {units.map((unit) => (
-                          <MenuItem key={unit} value={unit}>
-                            {unit}
-                          </MenuItem>
-                        ))}
-                      </TextField>
-                    </Grid>
-                    <Grid item xs={12} md={6}>
-                      <TextField
-                        fullWidth
-                        label="Storage Location"
-                        name="storageLocation"
-                        value={formData.storageLocation}
-                        onChange={handleInputChange}
-                        placeholder="e.g., Shelf A, Row 3"
-                      />
-                    </Grid>
-                    <Grid item xs={12} md={6}>
-                      <TextField
-                        fullWidth
-                        type="number"
-                        label="Reorder Point"
-                        name="reorderPoint"
-                        value={formData.reorderPoint}
-                        onChange={handleInputChange}
-                        helperText="Trigger reorder when stock reaches this level"
-                        InputProps={{
-                          inputProps: { min: 0 }
-                        }}
-                      />
-                    </Grid>
-                  </Grid>
-                </CardContent>
-              </Card>
-            </Grid>
-
-            {/* Product Details */}
-            <Grid item xs={12}>
-              <Card elevation={0} sx={{ borderRadius: 2, border: '1px solid #e0e0e0' }}>
-                <CardContent>
-                  <Typography variant="h6" fontWeight="600" gutterBottom>
-                    Product Details
+                    Manufacturing & Additional Details
                   </Typography>
                   <Divider sx={{ mb: 3 }} />
                   <Grid container spacing={2}>
@@ -678,50 +449,36 @@ const AddProduct = () => {
                         value={formData.manufacturer}
                         onChange={handleInputChange}
                         placeholder="Manufacturer name"
+                        helperText="Company that manufactures this product"
                       />
                     </Grid>
-                    <Grid item xs={12} md={6}>
+                    <Grid item xs={12} md={3}>
                       <TextField
                         fullWidth
-                        label="Supplier"
-                        name="supplier"
-                        value={formData.supplier}
+                        required
+                        select
+                        label="Unit"
+                        name="unit"
+                        value={formData.unit}
                         onChange={handleInputChange}
-                        placeholder="Supplier name"
-                      />
+                        error={!!errors.unit}
+                        helperText={errors.unit || 'Unit of measurement'}
+                      >
+                        {units.map((unit) => (
+                          <MenuItem key={unit} value={unit}>
+                            {unit.charAt(0).toUpperCase() + unit.slice(1)}
+                          </MenuItem>
+                        ))}
+                      </TextField>
                     </Grid>
-                    <Grid item xs={12} md={4}>
+                    <Grid item xs={12} md={3}>
                       <TextField
                         fullWidth
-                        label="Batch Number"
-                        name="batchNumber"
-                        value={formData.batchNumber}
+                        label="Barcode"
+                        name="barcode"
+                        value={formData.barcode}
                         onChange={handleInputChange}
-                        placeholder="e.g., BATCH2025-001"
-                      />
-                    </Grid>
-                    <Grid item xs={12} md={4}>
-                      <TextField
-                        fullWidth
-                        type="date"
-                        label="Manufacture Date"
-                        name="manufactureDate"
-                        value={formData.manufactureDate}
-                        onChange={handleInputChange}
-                        InputLabelProps={{ shrink: true }}
-                      />
-                    </Grid>
-                    <Grid item xs={12} md={4}>
-                      <TextField
-                        fullWidth
-                        type="date"
-                        label="Expiry Date"
-                        name="expiryDate"
-                        value={formData.expiryDate}
-                        onChange={handleInputChange}
-                        error={!!errors.expiryDate}
-                        helperText={errors.expiryDate}
-                        InputLabelProps={{ shrink: true }}
+                        placeholder="Product barcode"
                       />
                     </Grid>
                     <Grid item xs={12} md={6}>
@@ -757,12 +514,12 @@ const AddProduct = () => {
                       <TextField
                         fullWidth
                         multiline
-                        rows={2}
+                        rows={3}
                         label="Additional Notes"
                         name="notes"
                         value={formData.notes}
                         onChange={handleInputChange}
-                        placeholder="Any additional information"
+                        placeholder="Any additional information about this product"
                       />
                     </Grid>
                   </Grid>
