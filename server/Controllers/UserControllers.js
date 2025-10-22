@@ -12,7 +12,7 @@ exports.getAllUsers = async (req, res) => {
         const { search } = req.query;
         let query = {};
         
-        // If search parameter is provided, search by fullName (case-insensitive)
+        
         if (search) {
             query = {
                 fullName: { $regex: search, $options: 'i' }
@@ -23,10 +23,9 @@ exports.getAllUsers = async (req, res) => {
         const users = await User.find(query).select('-password');
         console.log(`Found ${users.length} users`);
         
-        // Transform the response to include name field for backward compatibility
         const transformedUsers = users.map(user => ({
             ...user.toObject(),
-            name: user.fullName || user.name  // Add name field that matches fullName
+            name: user.fullName || user.name  
         }));
         
         res.status(200).json(transformedUsers);
@@ -52,10 +51,10 @@ exports.searchUsers = async (req, res) => {
             fullName: { $regex: name, $options: 'i' }
         }).select('-password');
         
-        // Transform the response to include name field for backward compatibility
+        
         const transformedUsers = users.map(user => ({
             ...user.toObject(),
-            name: user.fullName  // Add name field that matches fullName
+            name: user.fullName  
         }));
         
         res.status(200).json(transformedUsers);
@@ -108,11 +107,9 @@ exports.generateUsersPDF = async (req, res) => {
         
         doc.moveDown();
         
-        // Add users table header
         doc.fontSize(14).text('Users List:', { underline: true });
         doc.moveDown();
         
-        // Table headers
         const tableTop = doc.y;
         const nameX = 50;
         const emailX = 180;
@@ -127,16 +124,14 @@ exports.generateUsersPDF = async (req, res) => {
            .text('Specialty', specialtyX, tableTop, { bold: true })
            .text('Contact', contactX, tableTop, { bold: true });
         
-        // Draw line under headers
         doc.moveTo(nameX, tableTop + 15)
            .lineTo(550, tableTop + 15)
            .stroke();
         
         let currentY = tableTop + 25;
         
-        // Add user data
         users.forEach((user, index) => {
-            // Check if we need a new page
+            
             if (currentY > 700) {
                 doc.addPage();
                 currentY = 50;
@@ -154,7 +149,6 @@ exports.generateUsersPDF = async (req, res) => {
             currentY += 20;
         });
         
-        // Add footer
         doc.fontSize(8)
            .text('Healthcare Management System - Generated Report', 50, doc.page.height - 50, {
                align: 'center',
@@ -214,7 +208,6 @@ exports.generateUserPDF = async (req, res) => {
             return res.status(404).json({ message: 'User not found' });
         }
         
-        // Create a new PDF document with professional margins
         const doc = new PDFDocument({ 
             margin: 40,
             size: 'A4',
@@ -226,7 +219,6 @@ exports.generateUserPDF = async (req, res) => {
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `attachment; filename=${fileName}`);
         
-        // Handle PDF generation errors
         doc.on('error', (err) => {
             console.error('PDF generation error:', err);
             if (!res.headersSent) {
@@ -237,7 +229,6 @@ exports.generateUserPDF = async (req, res) => {
         // Pipe the PDF document to the response
         doc.pipe(res);
         
-        // Define colors
         const primaryColor = '#075e02';
         const secondaryColor = '#014e85';
         const textColor = '#2c3e50';
@@ -245,10 +236,8 @@ exports.generateUserPDF = async (req, res) => {
         const borderColor = '#dfe6e9';
         const darkGray = '#636e72';
         
-        // Compact Header
         doc.rect(0, 0, doc.page.width, 85).fill(primaryColor);
         
-        // Add hospital name
         doc.fontSize(24)
            .fillColor('#ffffff')
            .font('Helvetica-Bold')
@@ -259,7 +248,6 @@ exports.generateUserPDF = async (req, res) => {
            .font('Helvetica')
            .text('User Profile Report', 40, 52, { align: 'center' });
         
-        // Generation date in header
         doc.fontSize(8)
            .fillColor('#ffffff')
            .text(`Generated: ${new Date().toLocaleDateString('en-US', { 
@@ -268,10 +256,8 @@ exports.generateUserPDF = async (req, res) => {
                day: 'numeric'
            })}`, 40, 68, { align: 'center' });
         
-        // Reset position after header
         doc.y = 100;
         
-        // Personal Information Section - Compact Header
         doc.rect(40, doc.y, 515, 25)
            .fill(secondaryColor);
         
@@ -282,7 +268,6 @@ exports.generateUserPDF = async (req, res) => {
         
         doc.y += 30;
         
-        // Personal info table - Compact layout
         const tableTop = doc.y;
         const leftCol = 55;
         const leftValueCol = 170;
@@ -290,11 +275,9 @@ exports.generateUserPDF = async (req, res) => {
         const rightValueCol = 425;
         let currentRow = tableTop;
         
-        // Draw background for table
         doc.rect(40, tableTop - 5, 515, 140)
            .fillAndStroke(lightGray, borderColor);
         
-        // Helper function to add compact table row
         const addRow = (leftLabel, leftValue, rightLabel = '', rightValue = '') => {
             doc.fontSize(9)
                .fillColor(darkGray)
@@ -453,7 +436,7 @@ exports.addUser = async (req, res) => {
 
         // Handle profile image path correctly
         if (req.file) {
-            // Use forward slashes for URL compatibility
+            
             userData.profileImage = `profileImages/${req.file.filename}`;
             console.log('Profile image path set to:', userData.profileImage);
         }
@@ -490,7 +473,7 @@ exports.updateUser = async (req, res) => {
         return res.status(400).json({ 
             message: 'Validation failed', 
             errors: errors.array(),
-            requestBody: req.body // For debugging
+            requestBody: req.body 
         });
     }
 
@@ -518,17 +501,17 @@ exports.updateUser = async (req, res) => {
         if (body.emergencyContactName !== undefined) user.emergencyContactName = body.emergencyContactName;
         if (body.emergencyContactNo !== undefined) user.emergencyContactNo = body.emergencyContactNo;
 
-        if (body.password) user.password = body.password; // hashed by pre-save
-        // Handle profile image path correctly
+        if (body.password) user.password = body.password; 
+        
         if (req.file) {
-            // Use forward slashes for URL compatibility
+            
             user.profileImage = `profileImages/${req.file.filename}`;
             console.log('Profile image path updated to:', user.profileImage);
         }
 
         await user.save();
 
-        // Convert to object and remove password
+        
         const safeUser = user.toObject();
         delete safeUser.password;
 
@@ -589,13 +572,13 @@ exports.forgotPassword = async (req, res) => {
             return res.status(404).json({ message: 'User with this email does not exist' });
         }
         
-        // Generate reset token
+        
         const resetToken = crypto.randomBytes(32).toString('hex');
         const resetTokenHash = crypto.createHash('sha256').update(resetToken).digest('hex');
         
-        // Set reset token and expiration (1 hour)
+       
         user.resetPasswordToken = resetTokenHash;
-        user.resetPasswordExpires = Date.now() + 60 * 60 * 1000; // 1 hour
+        user.resetPasswordExpires = Date.now() + 60 * 60 * 1000; 
         await user.save();
 
         // Build reset URL (frontend should provide route to accept token)
@@ -615,9 +598,9 @@ exports.forgotPassword = async (req, res) => {
 
         const responsePayload = { message: 'Password reset email sent' };
         if (previewUrl) {
-            // Include Ethereal preview link for development/testing
+           
             responsePayload.previewUrl = previewUrl;
-            responsePayload.resetToken = resetToken; // helpful for testing; remove in production
+            responsePayload.resetToken = resetToken; 
         }
 
         res.status(200).json(responsePayload);
@@ -632,7 +615,7 @@ exports.getDoctors = async (req, res) => {
     try {
         console.log('Starting getDoctors function...');
         
-        // Query for doctors
+        
         const query = { role: "doctor" };
         console.log('Searching for doctors with query:', query);
         
@@ -675,10 +658,10 @@ exports.resetPassword = async (req, res) => {
             return res.status(400).json({ message: 'Password must be at least 6 characters long' });
         }
         
-        // Hash the token to compare with stored hash
+        
         const resetTokenHash = crypto.createHash('sha256').update(token).digest('hex');
         
-        // Find user with valid reset token
+        
         const user = await User.findOne({
             resetPasswordToken: resetTokenHash,
             resetPasswordExpires: { $gt: Date.now() }
@@ -689,7 +672,7 @@ exports.resetPassword = async (req, res) => {
         }
         
         // Update password
-        user.password = password; // Will be hashed by pre-save middleware
+        user.password = password; 
         user.resetPasswordToken = undefined;
         user.resetPasswordExpires = undefined;
         await user.save();
