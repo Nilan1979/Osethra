@@ -68,6 +68,17 @@ export default function AddAppointment() {
   const [availableTimes, setAvailableTimes] = useState([]);
   const [loadingSchedules, setLoadingSchedules] = useState(false);
   const [existingAppointments, setExistingAppointments] = useState([]);
+  const [validationErrors, setValidationErrors] = useState({
+    name: "",
+    contact: "",
+    address: "",
+    age: "",
+    gender: "",
+    doctor: "",
+    date: "",
+    time: "",
+    reason: ""
+  });
 
   useEffect(() => {
     const fetchDoctors = async () => {
@@ -88,6 +99,84 @@ export default function AddAppointment() {
     };
     fetchDoctors();
   }, []);
+
+  // Real-time validation functions
+  const validateField = (name, value) => {
+    let errorMsg = "";
+
+    switch (name) {
+      case "name":
+        if (!value.trim()) {
+          errorMsg = "Name is required";
+        } else if (value.trim().length < 3) {
+          errorMsg = "Name must be at least 3 characters";
+        } else if (!/^[a-zA-Z\s]+$/.test(value)) {
+          errorMsg = "Name should only contain letters";
+        }
+        break;
+
+      case "contact":
+        if (!value.trim()) {
+          errorMsg = "Contact number is required";
+        } else if (!/^[0-9]{10}$/.test(value.replace(/\s/g, ""))) {
+          errorMsg = "Contact number must be 10 digits";
+        }
+        break;
+
+      case "address":
+        if (!value.trim()) {
+          errorMsg = "Address is required";
+        } else if (value.trim().length < 5) {
+          errorMsg = "Address must be at least 5 characters";
+        }
+        break;
+
+      case "age":
+        const ageNum = parseInt(value);
+        if (!value) {
+          errorMsg = "Age is required";
+        } else if (isNaN(ageNum) || ageNum < 1) {
+          errorMsg = "Age must be a positive number";
+        } else if (ageNum > 150) {
+          errorMsg = "Please enter a valid age";
+        }
+        break;
+
+      case "gender":
+        if (!value) {
+          errorMsg = "Gender is required";
+        }
+        break;
+
+      case "doctor":
+        if (!value) {
+          errorMsg = "Please select a doctor";
+        }
+        break;
+
+      case "date":
+        if (!value) {
+          errorMsg = "Appointment date is required";
+        }
+        break;
+
+      case "time":
+        if (!value) {
+          errorMsg = "Appointment time is required";
+        }
+        break;
+
+      default:
+        break;
+    }
+
+    setValidationErrors(prev => ({
+      ...prev,
+      [name]: errorMsg
+    }));
+
+    return errorMsg === "";
+  };
 
   // Helper function to format time
   const formatTime = React.useCallback((time) => {
@@ -329,6 +418,10 @@ export default function AddAppointment() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    
+    // Validate the field in real-time
+    validateField(name, value);
+    
     if (name === 'doctor') {
       const selectedDoctor = doctors.find(doc => doc._id === value);
       if (selectedDoctor) {
@@ -340,6 +433,7 @@ export default function AddAppointment() {
           date: "", // Reset date when doctor changes
           time: ""  // Reset time when doctor changes
         }));
+        validateField('doctor', selectedDoctor._id);
       }
     } else if (name === 'date') {
       // Reset time when date changes
@@ -350,8 +444,29 @@ export default function AddAppointment() {
   };
 
   const handleNext = () => {
-    setActiveStep((prev) => prev + 1);
-    setError('');
+    // Validate current step fields before proceeding
+    let isValid = true;
+    
+    if (activeStep === 0) {
+      // Validate patient information
+      isValid = validateField('name', form.name) &&
+                validateField('contact', form.contact) &&
+                validateField('address', form.address) &&
+                validateField('age', form.age) &&
+                validateField('gender', form.gender);
+    } else if (activeStep === 1) {
+      // Validate appointment details
+      isValid = validateField('doctor', form.doctorId) &&
+                validateField('date', form.date) &&
+                validateField('time', form.time);
+    }
+    
+    if (isValid) {
+      setActiveStep((prev) => prev + 1);
+      setError('');
+    } else {
+      setError('Please fill in all required fields correctly');
+    }
   };
 
   const handleBack = () => {
@@ -389,6 +504,8 @@ export default function AddAppointment() {
                 value={form.name}
                 onChange={handleChange}
                 required
+                error={!!validationErrors.name}
+                helperText={validationErrors.name}
                 sx={textFieldStyle}
                 InputProps={{
                   startAdornment: <Person sx={{ color: 'text.secondary', mr: 1 }} />
@@ -403,6 +520,8 @@ export default function AddAppointment() {
                 value={form.contact}
                 onChange={handleChange}
                 required
+                error={!!validationErrors.contact}
+                helperText={validationErrors.contact || "Enter 10-digit phone number"}
                 sx={textFieldStyle}
                 InputProps={{
                   startAdornment: <Phone sx={{ color: 'text.secondary', mr: 1 }} />
@@ -417,6 +536,8 @@ export default function AddAppointment() {
                 value={form.address}
                 onChange={handleChange}
                 required
+                error={!!validationErrors.address}
+                helperText={validationErrors.address}
                 sx={textFieldStyle}
                 InputProps={{
                   startAdornment: <Home sx={{ color: 'text.secondary', mr: 1 }} />
@@ -432,6 +553,8 @@ export default function AddAppointment() {
                 value={form.age}
                 onChange={handleChange}
                 required
+                error={!!validationErrors.age}
+                helperText={validationErrors.age}
                 sx={textFieldStyle}
                 InputProps={{
                   startAdornment: <Cake sx={{ color: 'text.secondary', mr: 1 }} />
@@ -447,6 +570,8 @@ export default function AddAppointment() {
                 value={form.gender}
                 onChange={handleChange}
                 required
+                error={!!validationErrors.gender}
+                helperText={validationErrors.gender}
                 sx={textFieldStyle}
                 InputProps={{
                   startAdornment: <Transgender sx={{ color: 'text.secondary', mr: 1 }} />
@@ -484,6 +609,8 @@ export default function AddAppointment() {
                 onChange={handleChange}
                 required
                 disabled={loading}
+                error={!!validationErrors.doctor}
+                helperText={validationErrors.doctor}
                 sx={{
                   ...textFieldStyle,
                   '& .MuiSelect-select': {
@@ -572,7 +699,9 @@ export default function AddAppointment() {
                 onChange={handleChange}
                 required
                 disabled={!form.doctorId || loadingSchedules || availableDates.length === 0}
+                error={!!validationErrors.date}
                 helperText={
+                  validationErrors.date ||
                   (!form.doctorId ? "Please select a doctor first" : 
                    availableDates.length === 0 && form.doctorId ? "No available dates for this doctor" : "")
                 }
@@ -613,7 +742,9 @@ export default function AddAppointment() {
                 onChange={handleChange}
                 required
                 disabled={!form.date || availableTimes.length === 0}
+                error={!!validationErrors.time}
                 helperText={
+                  validationErrors.time ||
                   (!form.date ? "Please select a date first" : 
                    availableTimes.length === 0 && form.date ? "⚠️ All time slots are booked for this date" : 
                    `✅ ${availableTimes.length} available slots (booked slots are automatically hidden)`)

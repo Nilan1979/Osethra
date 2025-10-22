@@ -276,7 +276,7 @@ const AdminDashboard = () => {
     const errors = {};
     Object.keys(formData).forEach(field => {
       if (field === 'password' && editingUser && !formData[field]) {
-        // Skip password validation for editing if no new password is provided
+        
         return;
       }
       const error = validateField(field, formData[field]);

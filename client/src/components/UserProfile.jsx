@@ -77,7 +77,7 @@ const UserProfile = ({ open, onClose, userId, userName }) => {
       
       const response = await api.get(`/users/${userId}/pdf`, {
         responseType: 'blob',
-        timeout: 30000 // 30 second timeout for PDF generation
+        timeout: 30000 
       });
       
       // Check response headers

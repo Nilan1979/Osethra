@@ -140,6 +140,8 @@ const NavBar = () => {
               alignItems: "center", 
               gap: 2,
               cursor: 'pointer',
+              mr: 4,
+              ml: -12,
               '&:hover': {
                 opacity: 0.9
               }
@@ -200,7 +202,7 @@ const NavBar = () => {
 
           {/* Desktop Navigation */}
           {!isMobile ? (
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1, ml: 32 }}>
               {/* Main Navigation */}
               <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
                 {/* About Us / My Schedule (for doctors) */}
@@ -215,6 +217,7 @@ const NavBar = () => {
                       minWidth: 'auto',
                       px: 2,
                       borderRadius: 0,
+                      whiteSpace: 'nowrap',
                       '&:hover': {
                         backgroundColor: 'rgba(255,255,255,0.1)'
                       }
@@ -233,6 +236,7 @@ const NavBar = () => {
                       minWidth: 'auto',
                       px: 2,
                       borderRadius: 0,
+                      whiteSpace: 'nowrap',
                       '&:hover': {
                         backgroundColor: 'rgba(255,255,255,0.1)'
                       }
@@ -251,6 +255,7 @@ const NavBar = () => {
                       minWidth: 'auto',
                       px: 2,
                       borderRadius: 0,
+                      whiteSpace: 'nowrap',
                       '&:hover': {
                         backgroundColor: 'rgba(255,255,255,0.1)'
                       }
@@ -272,6 +277,7 @@ const NavBar = () => {
                     minWidth: 'auto',
                     px: 2,
                     borderRadius: 0,
+                    whiteSpace: 'nowrap',
                     '&:hover': {
                       backgroundColor: 'rgba(255,255,255,0.1)'
                     }
@@ -292,6 +298,7 @@ const NavBar = () => {
                     minWidth: 'auto',
                     px: 2,
                     borderRadius: 0,
+                    whiteSpace: 'nowrap',
                     '&:hover': {
                       backgroundColor: 'rgba(255,255,255,0.1)'
                     }
@@ -311,6 +318,7 @@ const NavBar = () => {
                     minWidth: 'auto',
                     px: 2,
                     borderRadius: 0,
+                    whiteSpace: 'nowrap',
                     '&:hover': {
                       backgroundColor: 'rgba(255,255,255,0.1)'
                     }
@@ -331,6 +339,7 @@ const NavBar = () => {
                     minWidth: 'auto',
                     px: 2,
                     borderRadius: 0,
+                    whiteSpace: 'nowrap',
                     '&:hover': {
                       backgroundColor: 'rgba(255,255,255,0.1)'
                     }
@@ -350,6 +359,7 @@ const NavBar = () => {
                     minWidth: 'auto',
                     px: 2,
                     borderRadius: 0,
+                    whiteSpace: 'nowrap',
                     '&:hover': {
                       backgroundColor: 'rgba(255,255,255,0.1)'
                     }
@@ -359,42 +369,54 @@ const NavBar = () => {
                 </Button>
               </Box>
 
-              {/* Staff Menu */}
-              {user && (
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1, ml: 2 }}>
-                  <Button
-                    component={RouterLink}
-                    to="/appointments"
-                    sx={{ 
-                      color: "white",
-                      textTransform: 'none',
+              {/* Profile Menu */}
+              <Box sx={{ display: 'flex', alignItems: 'center', ml: 0.5 }}>
+                {user?.role && (
+                  <Box
+                    sx={{
+                      backgroundColor: 'rgba(255,255,255,0.18)',
+                      color: '#e0e0e0',
                       fontWeight: 500,
-                      fontSize: '0.8rem',
-                      borderRadius: 0,
-                      '&:hover': {
-                        backgroundColor: 'rgba(255,255,255,0.1)'
-                      }
+                      fontSize: '0.85rem',
+                      px: 1.5,
+                      py: 0.5,
+                      borderRadius: 999,
+                      mr: 0.5,
+                      textTransform: 'capitalize',
+                      boxShadow: '0 1px 4px rgba(0,0,0,0.07)',
+                      border: '1px solid rgba(255,255,255,0.25)',
+                      letterSpacing: 0.5,
+                      minWidth: 70,
+                      textAlign: 'center',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 1
                     }}
                   >
-                    
-                  </Button>
-                </Box>
-              )}
-
-              {/* Profile Menu */}
-              <IconButton
-                onClick={user ? handleProfileMenu : () => navigate('/login')}
-                sx={{ 
-                  color: "white",
-                  ml: 1,
-                  borderRadius: 0,
-                  '&:hover': {
-                    backgroundColor: 'rgba(255,255,255,0.1)'
-                  }
-                }}
-              >
-                <AccountCircle />
-              </IconButton>
+                    {user.name && (
+                      <span style={{ fontWeight: 600, color: '#fff', marginRight: 6 }}>
+                        {user.name}
+                      </span>
+                    )}
+                    <span style={{ opacity: 0.8 }}>
+                      {user.role}
+                    </span>
+                  </Box>
+                )}
+                <IconButton
+                  onClick={user ? handleProfileMenu : () => navigate('/login')}
+                  sx={{ 
+                    color: "white",
+                    borderRadius: 0,
+                    '&:hover': {
+                      backgroundColor: 'rgba(255,255,255,0.1)'
+                    }
+                  }}
+                >
+                  <AccountCircle />
+                </IconButton>
+              </Box>
             </Box>
           ) : (
             /* Mobile Navigation */

@@ -214,208 +214,193 @@ exports.generateUserPDF = async (req, res) => {
             return res.status(404).json({ message: 'User not found' });
         }
         
-        // Create a new PDF document
-        const doc = new PDFDocument({ margin: 50 });
+        // Create a new PDF document with professional margins
+        const doc = new PDFDocument({ 
+            margin: 40,
+            size: 'A4',
+            bufferPages: true
+        });
         
         // Set response headers for PDF download
-        const fileName = `${(user.fullName || user.name || 'user').replace(/\s+/g, '_')}_profile.pdf`;
+        const fileName = `${(user.fullName || user.name || 'user').replace(/\s+/g, '_')}_profile_${new Date().toISOString().split('T')[0]}.pdf`;
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `attachment; filename=${fileName}`);
         
         // Handle PDF generation errors
         doc.on('error', (err) => {
             console.error('PDF generation error:', err);
-            // Only send error if headers haven't been sent
             if (!res.headersSent) {
                 res.status(500).json({ message: 'Error generating PDF' });
             }
         });
         
-        // Pipe the PDF document to the response with error handling
+        // Pipe the PDF document to the response
         doc.pipe(res);
         
-        // Add header with logo placeholder and title
+        // Define colors
+        const primaryColor = '#075e02';
+        const secondaryColor = '#014e85';
+        const textColor = '#2c3e50';
+        const lightGray = '#f8f9fa';
+        const borderColor = '#dfe6e9';
+        const darkGray = '#636e72';
+        
+        // Compact Header
+        doc.rect(0, 0, doc.page.width, 85).fill(primaryColor);
+        
+        // Add hospital name
         doc.fontSize(24)
-           .fillColor('#1976d2')
-           .text('Healthcare Management System', { align: 'center' });
-        
-        doc.fontSize(18)
-           .fillColor('#333')
-           .text('User Profile Report', { align: 'center' });
-        
-        doc.moveDown(2);
-        
-        // Add generation info
-        doc.fontSize(10)
-           .fillColor('#666')
-           .text(`Generated on: ${new Date().toLocaleString()}`, { align: 'right' });
-        
-        doc.moveDown();
-        
-        // Add user profile section
-        doc.fontSize(16)
-           .fillColor('#1976d2')
-           .text('Personal Information', { underline: true });
-        
-        doc.moveDown(0.5);
-        
-        // Create a styled info box
-        const infoStartY = doc.y;
-        doc.rect(50, infoStartY, 495, 220)  // Increased height for more content
-           .fillAndStroke('#f8f9fa', '#e9ecef');
-        
-        // Add user details in a structured format
-        doc.fillColor('#333')
-           .fontSize(12);
-        
-        const leftColumn = 70;
-        const rightColumn = 320;
-        const labelWidth = 120;  // Width for labels
-        let currentY = infoStartY + 20;
-        
-        // Helper function for consistent label-value pairs
-        const addField = (label, value, useColor = null) => {
-            doc.font('Helvetica').fillColor('#333')
-               .text(label, leftColumn, currentY);
-            
-            if (useColor) doc.fillColor(useColor);
-            doc.font('Helvetica-Bold')
-               .text(value || 'N/A', leftColumn + labelWidth, currentY);
-            
-            currentY += 25;
-            return doc.fillColor('#333');  // Reset color
-        };
-        
-        // Add fields with consistent formatting
-        addField('Full Name:', user.fullName || user.name);
-        addField('Email Address:', user.email);
-        addField('Contact Number:', user.contactNo);
-        addField('Role:', 
-                user.role.charAt(0).toUpperCase() + user.role.slice(1), 
-                '#1976d2');
-        
-        // Add specialty for doctors
-        if (user.role === 'doctor' && user.specialty) {
-            currentY += 25;
-            doc.fillColor('#333')
-               .font('Helvetica')
-               .text('Specialty:', leftColumn, currentY, { continued: true })
-               .font('Helvetica-Bold')
-               .fillColor('#4caf50')
-               .text(` ${user.specialty}`, { continued: false });
-        }
-        
-        // Right column with formatted dates
-        let rightY = infoStartY + 20;
-        const rightLabelWidth = 130;
-        
-        // Helper function for right column fields
-        const addRightField = (label, value) => {
-            doc.font('Helvetica').fillColor('#333')
-               .text(label, rightColumn, rightY);
-            
-            doc.font('Helvetica-Bold')
-               .text(value || 'N/A', rightColumn + rightLabelWidth, rightY);
-            
-            rightY += 25;
-        };
-        
-        // Add right column fields
-        addRightField('User ID:', user._id);
-        addRightField('Account Created:', 
-            new Date(user.createdAt).toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-            })
-        );
-        addRightField('Last Updated:', 
-            new Date(user.updatedAt).toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-            })
-        );
-        
-        // Add address with proper formatting
-        doc.font('Helvetica').fillColor('#333')
-           .text('Address:', leftColumn, currentY);
-           
-        // Create a box for address with background
-        const addressY = currentY + 5;
-        const addressHeight = 50;
-        doc.rect(leftColumn + labelWidth - 10, addressY - 5, 400, addressHeight)
-           .fill('#ffffff');
-           
-        doc.font('Helvetica-Bold')
-           .fillColor('#333')
-           .text(user.address || 'N/A', leftColumn + labelWidth, addressY, {
-               width: 380,
-               align: 'left',
-               lineGap: 5
-           });
-        
-        doc.moveDown(3);
-        
-        // Add role responsibilities section
-        doc.fontSize(16)
-           .fillColor('#1976d2')
-           .font('Helvetica')
-           .text('Role & Responsibilities', { underline: true });
-        
-        doc.moveDown(0.5);
-    
-        
-        const userResponsibilities = responsibilities[user.role] || ['General healthcare support'];
+           .fillColor('#ffffff')
+           .font('Helvetica-Bold')
+           .text('OSETHRA HOSPITAL', 40, 20, { align: 'center' });
         
         doc.fontSize(11)
-           .fillColor('#333')
-           .font('Helvetica');
-        
-        userResponsibilities.forEach((responsibility, index) => {
-            doc.text(`• ${responsibility}`, 70, doc.y, { 
-                width: 450,
-                lineGap: 3
-            });
-        });
-        
-        doc.moveDown(2);
-        
-        // Add account status section
-        doc.fontSize(16)
-           .fillColor('#1976d2')
+           .fillColor('#ffffff')
            .font('Helvetica')
-           .text('Account Status', { underline: true });
+           .text('User Profile Report', 40, 52, { align: 'center' });
         
-        doc.moveDown(0.5);
+        // Generation date in header
+        doc.fontSize(8)
+           .fillColor('#ffffff')
+           .text(`Generated: ${new Date().toLocaleDateString('en-US', { 
+               year: 'numeric', 
+               month: 'short', 
+               day: 'numeric'
+           })}`, 40, 68, { align: 'center' });
         
-        const statusY = doc.y;
-        doc.rect(50, statusY, 495, 60)
-           .fillAndStroke('#e8f5e8', '#4caf50');
+        // Reset position after header
+        doc.y = 100;
+        
+        // Personal Information Section - Compact Header
+        doc.rect(40, doc.y, 515, 25)
+           .fill(secondaryColor);
         
         doc.fontSize(12)
-           .fillColor('#2e7d32')
+           .fillColor('#ffffff')
            .font('Helvetica-Bold')
-           .text('✓ Active Account', 70, statusY + 20);
+           .text('Personal Information', 50, doc.y + 6);
         
-        doc.fontSize(10)
-           .fillColor('#666')
+        doc.y += 30;
+        
+        // Personal info table - Compact layout
+        const tableTop = doc.y;
+        const leftCol = 55;
+        const leftValueCol = 170;
+        const rightCol = 310;
+        const rightValueCol = 425;
+        let currentRow = tableTop;
+        
+        // Draw background for table
+        doc.rect(40, tableTop - 5, 515, 140)
+           .fillAndStroke(lightGray, borderColor);
+        
+        // Helper function to add compact table row
+        const addRow = (leftLabel, leftValue, rightLabel = '', rightValue = '') => {
+            doc.fontSize(9)
+               .fillColor(darkGray)
+               .font('Helvetica-Bold')
+               .text(leftLabel, leftCol, currentRow, { width: 110 });
+            
+            doc.fontSize(9)
+               .fillColor(textColor)
+               .font('Helvetica')
+               .text(leftValue || 'N/A', leftValueCol, currentRow, { width: 130 });
+            
+            if (rightLabel) {
+                doc.fontSize(9)
+                   .fillColor(darkGray)
+                   .font('Helvetica-Bold')
+                   .text(rightLabel, rightCol, currentRow, { width: 110 });
+                
+                doc.fontSize(9)
+                   .fillColor(textColor)
+                   .font('Helvetica')
+                   .text(rightValue || 'N/A', rightValueCol, currentRow, { width: 130 });
+            }
+            
+            currentRow += 22;
+        };
+        
+        // Add personal information rows
+        addRow('Full Name:', user.fullName || user.name, 'Account Created:', 
+            new Date(user.createdAt).toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric'
+            })
+        );
+        addRow('Email Address:', user.email, 'Last Updated:', 
+            new Date(user.updatedAt).toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric'
+            })
+        );
+        addRow('Contact Number:', user.contactNo || 'N/A', '', '');
+        
+        // Role with color coding
+        const roleColors = {
+            admin: '#e74c3c',
+            doctor: '#3498db',
+            nurse: '#27ae60',
+            pharmacist: '#f39c12',
+            receptionist: '#9b59b6'
+        };
+        
+        const roleColor = roleColors[user.role?.toLowerCase()] || textColor;
+        doc.fontSize(9)
+           .fillColor(darkGray)
+           .font('Helvetica-Bold')
+           .text('Role:', leftCol, currentRow, { width: 110 });
+        
+        doc.fontSize(9)
+           .fillColor(roleColor)
+           .font('Helvetica-Bold')
+           .text(user.role?.charAt(0).toUpperCase() + user.role?.slice(1) || 'N/A', leftValueCol, currentRow, { width: 130 });
+        
+        currentRow += 22;
+        
+        // Address section - More compact
+        doc.fontSize(9)
+           .fillColor(darkGray)
+           .font('Helvetica-Bold')
+           .text('Address:', leftCol, currentRow);
+        
+        doc.fontSize(9)
+           .fillColor(textColor)
            .font('Helvetica')
-           .text('This user account is currently active and has full system access.', 70, statusY + 40);
+           .text(user.address || 'N/A', leftValueCol, currentRow, { 
+               width: 385,
+               align: 'left'
+           });
         
-        // Add footer
-        doc.fontSize(8)
-           .fillColor('#999')
-           .text('This document is confidential and intended for authorized personnel only.', 50, doc.page.height - 50, {
+        // Footer - Professional and compact
+        const footerY = doc.page.height - 50;
+        doc.rect(0, footerY, doc.page.width, 50).fill(primaryColor);
+        
+        doc.fontSize(7)
+           .fillColor('#ffffff')
+           .font('Helvetica')
+           .text('This document is confidential and intended for authorized personnel only.', 40, footerY + 12, {
                align: 'center',
-               width: 500
+               width: doc.page.width - 80
+           });
+        
+        doc.fontSize(7)
+           .fillColor('#ffffff')
+           .text('Osethra Hospital - Healthcare Management System', 40, footerY + 28, {
+               align: 'center',
+               width: doc.page.width - 80
            });
         
         // Finalize the PDF
         doc.end();
         
     } catch (err) {
-        res.status(500).json({ message: err.message });
+        console.error('PDF generation error:', err);
+        if (!res.headersSent) {
+            res.status(500).json({ message: err.message });
+        }
     }
 };
 
