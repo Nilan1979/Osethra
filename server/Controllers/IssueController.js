@@ -199,86 +199,128 @@ exports.createIssue = async (req, res) => {
                 });
             }
 
-            // Get available inventory items for this product using FEFO (First Expiry First Out)
-            const inventoryItems = await InventoryItem.find({
-                product: product._id,
-                status: 'available',
-                quantity: { $gt: 0 },
-                expiryDate: { $gt: new Date() } // Only non-expired items
-            })
-            .session(session)
-            .sort({ expiryDate: 1 }); // Sort by expiry date ascending (FEFO)
+            // Check if inventoryItemId is provided (user selected specific batch)
+            if (item.inventoryItemId) {
+                // Direct batch deduction - user selected specific batch
+                const invItem = await InventoryItem.findById(item.inventoryItemId).session(session);
 
-            // Calculate total available stock
-            const totalAvailable = inventoryItems.reduce((sum, invItem) => sum + invItem.quantity, 0);
+                if (!invItem) {
+                    await session.abortTransaction();
+                    session.endSession();
+                    return res.status(404).json({
+                        success: false,
+                        message: `Inventory item not found: ${item.inventoryItemId}`
+                    });
+                }
 
-            if (totalAvailable < item.quantity) {
-                await session.abortTransaction();
-                session.endSession();
-                return res.status(400).json({
-                    success: false,
-                    message: `Insufficient stock for ${product.name}. Available: ${totalAvailable}, Requested: ${item.quantity}`
-                });
-            }
+                if (invItem.quantity < item.quantity) {
+                    await session.abortTransaction();
+                    session.endSession();
+                    return res.status(400).json({
+                        success: false,
+                        message: `Insufficient stock for ${product.name} (Batch: ${invItem.batchNumber}). Available: ${invItem.quantity}, Requested: ${item.quantity}`
+                    });
+                }
 
-            // Allocate stock from batches using FEFO
-            let remainingQty = item.quantity;
-            const batchDeductions = [];
-            let weightedUnitPrice = 0;
-            let totalDeductedQty = 0;
+                // Create deduction record for this specific batch
+                const batchTotalPrice = invItem.sellingPrice * item.quantity;
+                totalAmount += batchTotalPrice;
 
-            for (const invItem of inventoryItems) {
-                if (remainingQty <= 0) break;
-
-                const qtyToDeduct = Math.min(remainingQty, invItem.quantity);
-                
-                batchDeductions.push({
-                    inventoryItemId: invItem._id,
+                validatedItems.push({
+                    productId: product._id,
+                    productName: product.name,
+                    quantity: item.quantity,
+                    unitPrice: invItem.sellingPrice,
+                    totalPrice: batchTotalPrice,
                     batchNumber: invItem.batchNumber,
-                    expiryDate: invItem.expiryDate,
-                    quantity: qtyToDeduct,
-                    unitPrice: invItem.sellingPrice
+                    expiryDate: invItem.expiryDate
                 });
 
-                // Calculate weighted average price
-                weightedUnitPrice += invItem.sellingPrice * qtyToDeduct;
-                totalDeductedQty += qtyToDeduct;
-                
-                remainingQty -= qtyToDeduct;
+                deductionRecords.push({
+                    productId: product._id,
+                    productName: product.name,
+                    batchDeductions: [{
+                        inventoryItemId: invItem._id,
+                        batchNumber: invItem.batchNumber,
+                        expiryDate: invItem.expiryDate,
+                        quantity: item.quantity,
+                        unitPrice: invItem.sellingPrice
+                    }]
+                });
+
+            } else {
+                // FEFO (First Expiry First Out) logic - no specific batch selected
+                const inventoryItems = await InventoryItem.find({
+                    product: product._id,
+                    status: 'available',
+                    quantity: { $gt: 0 },
+                    expiryDate: { $gt: new Date() } // Only non-expired items
+                })
+                    .session(session)
+                    .sort({ expiryDate: 1 }); // Sort by expiry date ascending (FEFO)
+
+                // Calculate total available stock
+                const totalAvailable = inventoryItems.reduce((sum, invItem) => sum + invItem.quantity, 0);
+
+                if (totalAvailable < item.quantity) {
+                    await session.abortTransaction();
+                    session.endSession();
+                    return res.status(400).json({
+                        success: false,
+                        message: `Insufficient stock for ${product.name}. Available: ${totalAvailable}, Requested: ${item.quantity}`
+                    });
+                }
+
+                // Allocate stock from batches using FEFO
+                let remainingQty = item.quantity;
+                const batchDeductions = [];
+
+                for (const invItem of inventoryItems) {
+                    if (remainingQty <= 0) break;
+
+                    const qtyToDeduct = Math.min(remainingQty, invItem.quantity);
+
+                    batchDeductions.push({
+                        inventoryItemId: invItem._id,
+                        batchNumber: invItem.batchNumber,
+                        expiryDate: invItem.expiryDate,
+                        quantity: qtyToDeduct,
+                        unitPrice: invItem.sellingPrice
+                    });
+
+                    // Create separate item for each batch
+                    const batchTotalPrice = invItem.sellingPrice * qtyToDeduct;
+                    totalAmount += batchTotalPrice;
+
+                    validatedItems.push({
+                        productId: product._id,
+                        productName: product.name,
+                        quantity: qtyToDeduct,
+                        unitPrice: invItem.sellingPrice,
+                        totalPrice: batchTotalPrice,
+                        batchNumber: invItem.batchNumber,
+                        expiryDate: invItem.expiryDate
+                    });
+
+                    remainingQty -= qtyToDeduct;
+                }
+
+                // Store deduction records for later processing
+                deductionRecords.push({
+                    productId: product._id,
+                    productName: product.name,
+                    batchDeductions
+                });
             }
-
-            // Calculate average unit price for this item
-            const unitPrice = weightedUnitPrice / totalDeductedQty;
-            const totalPrice = unitPrice * item.quantity;
-            totalAmount += totalPrice;
-
-            // Store validated item with batch information
-            validatedItems.push({
-                productId: product._id,
-                productName: product.name,
-                quantity: item.quantity,
-                unitPrice: unitPrice,
-                totalPrice: totalPrice,
-                batchNumber: batchDeductions[0].batchNumber, // Primary batch
-                expiryDate: batchDeductions[0].expiryDate,
-                batches: batchDeductions // Store all batch allocations
-            });
-
-            // Store deduction records for later processing
-            deductionRecords.push({
-                productId: product._id,
-                productName: product.name,
-                batchDeductions
-            });
         }
 
         // Deduct stock from inventory items
         const issuedToName = patient?.name || department?.name || 'General Issue';
-        
+
         for (const record of deductionRecords) {
             for (const batch of record.batchDeductions) {
                 const invItem = await InventoryItem.findById(batch.inventoryItemId).session(session);
-                
+
                 if (!invItem) {
                     await session.abortTransaction();
                     session.endSession();
@@ -290,8 +332,8 @@ exports.createIssue = async (req, res) => {
 
                 // Deduct quantity
                 invItem.quantity -= batch.quantity;
-                invItem.updatedBy = req.user?.id;
-                
+                invItem.updatedBy = req.user?._id || req.user?.id;
+
                 // Add transaction record
                 invItem.transactions.push({
                     type: 'issue',
@@ -299,7 +341,7 @@ exports.createIssue = async (req, res) => {
                     balanceAfter: invItem.quantity,
                     reference: '', // Will be updated with issue number after creation
                     performedBy: {
-                        id: req.user?.id,
+                        id: req.user?._id || req.user?.id,
                         name: req.user?.name || 'Unknown',
                         role: req.user?.role || 'Unknown'
                     },
@@ -317,7 +359,7 @@ exports.createIssue = async (req, res) => {
             department,
             items: validatedItems,
             issuedBy: {
-                id: req.user?.id,
+                id: req.user?._id || req.user?.id,
                 name: req.user?.name || 'Unknown',
                 role: req.user?.role || 'Unknown'
             },
@@ -344,26 +386,32 @@ exports.createIssue = async (req, res) => {
 
         // Log activity
         if (req.user) {
-            await Activity.create([{
-                type: 'issue_created',
-                description: `Created ${type} issue: ${issue.issueNumber} (${items.length} items, LKR ${totalAmount.toFixed(2)})`,
-                user: {
-                    id: req.user.id,
-                    name: req.user.name,
-                    role: req.user.role
-                },
-                entityType: 'Issue',
-                entityId: issue._id,
-                entityName: issue.issueNumber,
-                metadata: {
-                    type,
-                    itemCount: items.length,
-                    totalAmount,
-                    patientName: patient?.name,
-                    departmentName: department?.name
-                },
-                severity: 'success'
-            }], { session });
+            try {
+                await Activity.create([{
+                    type: 'issue_created',
+                    description: `Created ${type} issue: ${issue.issueNumber} (${validatedItems.length} line items, LKR ${totalAmount.toFixed(2)})`,
+                    user: {
+                        id: req.user._id || req.user.id,
+                        name: req.user.name || 'Unknown User',
+                        role: req.user.role || 'unknown'
+                    },
+                    entityType: 'Issue',
+                    entityId: issue._id,
+                    entityName: issue.issueNumber,
+                    metadata: {
+                        type,
+                        originalItemCount: items.length,
+                        lineItemCount: validatedItems.length,
+                        totalAmount,
+                        patientName: patient?.name,
+                        departmentName: department?.name
+                    },
+                    severity: 'success'
+                }], { session });
+            } catch (activityError) {
+                console.error('Error logging issue creation activity:', activityError);
+                // Don't abort transaction if activity logging fails
+            }
         }
 
         await session.commitTransaction();
@@ -437,23 +485,27 @@ exports.updateIssueStatus = async (req, res) => {
 
         // Log activity
         if (req.user) {
-            await Activity.create({
-                type: 'issue_updated',
-                description: `Updated issue ${issue.issueNumber} status: ${oldStatus} → ${status}`,
-                user: {
-                    id: req.user.id,
-                    name: req.user.name,
-                    role: req.user.role
-                },
-                entityType: 'Issue',
-                entityId: issue._id,
-                entityName: issue.issueNumber,
-                metadata: {
-                    oldStatus,
-                    newStatus: status
-                },
-                severity: 'info'
-            });
+            try {
+                await Activity.create({
+                    type: 'issue_updated',
+                    description: `Updated issue ${issue.issueNumber} status: ${oldStatus} → ${status}`,
+                    user: {
+                        id: req.user._id || req.user.id,
+                        name: req.user.name || 'Unknown User',
+                        role: req.user.role || 'unknown'
+                    },
+                    entityType: 'Issue',
+                    entityId: issue._id,
+                    entityName: issue.issueNumber,
+                    metadata: {
+                        oldStatus,
+                        newStatus: status
+                    },
+                    severity: 'info'
+                });
+            } catch (activityError) {
+                console.error('Error logging issue update activity:', activityError);
+            }
         }
 
         res.status(200).json({

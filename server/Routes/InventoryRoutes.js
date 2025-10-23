@@ -3,12 +3,12 @@ const router = express.Router();
 const InventoryController = require('../Controllers/InventoryController');
 const IssueController = require('../Controllers/IssueController');
 const { authenticate, authorize, requirePharmacistOrAdmin, inventoryAccess } = require('../Middleware/authMiddleware');
-const { 
-    validateProduct, 
+const {
+    validateProduct,
     validateProductMasterData,
-    validateIssue, 
+    validateIssue,
     validateCategory,
-    validateIssueStatus 
+    validateIssueStatus
 } = require('../Middleware/validationMiddleware');
 
 // ==================== PRODUCT ROUTES ====================
@@ -34,10 +34,23 @@ router.get('/products/:id', authenticate, inventoryAccess(false), InventoryContr
  * Access: Authenticated users (pharmacist, admin)
  */
 router.get(
-    '/products/:id/history', 
-    authenticate, 
+    '/products/:id/history',
+    authenticate,
     authorize('pharmacist', 'admin'),
     InventoryController.getProductOrderHistory
+);
+
+/**
+ * GET /api/inventory/products-with-stock
+ * Get products with available inventory (for issuing)
+ * Query params: search, category, status
+ * Access: Authenticated users
+ */
+router.get(
+    '/products-with-stock',
+    authenticate,
+    inventoryAccess(false),
+    InventoryController.getProductsWithStock
 );
 
 /**
@@ -46,8 +59,8 @@ router.get(
  * Access: Pharmacist and Admin only
  */
 router.post(
-    '/products', 
-    authenticate, 
+    '/products',
+    authenticate,
     requirePharmacistOrAdmin,
     validateProductMasterData,
     InventoryController.createProduct
@@ -59,8 +72,8 @@ router.post(
  * Access: Pharmacist and Admin only
  */
 router.put(
-    '/products/:id', 
-    authenticate, 
+    '/products/:id',
+    authenticate,
     requirePharmacistOrAdmin,
     validateProductMasterData,
     InventoryController.updateProduct
@@ -72,8 +85,8 @@ router.put(
  * Access: Pharmacist and Admin only
  */
 router.delete(
-    '/products/:id', 
-    authenticate, 
+    '/products/:id',
+    authenticate,
     requirePharmacistOrAdmin,
     InventoryController.deleteProduct
 );
@@ -93,8 +106,8 @@ router.get('/categories', authenticate, InventoryController.getCategories);
  * Access: Pharmacist and Admin only
  */
 router.post(
-    '/categories', 
-    authenticate, 
+    '/categories',
+    authenticate,
     requirePharmacistOrAdmin,
     validateCategory,
     InventoryController.createCategory
@@ -106,8 +119,8 @@ router.post(
  * Access: Pharmacist and Admin only
  */
 router.delete(
-    '/categories/:name', 
-    authenticate, 
+    '/categories/:name',
+    authenticate,
     requirePharmacistOrAdmin,
     InventoryController.deleteCategory
 );
@@ -197,8 +210,8 @@ router.get(
  * Access: Authenticated users (pharmacist, admin, nurse)
  */
 router.get(
-    '/alerts', 
-    authenticate, 
+    '/alerts',
+    authenticate,
     authorize('pharmacist', 'admin', 'nurse'),
     InventoryController.getStockAlerts
 );
@@ -211,8 +224,8 @@ router.get(
  * Access: Authenticated users (pharmacist, admin)
  */
 router.get(
-    '/dashboard/stats', 
-    authenticate, 
+    '/dashboard/stats',
+    authenticate,
     authorize('pharmacist', 'admin'),
     InventoryController.getDashboardStats
 );
@@ -224,8 +237,8 @@ router.get(
  * Access: Authenticated users (pharmacist, admin)
  */
 router.get(
-    '/dashboard/activities', 
-    authenticate, 
+    '/dashboard/activities',
+    authenticate,
     authorize('pharmacist', 'admin'),
     InventoryController.getRecentActivities
 );
@@ -239,8 +252,8 @@ router.get(
  * Access: Authenticated users (pharmacist, admin, nurse)
  */
 router.get(
-    '/issues', 
-    authenticate, 
+    '/issues',
+    authenticate,
     authorize('pharmacist', 'admin', 'nurse'),
     IssueController.getIssues
 );
@@ -251,8 +264,8 @@ router.get(
  * Access: Authenticated users (pharmacist, admin)
  */
 router.get(
-    '/issues/today', 
-    authenticate, 
+    '/issues/today',
+    authenticate,
     authorize('pharmacist', 'admin'),
     IssueController.getTodayIssues
 );
@@ -263,8 +276,8 @@ router.get(
  * Access: Authenticated users (pharmacist, admin, nurse)
  */
 router.get(
-    '/issues/:id', 
-    authenticate, 
+    '/issues/:id',
+    authenticate,
     authorize('pharmacist', 'admin', 'nurse'),
     IssueController.getIssue
 );
@@ -275,8 +288,8 @@ router.get(
  * Access: Pharmacist, Admin, and Nurse
  */
 router.post(
-    '/issues', 
-    authenticate, 
+    '/issues',
+    authenticate,
     authorize('pharmacist', 'admin', 'nurse'),
     validateIssue,
     IssueController.createIssue
@@ -288,8 +301,8 @@ router.post(
  * Access: Pharmacist and Admin only
  */
 router.patch(
-    '/issues/:id/status', 
-    authenticate, 
+    '/issues/:id/status',
+    authenticate,
     requirePharmacistOrAdmin,
     validateIssueStatus,
     IssueController.updateIssueStatus

@@ -89,6 +89,17 @@ export const productsAPI = {
       throw error;
     }
   },
+
+  // Get products with available stock (for issuing)
+  getProductsWithStock: async (params = {}) => {
+    try {
+      const response = await api.get('/api/inventory/products-with-stock', { params });
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching products with stock:', error);
+      throw error;
+    }
+  },
 };
 
 // Categories API
@@ -358,6 +369,17 @@ export const inventoryItemsAPI = {
       return response.data;
     } catch (error) {
       console.error('Error updating inventory item:', error);
+      throw error;
+    }
+  },
+
+  // Delete inventory item
+  deleteInventoryItem: async (id) => {
+    try {
+      const response = await api.delete(`/api/inventory/items/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error deleting inventory item:', error);
       throw error;
     }
   },

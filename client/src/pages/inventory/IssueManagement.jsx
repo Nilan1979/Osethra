@@ -58,7 +58,7 @@ const IssueManagement = () => {
   const location = useLocation();
   const invoiceRef = useRef();
   const thermalRef = useRef();
-  
+
   // State management
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -66,11 +66,11 @@ const IssueManagement = () => {
   const [products, setProducts] = useState([]);
   const [cart, setCart] = useState([]);
   const [showInvoice, setShowInvoice] = useState(false);
-  const [printFormat, setPrintFormat] = useState('a4'); 
+  const [printFormat, setPrintFormat] = useState('a4');
   const [createdIssue, setCreatedIssue] = useState(null);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
-  
+
   // Issue details
   const [issueType, setIssueType] = useState('outpatient'); // eslint-disable-line no-unused-vars
   const [patientInfo, setPatientInfo] = useState({
@@ -94,7 +94,7 @@ const IssueManagement = () => {
   // Handle prescription data from navigation
   useEffect(() => {
     const prescriptionData = location.state?.prescriptionData;
-    
+
     if (prescriptionData && prescriptionData.medications) {
       // Set patient info if available
       if (prescriptionData.patient) {
@@ -120,7 +120,7 @@ const IssueManagement = () => {
 
           for (const med of prescriptionData.medications) {
             // Find matching product by medication name
-            const product = products.find(p => 
+            const product = products.find(p =>
               p.name.toLowerCase() === med.name.toLowerCase()
             );
 
@@ -168,86 +168,23 @@ const IssueManagement = () => {
   const fetchProducts = async () => {
     try {
       setLoading(true);
-      console.log('Fetching products and inventory items...');
-      
-      // Fetch both products and inventory items
-      const [productsResponse, inventoryResponse] = await Promise.all([
-        inventoryAPI.products.getProducts({ 
-          page: 1, 
-          limit: 100,
-          status: 'active' 
-        }),
-        inventoryAPI.inventoryItems.getInventoryItems({
-          page: 1,
-          limit: 1000,
-          status: 'available'
-        })
-      ]);
-      
-      console.log('Products Response:', productsResponse);
-      console.log('Inventory Response:', inventoryResponse);
-      
-      const productsData = productsResponse.data?.products || productsResponse.products || [];
-      const inventoryData = inventoryResponse.data?.items || inventoryResponse.data?.inventoryItems || inventoryResponse.inventoryItems || [];
-      
-      console.log('Products Data:', productsData.length, 'items');
-      console.log('Inventory Data:', inventoryData.length, 'items');
-      console.log('Sample Inventory Item:', inventoryData[0]);
-      
-      // Calculate aggregated stock per product
-      const productsWithStock = productsData.map(product => {
-        // Find all inventory items for this product
-        // Convert IDs to strings for comparison
-        const productId = typeof product._id === 'string' ? product._id : product._id.toString();
-        const productInventory = inventoryData.filter(item => {
-          // Handle both populated and non-populated product field
-          let itemProductId;
-          if (typeof item.product === 'string') {
-            itemProductId = item.product;
-          } else if (item.product?._id) {
-            // Product is populated
-            itemProductId = typeof item.product._id === 'string' 
-              ? item.product._id 
-              : item.product._id.toString();
-          } else if (item.product) {
-            // Product is an ObjectId
-            itemProductId = item.product.toString();
-          }
-          return itemProductId === productId;
-        });
-        
-        console.log(`Product: ${product.name} (${productId}), Inventory Items:`, productInventory.length);
-        if (productInventory.length > 0) {
-          console.log('  Sample inventory item:', productInventory[0]);
-        }
-        
-        // Calculate total available stock (non-expired only)
-        const now = new Date();
-        const totalStock = productInventory
-          .filter(item => new Date(item.expiryDate) > now && item.quantity > 0)
-          .reduce((sum, item) => sum + item.quantity, 0);
-        
-        // Get the batch with earliest expiry (FEFO)
-        const sortedBatches = productInventory
-          .filter(item => new Date(item.expiryDate) > now && item.quantity > 0)
-          .sort((a, b) => new Date(a.expiryDate) - new Date(b.expiryDate));
-        
-        const primaryBatch = sortedBatches[0];
-        
-        console.log(`  Total Stock: ${totalStock}, Batches: ${sortedBatches.length}`);
-        
-        return {
-          ...product,
-          currentStock: totalStock, // Aggregated stock
-          batches: sortedBatches, // All available batches
-          batchNumber: primaryBatch?.batchNumber,
-          expiryDate: primaryBatch?.expiryDate,
-          sellingPrice: primaryBatch?.sellingPrice || product.sellingPrice || 0
-        };
+      console.log('Fetching products with available stock...');
+
+      // Fetch products with available stock from the new endpoint
+      // Each inventory batch is returned as a separate product entry
+      const response = await inventoryAPI.products.getProductsWithStock({
+        status: 'active'
       });
-      
-      console.log('Products with Stock:', productsWithStock);
-      setProducts(productsWithStock);
+
+      console.log('Products Response:', response);
+
+      const productsData = response.data?.products || response.products || [];
+
+      console.log('Products with Stock (separate batches):', productsData.length, 'items');
+
+      // Data is already in the correct format - each batch is a separate entry
+      // No need to map or transform
+      setProducts(productsData);
       setError(null);
     } catch (err) {
       console.error('Error fetching products:', err);
@@ -258,25 +195,27 @@ const IssueManagement = () => {
   };
 
   // Filter products based on search
-  const filteredProducts = products.filter(product => 
+  const filteredProducts = products.filter(product =>
     product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     product.sku?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     product.category?.toLowerCase().includes(searchTerm.toLowerCase())
-  ).filter(product => product.currentStock > 0); // Only show in-stock items
+  );
+  // No need to filter by stock - API already returns only in-stock items
 
   // Add product to cart
   const handleAddToCart = (product) => {
-    const existingItem = cart.find(item => item._id === product._id);
-    
+    const existingItem = cart.find(item => item.inventoryItemId === product.inventoryItemId);
+
     if (existingItem) {
       if (existingItem.quantity >= product.currentStock) {
         setError(`Cannot add more. Only ${product.currentStock} units available.`);
         return;
       }
-      handleUpdateQuantity(product._id, existingItem.quantity + 1);
+      handleUpdateQuantity(product.inventoryItemId, existingItem.quantity + 1);
     } else {
       setCart([...cart, {
         _id: product._id,
+        inventoryItemId: product.inventoryItemId,
         productName: product.name,
         sku: product.sku,
         quantity: 1,
@@ -286,35 +225,35 @@ const IssueManagement = () => {
         batchNumber: product.batchNumber,
         expiryDate: product.expiryDate,
       }]);
-      setSuccess(`Added ${product.name} to cart`);
+      setSuccess(`Added ${product.name} (Batch: ${product.batchNumber}) to cart`);
     }
     setSearchTerm(''); // Clear search
   };
 
   // Update quantity in cart
-  const handleUpdateQuantity = (productId, newQuantity) => {
-    const item = cart.find(i => i._id === productId);
-    
+  const handleUpdateQuantity = (inventoryItemId, newQuantity) => {
+    const item = cart.find(i => i.inventoryItemId === inventoryItemId);
+
     if (newQuantity < 1) {
-      handleRemoveFromCart(productId);
+      handleRemoveFromCart(inventoryItemId);
       return;
     }
-    
+
     if (newQuantity > item.availableStock) {
       setError(`Only ${item.availableStock} units available`);
       return;
     }
 
-    setCart(cart.map(item => 
-      item._id === productId 
+    setCart(cart.map(item =>
+      item.inventoryItemId === inventoryItemId
         ? { ...item, quantity: newQuantity, totalPrice: item.unitPrice * newQuantity }
         : item
     ));
   };
 
   // Remove from cart
-  const handleRemoveFromCart = (productId) => {
-    setCart(cart.filter(item => item._id !== productId));
+  const handleRemoveFromCart = (inventoryItemId) => {
+    setCart(cart.filter(item => item.inventoryItemId !== inventoryItemId));
   };
 
   // Clear cart
@@ -359,6 +298,7 @@ const IssueManagement = () => {
         type: 'general', // Set a default type since we removed issue type selection
         items: cart.map(item => ({
           productId: item._id,
+          inventoryItemId: item.inventoryItemId,
           quantity: item.quantity,
           unitPrice: item.unitPrice,
           batchNumber: item.batchNumber,
@@ -390,7 +330,7 @@ const IssueManagement = () => {
 
       // Refresh products to update stock
       await fetchProducts();
-      
+
     } catch (err) {
       console.error('Error creating issue:', err);
       setError(err.response?.data?.message || 'Failed to create issue');
@@ -470,11 +410,11 @@ const IssueManagement = () => {
         </Box>
 
         {/* Header */}
-        <Paper 
+        <Paper
           elevation={2}
-          sx={{ 
-            p: 4, 
-            mb: 4, 
+          sx={{
+            p: 4,
+            mb: 4,
             background: 'linear-gradient(135deg, #1976d2 0%, #0d47a1 100%)',
             color: 'white',
             borderRadius: 4,
@@ -502,7 +442,7 @@ const IssueManagement = () => {
             options={filteredProducts}
             getOptionLabel={(option) => typeof option === 'string' ? option : `${option.name} (${option.sku})`}
             renderOption={(props, option) => (
-              <Box component="li" {...props} key={option._id} display="flex" alignItems="center" gap={2}>
+              <Box component="li" {...props} key={option.inventoryItemId || option._id} display="flex" alignItems="center" gap={2}>
                 <Box flex={1}>
                   <Typography variant="body1" fontWeight="bold" color={option.currentStock < 10 ? 'error' : 'inherit'}>
                     {option.name}
@@ -583,10 +523,15 @@ const IssueManagement = () => {
                         </TableRow>
                       ) : (
                         cart.map((item) => (
-                          <TableRow key={item._id} hover sx={{ '&:hover': { bgcolor: '#f9f9f9' } }}>
+                          <TableRow key={item.inventoryItemId} hover sx={{ '&:hover': { bgcolor: '#f9f9f9' } }}>
                             <TableCell sx={{ py: 2.5 }}>
                               <Typography variant="body2" fontWeight="600" sx={{ mb: 0.5 }}>{item.productName}</Typography>
                               <Typography variant="caption" color="text.secondary">{item.sku}</Typography>
+                              {item.batchNumber && (
+                                <Box mt={0.5}>
+                                  <Chip label={`Batch: ${item.batchNumber}`} size="small" color="info" sx={{ height: 20, fontSize: '0.65rem' }} />
+                                </Box>
+                              )}
                               {item.availableStock < 10 && (
                                 <Box mt={0.5}>
                                   <Chip label={`Only ${item.availableStock} left!`} size="small" color="warning" sx={{ height: 20, fontSize: '0.65rem' }} />
@@ -596,31 +541,31 @@ const IssueManagement = () => {
                             <TableCell align="center" sx={{ py: 2.5 }}>
                               <Box display="flex" flexDirection="column" alignItems="center" gap={1}>
                                 <Box display="flex" alignItems="center" justifyContent="center" gap={0.5}>
-                                  <IconButton 
-                                    size="small" 
-                                    onClick={() => handleUpdateQuantity(item._id, item.quantity - 1)} 
-                                    color="primary" 
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => handleUpdateQuantity(item.inventoryItemId, item.quantity - 1)}
+                                    color="primary"
                                     sx={{ border: '1px solid #e0e0e0' }}
                                   >
                                     <RemoveIcon fontSize="small" />
                                   </IconButton>
-                                  <TextField 
-                                    value={item.quantity} 
-                                    onChange={(e) => { const val = parseInt(e.target.value) || 0; handleUpdateQuantity(item._id, val); }} 
-                                    type="number" 
-                                    size="small" 
-                                    sx={{ 
-                                      width: 70, 
+                                  <TextField
+                                    value={item.quantity}
+                                    onChange={(e) => { const val = parseInt(e.target.value) || 0; handleUpdateQuantity(item.inventoryItemId, val); }}
+                                    type="number"
+                                    size="small"
+                                    sx={{
+                                      width: 70,
                                       '& input': { textAlign: 'center', fontWeight: 'bold', fontSize: '1rem', py: 1 },
                                       '& .MuiOutlinedInput-root': { borderRadius: 2 }
-                                    }} 
-                                    inputProps={{ min: 1, max: item.availableStock }} 
+                                    }}
+                                    inputProps={{ min: 1, max: item.availableStock }}
                                   />
-                                  <IconButton 
-                                    size="small" 
-                                    onClick={() => handleUpdateQuantity(item._id, item.quantity + 1)} 
-                                    color="primary" 
-                                    disabled={item.quantity >= item.availableStock} 
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => handleUpdateQuantity(item.inventoryItemId, item.quantity + 1)}
+                                    color="primary"
+                                    disabled={item.quantity >= item.availableStock}
                                     sx={{ border: '1px solid #e0e0e0' }}
                                   >
                                     <AddIcon fontSize="small" />
@@ -637,10 +582,10 @@ const IssueManagement = () => {
                             </TableCell>
                             <TableCell align="center" sx={{ py: 2.5 }}>
                               <Tooltip title="Remove from cart">
-                                <IconButton 
-                                  size="small" 
-                                  color="error" 
-                                  onClick={() => handleRemoveFromCart(item._id)} 
+                                <IconButton
+                                  size="small"
+                                  color="error"
+                                  onClick={() => handleRemoveFromCart(item.inventoryItemId)}
                                   sx={{ '&:hover': { bgcolor: '#ffebee' } }}
                                 >
                                   <DeleteIcon fontSize="small" />
@@ -668,7 +613,7 @@ const IssueManagement = () => {
                     <Typography variant="subtitle2" color="text.secondary">Selected Products</Typography>
                     <Box display="flex" flexWrap="wrap" gap={1} mt={1}>
                       {cart.map(item => (
-                        <Chip key={item._id} label={`${item.productName} (${item.quantity})`} color="primary" variant="outlined" />
+                        <Chip key={item.inventoryItemId} label={`${item.productName} (${item.quantity})`} color="primary" variant="outlined" />
                       ))}
                     </Box>
                   </Box>
@@ -685,20 +630,20 @@ const IssueManagement = () => {
                   <Divider sx={{ my: 2 }} />
                   <Box mb={2}>
                     <Typography variant="subtitle1" fontWeight="600" gutterBottom>Patient Information (Optional)</Typography>
-                    <TextField 
-                      fullWidth 
-                      label="Patient Name" 
-                      value={patientInfo.name} 
-                      onChange={(e) => setPatientInfo({ ...patientInfo, name: e.target.value })} 
-                      sx={{ mb: 2 }} 
+                    <TextField
+                      fullWidth
+                      label="Patient Name"
+                      value={patientInfo.name}
+                      onChange={(e) => setPatientInfo({ ...patientInfo, name: e.target.value })}
+                      sx={{ mb: 2 }}
                       placeholder="Enter patient name (optional)"
                     />
-                    <TextField 
-                      fullWidth 
-                      label="Patient Contact Number" 
-                      value={patientInfo.contactNumber || ''} 
-                      onChange={(e) => setPatientInfo({ ...patientInfo, contactNumber: e.target.value })} 
-                      sx={{ mb: 2 }} 
+                    <TextField
+                      fullWidth
+                      label="Patient Contact Number"
+                      value={patientInfo.contactNumber || ''}
+                      onChange={(e) => setPatientInfo({ ...patientInfo, contactNumber: e.target.value })}
+                      sx={{ mb: 2 }}
                       placeholder="Enter contact number (optional)"
                       type="tel"
                     />
@@ -720,7 +665,7 @@ const IssueManagement = () => {
         {/* Invoice Dialog */}
         <Dialog
           open={showInvoice}
-          onClose={() => {}}
+          onClose={() => { }}
           maxWidth={printFormat === 'thermal' ? 'xs' : 'md'}
           fullWidth
           PaperProps={{

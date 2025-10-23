@@ -110,10 +110,84 @@ exports.getProduct = async (req, res) => {
     }
 };
 
+// Get products with available stock (for issuing)
+// Returns inventory items as separate entries for batch selection
+exports.getProductsWithStock = async (req, res) => {
+    try {
+        const {
+            search = '',
+            category = '',
+            status = 'active'
+        } = req.query;
+
+        // Get all inventory items with available stock
+        const now = new Date();
+        const inventoryItems = await InventoryItem.find({
+            status: 'available',
+            quantity: { $gt: 0 },
+            expiryDate: { $gt: now }
+        }).populate('product').sort({ expiryDate: 1 }).lean(); // Sort by expiry (FEFO)
+
+        // Convert inventory items to product entries (each batch is a separate entry)
+        const products = [];
+
+        for (const item of inventoryItems) {
+            if (!item.product) continue;
+
+            // Apply filters
+            if (status && item.product.status !== status) continue;
+            if (category && item.product.category !== category) continue;
+            if (search) {
+                const searchLower = search.toLowerCase();
+                const matchesSearch =
+                    item.product.name.toLowerCase().includes(searchLower) ||
+                    item.product.sku.toLowerCase().includes(searchLower) ||
+                    (item.product.barcode && item.product.barcode.toLowerCase().includes(searchLower));
+                if (!matchesSearch) continue;
+            }
+
+            // Create a product entry for each inventory batch
+            products.push({
+                _id: item.product._id,
+                inventoryItemId: item._id, // Important: include inventory item ID
+                name: item.product.name,
+                sku: item.product.sku,
+                category: item.product.category,
+                unit: item.product.unit,
+                prescription: item.product.prescription,
+                status: item.product.status,
+                currentStock: item.quantity, // Stock for this specific batch
+                availableStock: item.quantity, // Alias for compatibility
+                batchNumber: item.batchNumber,
+                expiryDate: item.expiryDate,
+                manufactureDate: item.manufactureDate,
+                sellingPrice: item.sellingPrice,
+                buyingPrice: item.buyingPrice,
+                storageLocation: item.storageLocation
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            data: {
+                products,
+                total: products.length
+            }
+        });
+    } catch (err) {
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching products with stock',
+            error: err.message
+        });
+    }
+};
+
 // Create new product (master data only - no stock)
 exports.createProduct = async (req, res) => {
     try {
         console.log('Received product data:', req.body);
+        console.log('User from token:', req.user);
 
         const {
             name,
@@ -168,30 +242,46 @@ exports.createProduct = async (req, res) => {
             prescription: prescription === 'yes' || prescription === true,
             status: status || 'active',
             notes,
-            createdBy: req.user?._id
+            createdBy: req.user?._id || req.user?.id
         });
+
+        console.log('Product object before save:', product);
 
         await product.save();
 
+        console.log('Product saved successfully:', product._id);
+
         // Log activity
         if (req.user) {
-            await Activity.create({
-                type: 'product_added',
-                description: `Added new product: ${product.name} (${product.sku})`,
-                user: {
-                    id: req.user._id,
-                    name: req.user.name,
-                    role: req.user.role
-                },
-                entityType: 'Product',
-                entityId: product._id,
-                entityName: product.name,
-                metadata: {
-                    sku: product.sku,
-                    category: product.category
-                },
-                severity: 'info'
+            console.log('Creating activity log with user:', {
+                id: req.user._id,
+                name: req.user.name,
+                role: req.user.role
             });
+
+            try {
+                await Activity.create({
+                    type: 'product_added',
+                    description: `Added new product: ${product.name} (${product.sku})`,
+                    user: {
+                        id: req.user._id || req.user.id,
+                        name: req.user.name || 'Unknown User',
+                        role: req.user.role || 'unknown'
+                    },
+                    entityType: 'Product',
+                    entityId: product._id,
+                    entityName: product.name,
+                    metadata: {
+                        sku: product.sku,
+                        category: product.category
+                    },
+                    severity: 'info'
+                });
+                console.log('Activity logged successfully');
+            } catch (activityError) {
+                console.error('Error logging activity:', activityError);
+                // Don't fail the product creation if activity logging fails
+            }
         }
 
         res.status(201).json({
@@ -287,20 +377,25 @@ exports.updateProduct = async (req, res) => {
 
         // Log activity
         if (req.user) {
-            await Activity.create({
-                type: 'product_updated',
-                description: `Updated product: ${product.name} (${product.sku})`,
-                user: {
-                    id: req.user._id,
-                    name: req.user.name,
-                    role: req.user.role
-                },
-                entityType: 'Product',
-                entityId: product._id,
-                entityName: product.name,
-                metadata: {},
-                severity: 'info'
-            });
+            try {
+                await Activity.create({
+                    type: 'product_updated',
+                    description: `Updated product: ${product.name} (${product.sku})`,
+                    user: {
+                        id: req.user._id || req.user.id,
+                        name: req.user.name || 'Unknown User',
+                        role: req.user.role || 'unknown'
+                    },
+                    entityType: 'Product',
+                    entityId: product._id,
+                    entityName: product.name,
+                    metadata: {},
+                    severity: 'info'
+                });
+            } catch (activityError) {
+                console.error('Error logging update activity:', activityError);
+                // Don't fail the update if activity logging fails
+            }
         }
 
         res.status(200).json({
@@ -347,18 +442,24 @@ exports.deleteProduct = async (req, res) => {
 
         // Log activity
         if (req.user) {
-            await Activity.create({
-                type: 'product_deleted',
-                description: `Deleted product: ${productName} (SKU: ${productSKU})`,
-                user: {
-                    id: req.user.id,
-                    name: req.user.name,
-                    role: req.user.role
-                },
-                entityType: 'Product',
-                entityName: productName,
-                severity: 'warning'
-            });
+            console.log('Logging delete activity for user:', req.user);
+            try {
+                await Activity.create({
+                    type: 'product_deleted',
+                    description: `Deleted product: ${productName} (SKU: ${productSKU})`,
+                    user: {
+                        id: req.user._id || req.user.id,
+                        name: req.user.name || 'Unknown User',
+                        role: req.user.role || 'unknown'
+                    },
+                    entityType: 'Product',
+                    entityName: productName,
+                    severity: 'warning'
+                });
+            } catch (activityError) {
+                console.error('Error logging delete activity:', activityError);
+                // Don't fail the deletion if activity logging fails
+            }
         }
 
         res.status(200).json({
@@ -433,26 +534,30 @@ exports.createCategory = async (req, res) => {
             name: name.trim(),
             description,
             icon,
-            createdBy: req.user?.id
+            createdBy: req.user?._id || req.user?.id
         });
 
         await category.save();
 
         // Log activity
         if (req.user) {
-            await Activity.create({
-                type: 'category_added',
-                description: `Added new category: ${category.name}`,
-                user: {
-                    id: req.user.id,
-                    name: req.user.name,
-                    role: req.user.role
-                },
-                entityType: 'Category',
-                entityId: category._id,
-                entityName: category.name,
-                severity: 'success'
-            });
+            try {
+                await Activity.create({
+                    type: 'category_added',
+                    description: `Added new category: ${category.name}`,
+                    user: {
+                        id: req.user._id || req.user.id,
+                        name: req.user.name || 'Unknown User',
+                        role: req.user.role || 'unknown'
+                    },
+                    entityType: 'Category',
+                    entityId: category._id,
+                    entityName: category.name,
+                    severity: 'success'
+                });
+            } catch (activityError) {
+                console.error('Error logging category add activity:', activityError);
+            }
         }
 
         res.status(201).json({
@@ -517,18 +622,22 @@ exports.deleteCategory = async (req, res) => {
 
         // Log activity
         if (req.user) {
-            await Activity.create({
-                type: 'category_deleted',
-                description: `Deleted category: ${categoryName}`,
-                user: {
-                    id: req.user.id,
-                    name: req.user.name,
-                    role: req.user.role
-                },
-                entityType: 'Category',
-                entityName: categoryName,
-                severity: 'warning'
-            });
+            try {
+                await Activity.create({
+                    type: 'category_deleted',
+                    description: `Deleted category: ${categoryName}`,
+                    user: {
+                        id: req.user._id || req.user.id,
+                        name: req.user.name || 'Unknown User',
+                        role: req.user.role || 'unknown'
+                    },
+                    entityType: 'Category',
+                    entityName: categoryName,
+                    severity: 'warning'
+                });
+            } catch (activityError) {
+                console.error('Error logging category delete activity:', activityError);
+            }
         }
 
         res.status(200).json({
@@ -1134,27 +1243,31 @@ exports.addInventoryItem = async (req, res) => {
 
         // Log activity only if user is authenticated
         if (userId) {
-            await Activity.create({
-                type: 'inventory_receipt',
-                description: `Added ${quantity} ${productExists.unit} of ${productExists.name} (Batch: ${batchNumber})`,
-                user: {
-                    id: req.user._id,
-                    name: req.user.name,
-                    role: req.user.role
-                },
-                entityType: 'Product',
-                entityId: product,
-                entityName: productExists.name,
-                severity: needsAlert ? 'warning' : 'info',
-                metadata: {
-                    productId: product,
-                    inventoryItemId: inventoryItem._id,
-                    quantity,
-                    batchNumber,
-                    availability: inventoryItem.availability,
-                    needsReorder: inventoryItem.needsReorder
-                }
-            });
+            try {
+                await Activity.create({
+                    type: 'inventory_receipt',
+                    description: `Added ${quantity} ${productExists.unit} of ${productExists.name} (Batch: ${batchNumber})`,
+                    user: {
+                        id: req.user._id || req.user.id,
+                        name: req.user.name || 'Unknown User',
+                        role: req.user.role || 'unknown'
+                    },
+                    entityType: 'Product',
+                    entityId: product,
+                    entityName: productExists.name,
+                    severity: needsAlert ? 'warning' : 'info',
+                    metadata: {
+                        productId: product,
+                        inventoryItemId: inventoryItem._id,
+                        quantity,
+                        batchNumber,
+                        availability: inventoryItem.availability,
+                        needsReorder: inventoryItem.needsReorder
+                    }
+                });
+            } catch (activityError) {
+                console.error('Error logging inventory receipt activity:', activityError);
+            }
         }
 
         res.status(201).json({
@@ -1163,14 +1276,14 @@ exports.addInventoryItem = async (req, res) => {
             data: inventoryItem,
             alert: needsAlert ? {
                 type: inventoryItem.availability,
-                message: inventoryItem.availability === 'out-of-stock' 
+                message: inventoryItem.availability === 'out-of-stock'
                     ? `${productExists.name} is out of stock`
                     : `${productExists.name} is running low (${inventoryItem.quantity} remaining)`
             } : null
         });
     } catch (err) {
         console.error('Error in addInventoryItem:', err);
-        
+
         // Handle duplicate key error
         if (err.code === 11000) {
             return res.status(400).json({
@@ -1318,7 +1431,7 @@ exports.getInventoryItem = async (req, res) => {
 exports.updateInventoryItem = async (req, res) => {
     try {
         const updates = req.body;
-        
+
         // Don't allow updating certain critical fields
         delete updates.product;
         delete updates.batchNumber;
@@ -1405,26 +1518,30 @@ exports.adjustInventoryStock = async (req, res) => {
         await item.save();
 
         // Log activity
-        await Activity.create({
-            type: 'inventory_adjustment',
-            description: `Adjusted stock for ${item.product.name} (Batch: ${item.batchNumber}): ${adjustment > 0 ? '+' : ''}${adjustment} ${item.product.unit}`,
-            user: {
-                id: req.user._id,
-                name: req.user.name,
-                role: req.user.role
-            },
-            entityType: 'Product',
-            entityId: item.product._id,
-            entityName: item.product.name,
-            severity: 'warning',
-            metadata: {
-                productId: item.product._id,
-                inventoryItemId: item._id,
-                adjustment,
-                newQuantity,
-                reason
-            }
-        });
+        try {
+            await Activity.create({
+                type: 'inventory_adjustment',
+                description: `Adjusted stock for ${item.product.name} (Batch: ${item.batchNumber}): ${adjustment > 0 ? '+' : ''}${adjustment} ${item.product.unit}`,
+                user: {
+                    id: req.user._id || req.user.id,
+                    name: req.user.name || 'Unknown User',
+                    role: req.user.role || 'unknown'
+                },
+                entityType: 'Product',
+                entityId: item.product._id,
+                entityName: item.product.name,
+                severity: 'warning',
+                metadata: {
+                    productId: item.product._id,
+                    inventoryItemId: item._id,
+                    adjustment,
+                    newQuantity,
+                    reason
+                }
+            });
+        } catch (activityError) {
+            console.error('Error logging inventory adjustment activity:', activityError);
+        }
 
         res.status(200).json({
             success: true,
@@ -1435,6 +1552,65 @@ exports.adjustInventoryStock = async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Error adjusting stock',
+            error: err.message
+        });
+    }
+};
+
+// Delete inventory item
+exports.deleteInventoryItem = async (req, res) => {
+    try {
+        const item = await InventoryItem.findById(req.params.id).populate('product');
+
+        if (!item) {
+            return res.status(404).json({
+                success: false,
+                message: 'Inventory item not found'
+            });
+        }
+
+        // Store item info before deletion
+        const itemInfo = {
+            productName: item.product.name,
+            batchNumber: item.batchNumber,
+            quantity: item.quantity
+        };
+
+        await InventoryItem.findByIdAndDelete(req.params.id);
+
+        // Log activity
+        if (req.user) {
+            try {
+                await Activity.create({
+                    type: 'inventory_adjustment',
+                    description: `Deleted inventory item: ${itemInfo.productName} (Batch: ${itemInfo.batchNumber}, Quantity: ${itemInfo.quantity})`,
+                    user: {
+                        id: req.user._id || req.user.id,
+                        name: req.user.name || 'Unknown User',
+                        role: req.user.role || 'unknown'
+                    },
+                    entityType: 'Product',
+                    entityId: item.product._id,
+                    entityName: itemInfo.productName,
+                    severity: 'warning',
+                    metadata: {
+                        batchNumber: itemInfo.batchNumber,
+                        quantity: itemInfo.quantity
+                    }
+                });
+            } catch (activityError) {
+                console.error('Error logging inventory item deletion:', activityError);
+            }
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'Inventory item deleted successfully'
+        });
+    } catch (err) {
+        res.status(500).json({
+            success: false,
+            message: 'Error deleting inventory item',
             error: err.message
         });
     }
@@ -1455,7 +1631,7 @@ exports.getProductInventorySummary = async (req, res) => {
         }
 
         // Get all inventory items for this product
-        const items = await InventoryItem.find({ 
+        const items = await InventoryItem.find({
             product: productId,
             status: { $in: ['available', 'reserved'] }
         }).sort({ expiryDate: 1 });
@@ -1463,8 +1639,8 @@ exports.getProductInventorySummary = async (req, res) => {
         // Calculate totals
         const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
         const totalValue = items.reduce((sum, item) => sum + (item.quantity * item.sellingPrice), 0);
-        const avgBuyingPrice = items.length > 0 
-            ? items.reduce((sum, item) => sum + item.buyingPrice, 0) / items.length 
+        const avgBuyingPrice = items.length > 0
+            ? items.reduce((sum, item) => sum + item.buyingPrice, 0) / items.length
             : 0;
         const avgSellingPrice = items.length > 0
             ? items.reduce((sum, item) => sum + item.sellingPrice, 0) / items.length
@@ -1497,8 +1673,8 @@ exports.getProductInventorySummary = async (req, res) => {
                     totalBatches: items.length,
                     expiredBatches: expiredItems.length,
                     expiringSoonBatches: expiringSoonItems.length,
-                    stockStatus: totalQuantity === 0 ? 'out-of-stock' : 
-                                totalQuantity <= product.minStock ? 'low-stock' : 'in-stock'
+                    stockStatus: totalQuantity === 0 ? 'out-of-stock' :
+                        totalQuantity <= product.minStock ? 'low-stock' : 'in-stock'
                 },
                 batches: items
             }
