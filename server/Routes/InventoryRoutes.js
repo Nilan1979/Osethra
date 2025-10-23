@@ -190,6 +190,18 @@ router.patch(
 );
 
 /**
+ * DELETE /api/inventory/items/:id
+ * Delete inventory item (batch)
+ * Access: Pharmacist and Admin only
+ */
+router.delete(
+    '/items/:id',
+    authenticate,
+    requirePharmacistOrAdmin,
+    InventoryController.deleteInventoryItem
+);
+
+/**
  * GET /api/inventory/products/:productId/inventory
  * Get inventory summary for a specific product (all batches)
  * Access: Authenticated users (pharmacist, admin, nurse)
